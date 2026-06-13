@@ -1,0 +1,21 @@
+{
+	"modListVersion": 2,
+	"modList": [{
+		"modid": "${modId}",
+		"name": "${modName}",
+		"description": "Exports GTNH NEI final-result data for WebNEI.",
+		"version": "${modVersion}",
+		"mcversion": "${minecraftVersion}",
+		"url": "",
+		"updateUrl": "",
+		"authorList": ["XSana"],
+		"credits": "",
+		"logoFile": "",
+		"screenshots": [],
+		"parent": "",
+		"requiredMods": [],
+		"dependencies": [],
+		"dependants": [],
+		"useDependencyInformation": false
+	}]
+}
