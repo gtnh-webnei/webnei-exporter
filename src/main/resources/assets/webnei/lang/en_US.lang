@@ -1,0 +1,9 @@
+webnei.command.usage=/webnei help | /webnei export <handlers|slots>
+webnei.command.help.header=WebNEI Exporter commands:
+webnei.command.help.help=/webnei help - Show this help.
+webnei.command.help.export.handlers=/webnei export handlers - Write the NEI handler scan bundle.
+webnei.command.help.export.slots=/webnei export slots - Write the standard NEI slot extraction bundle.
+webnei.command.bundle.handlers.success=WebNEI handler scan bundle: %s
+webnei.command.bundle.handlers.failure=Failed to create handler scan bundle: %s
+webnei.command.bundle.slots.success=WebNEI slot extraction bundle: %s
+webnei.command.bundle.slots.failure=Failed to create slot extraction bundle: %s

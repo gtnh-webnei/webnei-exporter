@@ -25,30 +25,43 @@ public final class NeiHandlerScanner {
 
     public List<NeiHandlerDescriptor> scan() {
         List<NeiHandlerDescriptor> descriptors = new ArrayList<>();
-        Set<String> seen = new HashSet<>();
-        int index = 0;
-        index = scanList(descriptors, seen, index, "crafting", GuiCraftingRecipe.craftinghandlers);
-        index = scanList(descriptors, seen, index, "serial_crafting", GuiCraftingRecipe.serialCraftingHandlers);
-        index = scanList(descriptors, seen, index, "usage", GuiUsageRecipe.usagehandlers);
-        scanList(descriptors, seen, index, "serial_usage", GuiUsageRecipe.serialUsageHandlers);
-        return ensureUniqueCategoryIds(descriptors);
+        for (NeiHandlerEntry entry : scanEntries()) {
+            descriptors.add(entry.descriptor);
+        }
+        return descriptors;
     }
 
-    private List<NeiHandlerDescriptor> ensureUniqueCategoryIds(List<NeiHandlerDescriptor> descriptors) {
+    public List<NeiHandlerEntry> scanEntries() {
+        List<NeiHandlerEntry> entries = new ArrayList<>();
+        Set<String> seen = new HashSet<>();
+        int index = 0;
+        index = scanList(entries, seen, index, "crafting", GuiCraftingRecipe.craftinghandlers);
+        index = scanList(entries, seen, index, "serial_crafting", GuiCraftingRecipe.serialCraftingHandlers);
+        index = scanList(entries, seen, index, "usage", GuiUsageRecipe.usagehandlers);
+        scanList(entries, seen, index, "serial_usage", GuiUsageRecipe.serialUsageHandlers);
+        return ensureUniqueCategoryIds(entries);
+    }
+
+    private List<NeiHandlerEntry> ensureUniqueCategoryIds(List<NeiHandlerEntry> entries) {
         Map<String, Integer> counts = new HashMap<>();
-        for (NeiHandlerDescriptor descriptor : descriptors) {
-            counts.put(descriptor.resolvedCategoryId, counts.getOrDefault(descriptor.resolvedCategoryId, 0) + 1);
+        for (NeiHandlerEntry entry : entries) {
+            counts.put(
+                entry.descriptor.resolvedCategoryId,
+                counts.getOrDefault(entry.descriptor.resolvedCategoryId, 0) + 1);
         }
-        List<NeiHandlerDescriptor> out = new ArrayList<>(descriptors.size());
-        for (NeiHandlerDescriptor descriptor : descriptors) {
+        List<NeiHandlerEntry> out = new ArrayList<>(entries.size());
+        for (NeiHandlerEntry entry : entries) {
+            NeiHandlerDescriptor descriptor = entry.descriptor;
             if (counts.getOrDefault(descriptor.resolvedCategoryId, 0) <= 1) {
-                out.add(descriptor);
+                out.add(entry);
                 continue;
             }
             out.add(
-                copyWithCategoryId(
-                    descriptor,
-                    descriptor.resolvedCategoryId + "." + simpleClassName(descriptor.handlerClass)));
+                new NeiHandlerEntry(
+                    copyWithCategoryId(
+                        descriptor,
+                        descriptor.resolvedCategoryId + "." + simpleClassName(descriptor.handlerClass)),
+                    entry.handler));
         }
         return out;
     }
@@ -78,7 +91,7 @@ public final class NeiHandlerScanner {
         return sanitizeSegment(index < 0 ? className : className.substring(index + 1));
     }
 
-    private int scanList(List<NeiHandlerDescriptor> descriptors, Set<String> seen, int index, String sourceList,
+    private int scanList(List<NeiHandlerEntry> entries, Set<String> seen, int index, String sourceList,
         List<? extends IRecipeHandler> handlers) {
         for (IRecipeHandler handler : handlers) {
             String handlerClass = handler.getClass()
@@ -89,7 +102,10 @@ public final class NeiHandlerScanner {
             if (!seen.add(stableKey)) {
                 continue;
             }
-            descriptors.add(scanOne(index++, sourceList, stableKey, handler, handlerClass, handlerId, overlayId));
+            entries.add(
+                new NeiHandlerEntry(
+                    scanOne(index++, sourceList, stableKey, handler, handlerClass, handlerId, overlayId),
+                    handler));
         }
         return index;
     }

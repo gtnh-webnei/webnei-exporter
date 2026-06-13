@@ -1,0 +1,9 @@
+webnei.command.usage=/webnei help | /webnei export <handlers|slots>
+webnei.command.help.header=WebNEI Exporter 命令：
+webnei.command.help.help=/webnei help - 显示帮助。
+webnei.command.help.export.handlers=/webnei export handlers - 写出 NEI handler 扫描 bundle。
+webnei.command.help.export.slots=/webnei export slots - 写出标准 NEI slot 抽取 bundle。
+webnei.command.bundle.handlers.success=WebNEI handler scan bundle：%s
+webnei.command.bundle.handlers.failure=创建 handler scan bundle 失败：%s
+webnei.command.bundle.slots.success=WebNEI slot extraction bundle：%s
+webnei.command.bundle.slots.failure=创建 slot extraction bundle 失败：%s

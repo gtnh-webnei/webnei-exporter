@@ -146,7 +146,7 @@ bundle/mysql/MySqlBundleWriter
 规则：
 
 - TSV、JSON、PostgreSQL、MySQL 都是 bundle format。
-- 不再维护独立 report writer。
+- 不再维护独立诊断输出体系。
 - 诊断输出也通过 bundle writer 写出。
 - PostgreSQL 只是一个 writer 实现，不是核心架构。
 
@@ -181,14 +181,35 @@ extraction_status
 reason
 ```
 
-## 后续 Phase 3 方向
+## 当前 slot extraction bundle
 
-Phase 3 建议新增：
+当前 `/webnei export slots` 生成：
 
 ```text
-nei/recipe/NeiRecipeExtractor
+slot-extraction/handlers.tsv
+slot-extraction/recipes.tsv
+slot-extraction/stacks.tsv
+slot-extraction/candidates.tsv
+```
+
+抽取路径使用 NEI 标准公开 API：
+
+```text
+IRecipeHandler.numRecipes()
+IRecipeHandler.getIngredientStacks(recipeIndex)
+IRecipeHandler.getResultStack(recipeIndex)
+IRecipeHandler.getOtherStacks(recipeIndex)
+```
+
+当前目标是全量尝试所有 handler，先观察标准行为下能抽出多少内容，再和人工校对表对比。
+
+## 后续 Phase 3 方向
+
+后续建议继续补充：
+
+```text
 nei/stack/PositionedStackExtractor
-adapter/HandlerAdapter
+adapter/IHandlerAdapter
 model/ExportRecipe / ExportSlot / ExportCandidate
 ```
 
@@ -196,8 +217,7 @@ model/ExportRecipe / ExportSlot / ExportCandidate
 
 ```text
 NEI handler
-  -> arecipes
-  -> CachedRecipe
+  -> standard slot extraction / handler-specific loading
   -> PositionedStack
   -> ExportDataset / domain model
   -> IBundleWriter

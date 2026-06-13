@@ -16,7 +16,7 @@ public final class WebneiCommand implements ICommand {
 
     @Override
     public String getCommandUsage(ICommandSender sender) {
-        return "/webnei export handlers";
+        return "webnei.command.usage";
     }
 
     @Override
@@ -28,7 +28,7 @@ public final class WebneiCommand implements ICommand {
     @Override
     public void processCommand(ICommandSender sender, String[] args) {
         if (!router.run(sender, args)) {
-            router.sendUsage(sender, getCommandUsage(sender));
+            router.sendUsage(sender);
         }
     }
 
@@ -40,7 +40,7 @@ public final class WebneiCommand implements ICommand {
     @Override
     @SuppressWarnings("rawtypes")
     public List addTabCompletionOptions(ICommandSender sender, String[] args) {
-        return null;
+        return router.complete(args);
     }
 
     @Override

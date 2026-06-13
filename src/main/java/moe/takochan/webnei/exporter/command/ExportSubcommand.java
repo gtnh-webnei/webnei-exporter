@@ -6,5 +6,7 @@ interface ExportSubcommand {
 
     String name();
 
+    String descriptionKey();
+
     void run(ICommandSender sender);
 }
