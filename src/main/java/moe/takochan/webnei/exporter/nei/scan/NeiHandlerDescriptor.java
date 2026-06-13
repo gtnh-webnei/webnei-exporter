@@ -1,6 +1,7 @@
-package moe.takochan.webnei.exporter.nei;
+package moe.takochan.webnei.exporter.nei.scan;
 
-public final class HandlerScanRow {
+/** Domain description of one unique NEI recipe handler discovered at runtime. */
+public final class NeiHandlerDescriptor {
 
     public final int registrationIndex;
     public final String sourceList;
@@ -19,7 +20,7 @@ public final class HandlerScanRow {
     public final String extractionStatus;
     public final String reason;
 
-    public HandlerScanRow(int registrationIndex, String sourceList, String stableKey, String handlerClass,
+    public NeiHandlerDescriptor(int registrationIndex, String sourceList, String stableKey, String handlerClass,
         String handlerId, String overlayId, String recipeName, String recipeTabName, String resolvedCategoryId,
         String modId, String modName, String iconStackId, String catalystKey, int loadedRecipeCount,
         String extractionStatus, String reason) {

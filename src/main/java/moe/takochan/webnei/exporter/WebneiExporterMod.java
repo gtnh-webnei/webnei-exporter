@@ -11,11 +11,11 @@ import cpw.mods.fml.common.event.FMLPreInitializationEvent;
 import cpw.mods.fml.common.event.FMLServerStartingEvent;
 
 @Mod(
-    modid = WebneiExporter.MODID,
+    modid = WebneiExporterMod.MODID,
     version = Tags.VERSION,
     name = "WebNEI Exporter",
     acceptedMinecraftVersions = "[1.7.10]")
-public class WebneiExporter {
+public class WebneiExporterMod {
 
     public static final String MODID = "webnei";
     public static final Logger LOG = LogManager.getLogger(MODID);

@@ -10,7 +10,7 @@ public class CommonProxy {
     // preInit "Run before anything else. Read your config, create blocks, items, etc, and register them with the
     // GameRegistry." (Remove if not needed)
     public void preInit(FMLPreInitializationEvent event) {
-        WebneiExporter.LOG.info("WebNEI Exporter " + Tags.VERSION);
+        WebneiExporterMod.LOG.info("WebNEI Exporter " + Tags.VERSION);
     }
 
     // load "Do your mod setup. Build whatever data structures you care about. Register recipes." (Remove if not needed)
