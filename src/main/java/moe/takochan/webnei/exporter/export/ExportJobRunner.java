@@ -11,7 +11,8 @@ import moe.takochan.webnei.exporter.workflow.ExportWorkflow;
 /**
  * 异步导出 job 入口。
  *
- * <p>runner 负责把 request 解析成 plan，并把 plan 交给 workflow 执行。
+ * <p>
+ * runner 负责把 request 解析成 plan，并把 plan 交给 workflow 执行。
  * 它不选择 step，也不关心 step 内部如何导出数据。
  */
 public final class ExportJobRunner {
@@ -35,8 +36,9 @@ public final class ExportJobRunner {
         final IExportPlan plan = planRegistry.get(request.planId());
         final ExportJobSession session = new ExportJobSession(
             NEXT_JOB_ID.getAndIncrement(),
-            plan == null ? 1 : plan.steps()
-                .size());
+            plan == null ? 1
+                : plan.steps()
+                    .size());
         session.start();
         listener.onStarted(session.snapshot());
 
@@ -52,14 +54,15 @@ public final class ExportJobRunner {
         return session;
     }
 
-    private void runJob(ExportRequest request, IExportPlan plan, ExportJobSession session, IExportJobListener listener) {
+    private void runJob(ExportRequest request, IExportPlan plan, ExportJobSession session,
+        IExportJobListener listener) {
         try {
             if (plan == null) {
                 fail(session, listener, "unknown export plan: " + request.planId());
                 return;
             }
 
-            ExportExecutionContext context = new ExportExecutionContext(session);
+            ExportExecutionContext context = new ExportExecutionContext(request, session);
             BundleResult result = workflow.execute(plan, context, session, listener);
             if (!result.success) {
                 fail(session, listener, result.errorMessage);

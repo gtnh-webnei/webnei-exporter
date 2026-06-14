@@ -3,7 +3,8 @@ package moe.takochan.webnei.exporter.step;
 /**
  * 单个数据域导出步骤。
  *
- * <p>step 才负责具体数据来源，例如 NEI、mod registry、渲染器等。
+ * <p>
+ * step 才负责具体数据来源，例如 NEI、mod registry、渲染器等。
  * workflow 只按 plan 顺序执行 step，不了解 step 内部细节。
  */
 public interface IExportStep {

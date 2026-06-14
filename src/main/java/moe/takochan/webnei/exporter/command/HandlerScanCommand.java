@@ -21,7 +21,7 @@ final class HandlerScanCommand implements ExportSubcommand {
     }
 
     @Override
-    public void run(ICommandSender sender) {
+    public void run(ICommandSender sender, String[] args) {
         ExportJobRunner.defaults()
             .submit(ExportRequest.plan(ExportPlanIds.HANDLER_DISCOVERY_VALIDATION), new ChatExportJobListener(sender));
     }

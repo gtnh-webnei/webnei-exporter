@@ -5,6 +5,7 @@ import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
+import moe.takochan.webnei.exporter.step.DatasetModExportStep;
 import moe.takochan.webnei.exporter.step.HandlerExportStep;
 import moe.takochan.webnei.exporter.step.IExportStep;
 import moe.takochan.webnei.exporter.step.RecipeVisualFactsExportStep;
@@ -12,7 +13,8 @@ import moe.takochan.webnei.exporter.step.RecipeVisualFactsExportStep;
 /**
  * 导出计划注册表。
  *
- * <p>command 只传 plan id；这里负责把 plan id 映射成具体计划。
+ * <p>
+ * command 只传 plan id；这里负责把 plan id 映射成具体计划。
  * workflow 不从这里挑选 step，它只执行已经解析好的 plan。
  */
 public final class ExportPlanRegistry {
@@ -31,6 +33,10 @@ public final class ExportPlanRegistry {
     public static ExportPlanRegistry defaults() {
         return new ExportPlanRegistry(
             Arrays.<IExportPlan>asList(
+                new StaticExportPlan(
+                    ExportPlanIds.DATASET_MOD_VALIDATION,
+                    "webnei.task.dataset",
+                    Arrays.<IExportStep>asList(new DatasetModExportStep())),
                 new StaticExportPlan(
                     ExportPlanIds.HANDLER_DISCOVERY_VALIDATION,
                     "webnei.task.handlers",

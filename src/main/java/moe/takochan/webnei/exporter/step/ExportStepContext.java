@@ -11,10 +11,11 @@ import moe.takochan.webnei.exporter.model.ExportSection;
 /**
  * step 之间共享的导出上下文。
  *
- * <p>它负责两件事：
+ * <p>
+ * 它负责两件事：
  * <ol>
- *   <li>收集 step 输出的 bundle sections。</li>
- *   <li>保存同一次 plan 内的临时中间结果，例如 handler 扫描结果。</li>
+ * <li>收集 step 输出的 bundle sections。</li>
+ * <li>保存同一次 plan 内的临时中间结果，例如 handler 扫描结果。</li>
  * </ol>
  * 这里不放 TSV/JSON/SQL 写出逻辑，最终格式仍由 bundle writer 决定。
  */
@@ -23,6 +24,7 @@ public final class ExportStepContext {
     private final ExportExecutionContext executionContext;
     private final List<ExportSection> sections = new ArrayList<>();
     private final Map<String, Object> values = new HashMap<>();
+    private String datasetName;
 
     public ExportStepContext(ExportExecutionContext executionContext) {
         this.executionContext = executionContext;
@@ -41,6 +43,16 @@ public final class ExportStepContext {
     /** 返回当前已收集的 sections 副本，避免外部直接修改内部列表。 */
     public List<ExportSection> sections() {
         return new ArrayList<>(sections);
+    }
+
+    /** 设置本次 bundle 使用的数据集名称，bundle writer 会用它作为输出目录名。 */
+    public void setDatasetName(String datasetName) {
+        this.datasetName = datasetName;
+    }
+
+    /** 返回本次 bundle 使用的数据集名称；未设置时由 workflow 使用 plan id 兜底。 */
+    public String datasetName(String fallback) {
+        return datasetName == null || datasetName.isEmpty() ? fallback : datasetName;
     }
 
     /** 保存 plan 内临时中间结果；key 应由提供方集中定义。 */

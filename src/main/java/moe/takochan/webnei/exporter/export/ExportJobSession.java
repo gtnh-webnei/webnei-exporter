@@ -8,7 +8,8 @@ import moe.takochan.webnei.exporter.step.IExportStep;
 /**
  * 导出 job 的统一状态源。
  *
- * <p>chat listener 和未来 GUI 都应读取同一个 session/snapshot。
+ * <p>
+ * chat listener 和未来 GUI 都应读取同一个 session/snapshot。
  * 现有 snapshot 字段名仍保留 workflow 命名以减少牵连，但当前语义已经是“plan 中的 step 进度”。
  */
 public final class ExportJobSession {

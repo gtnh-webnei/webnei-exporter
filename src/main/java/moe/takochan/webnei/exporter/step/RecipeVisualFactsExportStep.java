@@ -19,7 +19,8 @@ import moe.takochan.webnei.exporter.nei.scan.NeiHandlerScanner;
 /**
  * recipe visual facts 验证导出步骤。
  *
- * <p>本 step 服务当前验证：确认能否从 NEI final result 中拿到 recipe 顺序、slot 坐标和候选栈。
+ * <p>
+ * 本 step 服务当前验证：确认能否从 NEI final result 中拿到 recipe 顺序、slot 坐标和候选栈。
  * 它不是长期的“slots 功能”，后续会被正式 recipe 导出 step 替代或吸收。
  */
 public final class RecipeVisualFactsExportStep implements IExportStep {

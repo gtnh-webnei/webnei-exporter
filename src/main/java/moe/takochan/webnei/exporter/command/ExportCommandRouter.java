@@ -10,20 +10,20 @@ import net.minecraft.command.ICommandSender;
 final class ExportCommandRouter {
 
     private final List<ExportSubcommand> subcommands = Arrays
-        .asList(new HandlerScanCommand(), new SlotExtractionCommand());
+        .asList(new DatasetModCommand(), new HandlerScanCommand(), new SlotExtractionCommand());
 
     boolean run(ICommandSender sender, String[] args) {
         if (args.length == 0 || isHelp(args)) {
             sendHelp(sender);
             return true;
         }
-        if (args.length != 2 || !"export".equals(args[0])) {
+        if (args.length < 2 || !"export".equals(args[0])) {
             return false;
         }
         for (ExportSubcommand subcommand : subcommands) {
             if (subcommand.name()
                 .equals(args[1])) {
-                subcommand.run(sender);
+                subcommand.run(sender, Arrays.copyOfRange(args, 2, args.length));
                 return true;
             }
         }

@@ -7,7 +7,8 @@ import moe.takochan.webnei.exporter.step.IExportStep;
 /**
  * 一次导出计划。
  *
- * <p>plan 只描述“这次导出由哪些 step 组成，以及执行顺序是什么”。
+ * <p>
+ * plan 只描述“这次导出由哪些 step 组成，以及执行顺序是什么”。
  * 它不负责执行 step，也不关心 step 内部如何从 NEI、mod registry 或渲染器取数据。
  */
 public interface IExportPlan {

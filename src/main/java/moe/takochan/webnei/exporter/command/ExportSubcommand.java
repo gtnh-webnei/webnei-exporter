@@ -8,5 +8,5 @@ interface ExportSubcommand {
 
     String descriptionKey();
 
-    void run(ICommandSender sender);
+    void run(ICommandSender sender, String[] args);
 }

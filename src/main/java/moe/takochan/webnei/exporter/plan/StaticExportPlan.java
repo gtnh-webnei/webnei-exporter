@@ -9,7 +9,8 @@ import moe.takochan.webnei.exporter.step.IExportStep;
 /**
  * 固定 step 列表的简单计划实现。
  *
- * <p>当前阶段用于把验证计划先落地；后续如果 plan 需要根据配置动态选择 step，
+ * <p>
+ * 当前阶段用于把验证计划先落地；后续如果 plan 需要根据配置动态选择 step，
  * 可以新增专门的 plan 实现，而不需要改 workflow。
  */
 final class StaticExportPlan implements IExportPlan {

@@ -24,7 +24,8 @@ import moe.takochan.webnei.exporter.step.IExportStep;
 /**
  * 通用导出流程执行器。
  *
- * <p>workflow 只负责执行已经解析好的 plan：创建 step context、按顺序运行 steps、
+ * <p>
+ * workflow 只负责执行已经解析好的 plan：创建 step context、按顺序运行 steps、
  * 汇总 sections 并交给 bundle writer。它不决定本次有哪些 step，也不包含 NEI、item、fluid、asset 的具体逻辑。
  */
 public final class ExportWorkflow {
@@ -63,7 +64,7 @@ public final class ExportWorkflow {
 
         try {
             return bundleWriter.write(
-                new ExportDataset(plan.id(), stepContext.sections()),
+                new ExportDataset(stepContext.datasetName(plan.id()), stepContext.sections()),
                 defaultTarget(),
                 BundleContext.defaults());
         } catch (BundleException e) {

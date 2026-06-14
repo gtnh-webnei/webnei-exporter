@@ -13,7 +13,8 @@ import moe.takochan.webnei.exporter.nei.scan.NeiHandlerScanner;
 /**
  * NEI handler/category 发现步骤。
  *
- * <p>本 step 只负责“当前 NEI 注册了哪些 handler，以及这些 handler 暴露了哪些基础信息”。
+ * <p>
+ * 本 step 只负责“当前 NEI 注册了哪些 handler，以及这些 handler 暴露了哪些基础信息”。
  * 它不加载 recipes，不抽 slots，也不决定最终 bundle 如何落库。
  */
 public final class HandlerExportStep implements IExportStep {

@@ -21,8 +21,10 @@ final class SlotExtractionCommand implements ExportSubcommand {
     }
 
     @Override
-    public void run(ICommandSender sender) {
+    public void run(ICommandSender sender, String[] args) {
         ExportJobRunner.defaults()
-            .submit(ExportRequest.plan(ExportPlanIds.RECIPE_VISUAL_FACTS_VALIDATION), new ChatExportJobListener(sender));
+            .submit(
+                ExportRequest.plan(ExportPlanIds.RECIPE_VISUAL_FACTS_VALIDATION),
+                new ChatExportJobListener(sender));
     }
 }
