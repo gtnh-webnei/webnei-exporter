@@ -5,8 +5,9 @@ import net.minecraft.command.ICommandSender;
 import moe.takochan.webnei.exporter.export.ExportJobRunner;
 import moe.takochan.webnei.exporter.export.ExportRequest;
 import moe.takochan.webnei.exporter.export.listener.ChatExportJobListener;
-import moe.takochan.webnei.exporter.workflow.SlotExtractionWorkflow;
+import moe.takochan.webnei.exporter.plan.ExportPlanIds;
 
+/** 临时验证命令：请求 recipe visual facts 验证计划，后续会被正式导出计划替代。 */
 final class SlotExtractionCommand implements ExportSubcommand {
 
     @Override
@@ -22,6 +23,6 @@ final class SlotExtractionCommand implements ExportSubcommand {
     @Override
     public void run(ICommandSender sender) {
         ExportJobRunner.defaults()
-            .submit(ExportRequest.single(SlotExtractionWorkflow.ID), new ChatExportJobListener(sender));
+            .submit(ExportRequest.plan(ExportPlanIds.RECIPE_VISUAL_FACTS_VALIDATION), new ChatExportJobListener(sender));
     }
 }

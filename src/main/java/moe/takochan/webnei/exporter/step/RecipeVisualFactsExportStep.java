@@ -1,23 +1,9 @@
-package moe.takochan.webnei.exporter.workflow;
+package moe.takochan.webnei.exporter.step;
 
-import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-import net.minecraft.client.Minecraft;
-
-import moe.takochan.webnei.exporter.WebneiExporterMod;
-import moe.takochan.webnei.exporter.bundle.BundleContext;
-import moe.takochan.webnei.exporter.bundle.BundleException;
-import moe.takochan.webnei.exporter.bundle.BundleFormat;
-import moe.takochan.webnei.exporter.bundle.BundleResult;
-import moe.takochan.webnei.exporter.bundle.BundleTarget;
-import moe.takochan.webnei.exporter.bundle.IBundleWriter;
-import moe.takochan.webnei.exporter.bundle.tsv.TsvBundleWriter;
-import moe.takochan.webnei.exporter.export.ExportExecutionContext;
-import moe.takochan.webnei.exporter.export.IExportWorkflow;
-import moe.takochan.webnei.exporter.model.ExportDataset;
 import moe.takochan.webnei.exporter.model.ExportRow;
 import moe.takochan.webnei.exporter.model.ExportSection;
 import moe.takochan.webnei.exporter.nei.recipe.ExtractedCandidate;
@@ -27,31 +13,34 @@ import moe.takochan.webnei.exporter.nei.recipe.ExtractedStack;
 import moe.takochan.webnei.exporter.nei.recipe.SlotExtraction;
 import moe.takochan.webnei.exporter.nei.recipe.StandardSlotExtractor;
 import moe.takochan.webnei.exporter.nei.scan.NeiHandlerDescriptor;
+import moe.takochan.webnei.exporter.nei.scan.NeiHandlerEntry;
 import moe.takochan.webnei.exporter.nei.scan.NeiHandlerScanner;
 
-/** Builds a standard NEI slot extraction dataset and delegates output to the configured bundle writer. */
-public final class SlotExtractionWorkflow implements IExportWorkflow {
+/**
+ * recipe visual facts 验证导出步骤。
+ *
+ * <p>本 step 服务当前验证：确认能否从 NEI final result 中拿到 recipe 顺序、slot 坐标和候选栈。
+ * 它不是长期的“slots 功能”，后续会被正式 recipe 导出 step 替代或吸收。
+ */
+public final class RecipeVisualFactsExportStep implements IExportStep {
 
-    public static final String ID = "slot-extraction";
-    private static final String DATASET_NAME = ID;
+    public static final String ID = "recipe-visual-facts";
 
     private final NeiHandlerScanner scanner;
     private final StandardSlotExtractor extractor;
-    private final IBundleWriter bundleWriter;
 
-    public SlotExtractionWorkflow() {
-        this(new NeiHandlerScanner(), new StandardSlotExtractor(), new TsvBundleWriter());
+    public RecipeVisualFactsExportStep() {
+        this(new NeiHandlerScanner(), new StandardSlotExtractor());
     }
 
-    SlotExtractionWorkflow(NeiHandlerScanner scanner, StandardSlotExtractor extractor, IBundleWriter bundleWriter) {
+    RecipeVisualFactsExportStep(NeiHandlerScanner scanner, StandardSlotExtractor extractor) {
         this.scanner = scanner;
         this.extractor = extractor;
-        this.bundleWriter = bundleWriter;
     }
 
     @Override
     public String id() {
-        return DATASET_NAME;
+        return ID;
     }
 
     @Override
@@ -60,31 +49,22 @@ public final class SlotExtractionWorkflow implements IExportWorkflow {
     }
 
     @Override
-    public BundleResult execute(ExportExecutionContext context) {
-        try {
-            ExportDataset dataset = buildDataset(extractor.extract(scanner.scanEntries()));
-            return bundleWriter.write(dataset, defaultTarget(), BundleContext.defaults());
-        } catch (BundleException e) {
-            WebneiExporterMod.LOG.error("Failed to write WebNEI slot extraction bundle", e);
-            return BundleResult.failure(BundleFormat.TSV, e.getMessage());
-        } catch (RuntimeException e) {
-            WebneiExporterMod.LOG.error("Failed to extract WebNEI slots", e);
-            return BundleResult.failure(BundleFormat.TSV, e.getMessage());
+    public void execute(ExportStepContext context) {
+        SlotExtraction extraction = extractor.extract(handlerEntries(context));
+        context.addSection(new ExportSection("handlers", handlerColumns(), handlerRows(extraction.handlers)));
+        context.addSection(new ExportSection("recipes", recipeColumns(), recipeRows(extraction.recipes)));
+        context.addSection(new ExportSection("stacks", stackColumns(), stackRows(extraction.stacks)));
+        context.addSection(new ExportSection("candidates", candidateColumns(), candidateRows(extraction.candidates)));
+    }
+
+    /** 优先复用 HandlerExportStep 的扫描结果；单独运行时才自行扫描。 */
+    @SuppressWarnings("unchecked")
+    private List<NeiHandlerEntry> handlerEntries(ExportStepContext context) {
+        Object value = context.get(HandlerExportStep.HANDLER_ENTRIES_KEY);
+        if (value instanceof List) {
+            return (List<NeiHandlerEntry>) value;
         }
-    }
-
-    private static BundleTarget defaultTarget() {
-        File outputDirectory = new File(Minecraft.getMinecraft().mcDataDir, "webnei-exporter/bundles");
-        return BundleTarget.directory(outputDirectory);
-    }
-
-    private static ExportDataset buildDataset(SlotExtraction extraction) {
-        List<ExportSection> sections = new ArrayList<>();
-        sections.add(new ExportSection("handlers", handlerColumns(), handlerRows(extraction.handlers)));
-        sections.add(new ExportSection("recipes", recipeColumns(), recipeRows(extraction.recipes)));
-        sections.add(new ExportSection("stacks", stackColumns(), stackRows(extraction.stacks)));
-        sections.add(new ExportSection("candidates", candidateColumns(), candidateRows(extraction.candidates)));
-        return new ExportDataset(DATASET_NAME, sections);
+        return scanner.scanEntries();
     }
 
     private static List<ExportRow> handlerRows(List<ExtractedHandler> handlers) {
