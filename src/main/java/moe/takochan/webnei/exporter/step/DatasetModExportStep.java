@@ -53,7 +53,7 @@ public final class DatasetModExportStep implements IExportStep {
     @Override
     public void execute(ExportStepContext context) {
         DatasetIdentity identity = DatasetIdentity.from(context);
-        context.setDatasetName(identity.datasetId);
+        context.setDatasetName(identity.outputPath());
         context.addSection(new ExportSection("dataset", datasetColumns(), datasetRows(identity)));
         context.addSection(new ExportSection("mods", modColumns(), modRows(identity)));
     }
@@ -221,6 +221,15 @@ public final class DatasetModExportStep implements IExportStep {
             this.displayName = packSlug + " " + packVersion + " " + variant + " (" + language + ")";
         }
 
+        String outputPath() {
+            return sanitizePathSegment(packSlug) + File.separator
+                + sanitizePathSegment(packVersion)
+                + File.separator
+                + sanitizePathSegment(variant)
+                + File.separator
+                + sanitizePathSegment(language);
+        }
+
         static DatasetIdentity from(ExportStepContext context) {
             return new DatasetIdentity(
                 context.executionContext()
@@ -245,6 +254,14 @@ public final class DatasetModExportStep implements IExportStep {
                 }
             } catch (Throwable ignored) {}
             return "en_US";
+        }
+
+        private static String sanitizePathSegment(String value) {
+            String sanitized = value.trim()
+                .replaceAll("[^A-Za-z0-9._-]", "_");
+            sanitized = sanitized.replaceAll("^\\.+", "")
+                .replaceAll("\\.+$", "");
+            return sanitized.isEmpty() ? "value" : sanitized;
         }
     }
 }
