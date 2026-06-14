@@ -4,6 +4,7 @@ import net.minecraft.command.ICommandSender;
 
 import moe.takochan.webnei.exporter.export.ExportJobRunner;
 import moe.takochan.webnei.exporter.export.ExportRequest;
+import moe.takochan.webnei.exporter.export.listener.ChatExportJobListener;
 import moe.takochan.webnei.exporter.workflow.SlotExtractionWorkflow;
 
 final class SlotExtractionCommand implements ExportSubcommand {
