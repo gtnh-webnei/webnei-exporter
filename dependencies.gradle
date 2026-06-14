@@ -43,7 +43,7 @@ dependencies {
     api(gtnhDev("NotEnoughItems"))
 
     // Mod integrations used by explicit mod adapters.
-    compileOnly(gtnhDev("NEI-Integration"))
+    devOnlyNonPublishable(gtnhDev("NEI-Integration"))
 }
 
 String gtnh(String name) {

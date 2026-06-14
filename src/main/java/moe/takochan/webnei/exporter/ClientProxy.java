@@ -1,9 +1,6 @@
 package moe.takochan.webnei.exporter;
 
-import net.minecraftforge.client.ClientCommandHandler;
-
 import cpw.mods.fml.common.event.FMLInitializationEvent;
-import moe.takochan.webnei.exporter.command.WebneiCommand;
 
 public class ClientProxy extends CommonProxy {
 
@@ -12,7 +9,6 @@ public class ClientProxy extends CommonProxy {
     @Override
     public void init(FMLInitializationEvent event) {
         super.init(event);
-        ClientCommandHandler.instance.registerCommand(new WebneiCommand());
     }
 
 }

@@ -1,11 +1,13 @@
 package moe.takochan.webnei.exporter.adapter.railcraft;
 
 import codechicken.nei.recipe.IRecipeHandler;
+import cpw.mods.fml.common.Loader;
 import moe.takochan.webnei.exporter.adapter.AdapterContext;
 import moe.takochan.webnei.exporter.adapter.AdapterLoadingSource;
 import moe.takochan.webnei.exporter.adapter.AdapterResult;
 import moe.takochan.webnei.exporter.adapter.IModAdapter;
 import moe.takochan.webnei.exporter.nei.scan.NeiHandlerEntry;
+import tonius.neiintegration.NEIIntegration;
 import tonius.neiintegration.RecipeHandlerBase;
 import tonius.neiintegration.mods.railcraft.RecipeHandlerBlastFurnace;
 import tonius.neiintegration.mods.railcraft.RecipeHandlerCokeOven;
@@ -18,6 +20,11 @@ public final class RailcraftAdapter implements IModAdapter {
     @Override
     public String id() {
         return ID;
+    }
+
+    @Override
+    public boolean isAvailable() {
+        return Loader.isModLoaded(NEIIntegration.MODID);
     }
 
     @Override

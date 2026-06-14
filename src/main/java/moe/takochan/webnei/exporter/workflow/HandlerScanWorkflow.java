@@ -16,6 +16,8 @@ import moe.takochan.webnei.exporter.bundle.BundleResult;
 import moe.takochan.webnei.exporter.bundle.BundleTarget;
 import moe.takochan.webnei.exporter.bundle.IBundleWriter;
 import moe.takochan.webnei.exporter.bundle.tsv.TsvBundleWriter;
+import moe.takochan.webnei.exporter.export.ExportExecutionContext;
+import moe.takochan.webnei.exporter.export.IExportWorkflow;
 import moe.takochan.webnei.exporter.model.ExportDataset;
 import moe.takochan.webnei.exporter.model.ExportRow;
 import moe.takochan.webnei.exporter.model.ExportSection;
@@ -23,9 +25,10 @@ import moe.takochan.webnei.exporter.nei.scan.NeiHandlerDescriptor;
 import moe.takochan.webnei.exporter.nei.scan.NeiHandlerScanner;
 
 /** Builds the handler-scan dataset and delegates output to the configured bundle writer. */
-public final class HandlerScanWorkflow {
+public final class HandlerScanWorkflow implements IExportWorkflow {
 
-    private static final String DATASET_NAME = "handler-scan";
+    public static final String ID = "handler-scan";
+    private static final String DATASET_NAME = ID;
     private static final String SECTION_NAME = "nei-handlers";
 
     private final NeiHandlerScanner scanner;
@@ -40,7 +43,18 @@ public final class HandlerScanWorkflow {
         this.bundleWriter = bundleWriter;
     }
 
-    public BundleResult run() {
+    @Override
+    public String id() {
+        return DATASET_NAME;
+    }
+
+    @Override
+    public String labelKey() {
+        return "webnei.task.handlers";
+    }
+
+    @Override
+    public BundleResult execute(ExportExecutionContext context) {
         try {
             ExportDataset dataset = buildDataset(scanner.scan());
             return bundleWriter.write(dataset, defaultTarget(), BundleContext.defaults());

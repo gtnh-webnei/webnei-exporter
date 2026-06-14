@@ -6,6 +6,8 @@ public interface IModAdapter {
 
     String id();
 
+    boolean isAvailable();
+
     boolean supportsNeiHandler(NeiHandlerEntry entry);
 
     AdapterResult extractNeiHandler(NeiHandlerEntry entry, AdapterContext context);

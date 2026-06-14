@@ -1,6 +1,6 @@
 package moe.takochan.webnei.exporter.adapter;
 
-import java.util.Arrays;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
@@ -12,11 +12,23 @@ public final class AdapterRegistry {
     private final List<IModAdapter> adapters;
 
     public AdapterRegistry(List<IModAdapter> adapters) {
-        this.adapters = Collections.unmodifiableList(adapters);
+        this.adapters = Collections.unmodifiableList(available(adapters));
     }
 
     public static AdapterRegistry defaults() {
-        return new AdapterRegistry(Arrays.<IModAdapter>asList(new RailcraftAdapter()));
+        List<IModAdapter> adapters = new ArrayList<>();
+        adapters.add(new RailcraftAdapter());
+        return new AdapterRegistry(adapters);
+    }
+
+    private static List<IModAdapter> available(List<IModAdapter> adapters) {
+        List<IModAdapter> out = new ArrayList<>();
+        for (IModAdapter adapter : adapters) {
+            if (adapter.isAvailable()) {
+                out.add(adapter);
+            }
+        }
+        return out;
     }
 
     public AdapterResult extractNeiHandler(NeiHandlerEntry entry, AdapterContext context) {

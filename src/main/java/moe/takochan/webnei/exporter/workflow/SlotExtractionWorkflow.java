@@ -15,6 +15,8 @@ import moe.takochan.webnei.exporter.bundle.BundleResult;
 import moe.takochan.webnei.exporter.bundle.BundleTarget;
 import moe.takochan.webnei.exporter.bundle.IBundleWriter;
 import moe.takochan.webnei.exporter.bundle.tsv.TsvBundleWriter;
+import moe.takochan.webnei.exporter.export.ExportExecutionContext;
+import moe.takochan.webnei.exporter.export.IExportWorkflow;
 import moe.takochan.webnei.exporter.model.ExportDataset;
 import moe.takochan.webnei.exporter.model.ExportRow;
 import moe.takochan.webnei.exporter.model.ExportSection;
@@ -28,9 +30,10 @@ import moe.takochan.webnei.exporter.nei.scan.NeiHandlerDescriptor;
 import moe.takochan.webnei.exporter.nei.scan.NeiHandlerScanner;
 
 /** Builds a standard NEI slot extraction dataset and delegates output to the configured bundle writer. */
-public final class SlotExtractionWorkflow {
+public final class SlotExtractionWorkflow implements IExportWorkflow {
 
-    private static final String DATASET_NAME = "slot-extraction";
+    public static final String ID = "slot-extraction";
+    private static final String DATASET_NAME = ID;
 
     private final NeiHandlerScanner scanner;
     private final StandardSlotExtractor extractor;
@@ -46,7 +49,18 @@ public final class SlotExtractionWorkflow {
         this.bundleWriter = bundleWriter;
     }
 
-    public BundleResult run() {
+    @Override
+    public String id() {
+        return DATASET_NAME;
+    }
+
+    @Override
+    public String labelKey() {
+        return "webnei.task.slots";
+    }
+
+    @Override
+    public BundleResult execute(ExportExecutionContext context) {
         try {
             ExportDataset dataset = buildDataset(extractor.extract(scanner.scanEntries()));
             return bundleWriter.write(dataset, defaultTarget(), BundleContext.defaults());

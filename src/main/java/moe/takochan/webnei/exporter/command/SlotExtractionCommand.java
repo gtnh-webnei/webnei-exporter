@@ -2,12 +2,11 @@ package moe.takochan.webnei.exporter.command;
 
 import net.minecraft.command.ICommandSender;
 
-import moe.takochan.webnei.exporter.bundle.BundleResult;
+import moe.takochan.webnei.exporter.export.ExportJobRunner;
+import moe.takochan.webnei.exporter.export.ExportRequest;
 import moe.takochan.webnei.exporter.workflow.SlotExtractionWorkflow;
 
 final class SlotExtractionCommand implements ExportSubcommand {
-
-    private final SlotExtractionWorkflow workflow = new SlotExtractionWorkflow();
 
     @Override
     public String name() {
@@ -21,11 +20,7 @@ final class SlotExtractionCommand implements ExportSubcommand {
 
     @Override
     public void run(ICommandSender sender) {
-        BundleResult result = workflow.run();
-        if (result.success) {
-            CommandMessages.send(sender, "webnei.command.bundle.slots.success", result.outputSummary());
-        } else {
-            CommandMessages.send(sender, "webnei.command.bundle.slots.failure", result.errorMessage);
-        }
+        ExportJobRunner.defaults()
+            .submit(ExportRequest.single(SlotExtractionWorkflow.ID), new ChatExportJobListener(sender));
     }
 }
