@@ -11,13 +11,34 @@ import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 
 import codechicken.nei.PositionedStack;
-import codechicken.nei.recipe.ICraftingHandler;
 import codechicken.nei.recipe.IRecipeHandler;
-import codechicken.nei.recipe.IUsageHandler;
+import moe.takochan.webnei.exporter.adapter.AdapterContext;
+import moe.takochan.webnei.exporter.adapter.AdapterRegistry;
+import moe.takochan.webnei.exporter.adapter.AdapterResult;
+import moe.takochan.webnei.exporter.adapter.AdapterStatus;
+import moe.takochan.webnei.exporter.nei.loading.BuiltinNeiLoadingSupport;
+import moe.takochan.webnei.exporter.nei.loading.INeiLoadingSupport;
+import moe.takochan.webnei.exporter.nei.loading.NeiLoadingResult;
+import moe.takochan.webnei.exporter.nei.loading.NeiLoadingStatus;
 import moe.takochan.webnei.exporter.nei.scan.NeiHandlerDescriptor;
 import moe.takochan.webnei.exporter.nei.scan.NeiHandlerEntry;
 
 public final class StandardSlotExtractor {
+
+    private final INeiLoadingSupport coreLoadingSupport;
+    private final AdapterRegistry adapterRegistry;
+    private final AdapterContext adapterContext;
+
+    public StandardSlotExtractor() {
+        this(new BuiltinNeiLoadingSupport(), AdapterRegistry.defaults(), new AdapterContext());
+    }
+
+    StandardSlotExtractor(INeiLoadingSupport coreLoadingSupport, AdapterRegistry adapterRegistry,
+        AdapterContext adapterContext) {
+        this.coreLoadingSupport = coreLoadingSupport;
+        this.adapterRegistry = adapterRegistry;
+        this.adapterContext = adapterContext;
+    }
 
     public SlotExtraction extract(List<NeiHandlerEntry> entries) {
         List<ExtractedHandler> handlers = new ArrayList<>();
@@ -31,43 +52,78 @@ public final class StandardSlotExtractor {
         return new SlotExtraction(handlers, recipes, stacks, candidates);
     }
 
-    private static void extractHandler(NeiHandlerEntry entry, List<ExtractedHandler> handlers,
-        List<ExtractedRecipe> recipes, List<ExtractedStack> stacks, List<ExtractedCandidate> candidates) {
-        LoadedHandler loaded = loadBestHandler(entry);
+    private void extractHandler(NeiHandlerEntry entry, List<ExtractedHandler> handlers, List<ExtractedRecipe> recipes,
+        List<ExtractedStack> stacks, List<ExtractedCandidate> candidates) {
+        if (coreLoadingSupport.supports(entry)) {
+            extractCore(entry, handlers, recipes, stacks, candidates);
+            return;
+        }
+
+        AdapterResult adapterResult = adapterRegistry.extractNeiHandler(entry, adapterContext);
+        if (adapterResult.status == AdapterStatus.SKIPPED) {
+            handlers.add(new ExtractedHandler(entry.descriptor, 0, "skipped", adapterResult.describe()));
+            return;
+        }
+        if (adapterResult.status == AdapterStatus.ERROR) {
+            handlers.add(new ExtractedHandler(entry.descriptor, -1, "error", adapterResult.describe()));
+            return;
+        }
+        if (adapterResult.status == AdapterStatus.EXTRACTED) {
+            extractLoaded(
+                entry,
+                adapterResult.loadedHandler,
+                "adapter",
+                adapterResult.describe(),
+                handlers,
+                recipes,
+                stacks,
+                candidates);
+            return;
+        }
+
+        LoadedHandler registered = tryLoaded(entry.handler, "registered");
+        if (registered.handler == null) {
+            handlers.add(new ExtractedHandler(entry.descriptor, -1, "error", registered.reason));
+            return;
+        }
+        if (registered.recipeCount == 0) {
+            handlers.add(new ExtractedHandler(entry.descriptor, 0, "unsupported_loading", adapterResult.describe()));
+            return;
+        }
+        addLoaded(entry, registered, "generic", handlers, recipes, stacks, candidates);
+    }
+
+    private void extractCore(NeiHandlerEntry entry, List<ExtractedHandler> handlers, List<ExtractedRecipe> recipes,
+        List<ExtractedStack> stacks, List<ExtractedCandidate> candidates) {
+        NeiLoadingResult result = coreLoadingSupport.load(entry);
+        if (result.status == NeiLoadingStatus.ERROR) {
+            handlers.add(new ExtractedHandler(entry.descriptor, -1, "error", result.describe()));
+            return;
+        }
+        if (result.status == NeiLoadingStatus.UNSUPPORTED) {
+            handlers.add(new ExtractedHandler(entry.descriptor, 0, "unsupported_loading", result.describe()));
+            return;
+        }
+        extractLoaded(entry, result.handler, "core", result.describe(), handlers, recipes, stacks, candidates);
+    }
+
+    private static void extractLoaded(NeiHandlerEntry entry, IRecipeHandler handler, String status, String reason,
+        List<ExtractedHandler> handlers, List<ExtractedRecipe> recipes, List<ExtractedStack> stacks,
+        List<ExtractedCandidate> candidates) {
+        LoadedHandler loaded = tryLoaded(handler, reason);
         if (loaded.handler == null) {
             handlers.add(new ExtractedHandler(entry.descriptor, -1, "error", loaded.reason));
             return;
         }
+        addLoaded(entry, loaded, status, handlers, recipes, stacks, candidates);
+    }
 
-        String handlerStatus = loaded.recipeCount == 0 ? "empty" : "standard";
-        handlers.add(new ExtractedHandler(entry.descriptor, loaded.recipeCount, handlerStatus, loaded.reason));
+    private static void addLoaded(NeiHandlerEntry entry, LoadedHandler loaded, String status,
+        List<ExtractedHandler> handlers, List<ExtractedRecipe> recipes, List<ExtractedStack> stacks,
+        List<ExtractedCandidate> candidates) {
+        handlers.add(new ExtractedHandler(entry.descriptor, loaded.recipeCount, status, loaded.reason));
         for (int recipeIndex = 0; recipeIndex < loaded.recipeCount; recipeIndex++) {
             extractRecipe(entry.descriptor, loaded.handler, recipeIndex, recipes, stacks, candidates);
-        }
-    }
-
-    private static LoadedHandler loadBestHandler(NeiHandlerEntry entry) {
-        LoadedHandler best = tryLoaded(entry.handler, "registered");
-        for (String key : loadingKeys(entry.descriptor)) {
-            LoadedHandler candidate = tryLoadingKey(entry.handler, entry.descriptor.sourceList, key);
-            if (candidate.recipeCount > best.recipeCount) {
-                best = candidate;
-            }
-        }
-        return best;
-    }
-
-    private static LoadedHandler tryLoadingKey(IRecipeHandler handler, String sourceList, String key) {
-        try {
-            if (isCraftingSource(sourceList) && handler instanceof ICraftingHandler) {
-                return tryLoaded(((ICraftingHandler) handler).getRecipeHandler(key), "loaded key=" + key);
-            }
-            if (isUsageSource(sourceList) && handler instanceof IUsageHandler) {
-                return tryLoaded(((IUsageHandler) handler).getUsageHandler(key), "loaded key=" + key);
-            }
-            return new LoadedHandler(null, -1, "unsupported handler source for key=" + key);
-        } catch (Throwable t) {
-            return new LoadedHandler(null, -1, "load key=" + key + " failed: " + errorReason(t));
         }
     }
 
@@ -111,35 +167,6 @@ public final class StandardSlotExtractor {
                 others.stacks.size(),
                 status,
                 reason));
-    }
-
-    private static List<String> loadingKeys(NeiHandlerDescriptor descriptor) {
-        List<String> keys = new ArrayList<>();
-        addKey(keys, descriptor.overlayId);
-        addKey(keys, descriptor.handlerId);
-        addKey(keys, descriptor.catalystKey);
-        addKey(keys, descriptor.recipeName);
-        addKey(keys, descriptor.recipeTabName);
-        int colon = descriptor.resolvedCategoryId.indexOf(':');
-        if (colon >= 0 && colon + 1 < descriptor.resolvedCategoryId.length()) {
-            addKey(keys, descriptor.resolvedCategoryId.substring(colon + 1));
-        }
-        return keys;
-    }
-
-    private static void addKey(List<String> keys, String key) {
-        if (key == null || key.isEmpty()) return;
-        if (!keys.contains(key)) {
-            keys.add(key);
-        }
-    }
-
-    private static boolean isCraftingSource(String sourceList) {
-        return "crafting".equals(sourceList) || "serial_crafting".equals(sourceList);
-    }
-
-    private static boolean isUsageSource(String sourceList) {
-        return "usage".equals(sourceList) || "serial_usage".equals(sourceList);
     }
 
     private static SourceStacks getIngredientStacks(IRecipeHandler handler, int recipeIndex) {

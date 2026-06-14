@@ -41,6 +41,9 @@ elytraModpackVersion {
 dependencies {
     // NEI
     api(gtnhDev("NotEnoughItems"))
+
+    // Mod integrations used by explicit mod adapters.
+    compileOnly(gtnhDev("NEI-Integration"))
 }
 
 String gtnh(String name) {
