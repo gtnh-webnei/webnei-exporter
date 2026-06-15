@@ -7,7 +7,7 @@ import java.util.Map;
 
 import moe.takochan.webnei.exporter.step.DatasetModExportStep;
 import moe.takochan.webnei.exporter.step.HandlerExportStep;
-import moe.takochan.webnei.exporter.step.IExportStep;
+import moe.takochan.webnei.exporter.step.ItemExportStep;
 import moe.takochan.webnei.exporter.step.RecipeVisualFactsExportStep;
 
 /**
@@ -29,22 +29,18 @@ public final class ExportPlanRegistry {
         this.plans = Collections.unmodifiableMap(byId);
     }
 
-    /** 当前默认注册的验证计划。正式全量导出计划后续再加入。 */
+    /** 当前默认注册的导出计划。 */
     public static ExportPlanRegistry defaults() {
         return new ExportPlanRegistry(
-            Arrays.<IExportPlan>asList(
+            Arrays.asList(
                 new StaticExportPlan(
-                    ExportPlanIds.DATASET_MOD_VALIDATION,
-                    "webnei.task.dataset",
-                    Arrays.<IExportStep>asList(new DatasetModExportStep())),
-                new StaticExportPlan(
-                    ExportPlanIds.HANDLER_DISCOVERY_VALIDATION,
-                    "webnei.task.handlers",
-                    Arrays.<IExportStep>asList(new HandlerExportStep())),
-                new StaticExportPlan(
-                    ExportPlanIds.RECIPE_VISUAL_FACTS_VALIDATION,
-                    "webnei.task.slots",
-                    Arrays.<IExportStep>asList(new HandlerExportStep(), new RecipeVisualFactsExportStep()))));
+                    ExportPlanIds.ALL,
+                    "webnei.task.all",
+                    Arrays.asList(
+                        new DatasetModExportStep(),
+                        new ItemExportStep(),
+                        new HandlerExportStep(),
+                        new RecipeVisualFactsExportStep()))));
     }
 
     public IExportPlan get(String id) {
