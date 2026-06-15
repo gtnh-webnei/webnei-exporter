@@ -43,6 +43,7 @@ public final class ItemDomainStore implements IDomainStore<ItemStack, ItemVarian
 
     private final Map<String, ItemRow> items = new LinkedHashMap<>();
     private final Map<String, ItemVariantRow> variants = new LinkedHashMap<>();
+    private final Map<String, ItemStack> stacks = new LinkedHashMap<>();
     private final List<ItemToolClassRow> toolClasses = new ArrayList<>();
     private final Map<String, ItemListEntryRow> listEntries = new LinkedHashMap<>();
     private final Set<String> toolClassKeys = new LinkedHashSet<>();
@@ -84,6 +85,11 @@ public final class ItemDomainStore implements IDomainStore<ItemStack, ItemVarian
             new ArrayList<>(listEntries.values()));
     }
 
+    /** 获取所有已注册的 variantId → ItemStack 映射，供 asset 渲染使用。 */
+    public Map<String, ItemStack> stacks() {
+        return Collections.unmodifiableMap(stacks);
+    }
+
     /** 记录物品列表展示入口。 */
     public void addListEntry(String itemVariantId, int listIndex) {
         if (!listEntries.containsKey(itemVariantId)) {
@@ -108,6 +114,7 @@ public final class ItemDomainStore implements IDomainStore<ItemStack, ItemVarian
         ItemVariantRow row = detailCollector.collectVariant(datasetId, variantIdentity, stack);
         adapterRegistry.fillItemVariant(stack, row, adapterContext);
         variants.put(variantIdentity.getItemVariantId(), row);
+        stacks.put(variantIdentity.getItemVariantId(), stack);
         addToolClasses(variantIdentity, stack);
         return row;
     }
