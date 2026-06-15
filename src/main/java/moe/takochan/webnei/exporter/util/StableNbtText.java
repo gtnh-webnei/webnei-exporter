@@ -30,11 +30,11 @@ public final class StableNbtText {
 
     /** 分派不同 NBT 类型的 canonical 写出逻辑。 */
     private static String write(NBTBase tag) {
-        if (tag instanceof NBTTagCompound) {
-            return writeCompound((NBTTagCompound) tag);
+        if (tag instanceof NBTTagCompound compound) {
+            return writeCompound(compound);
         }
-        if (tag instanceof NBTTagList) {
-            return writeList((NBTTagList) tag);
+        if (tag instanceof NBTTagList list) {
+            return writeList(list);
         }
         return tag.toString();
     }
