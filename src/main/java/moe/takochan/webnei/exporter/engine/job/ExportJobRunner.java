@@ -1,0 +1,107 @@
+package moe.takochan.webnei.exporter.engine.job;
+
+import java.util.concurrent.atomic.AtomicLong;
+
+import moe.takochan.webnei.exporter.WebneiExporterMod;
+import moe.takochan.webnei.exporter.bundle.BundleException;
+import moe.takochan.webnei.exporter.bundle.BundleResult;
+import moe.takochan.webnei.exporter.bundle.BundleWriterRegistry;
+import moe.takochan.webnei.exporter.bundle.IBundleWriter;
+import moe.takochan.webnei.exporter.engine.ExportExecutionContext;
+import moe.takochan.webnei.exporter.engine.ExportRequest;
+import moe.takochan.webnei.exporter.engine.plan.ExportPlanExecutor;
+import moe.takochan.webnei.exporter.export.ExportPlanRegistry;
+import moe.takochan.webnei.exporter.engine.plan.IExportPlan;
+
+/**
+ * 异步导出 job 入口。
+ *
+ * <p>
+ * runner 负责把 request 解析成 plan 和 bundle writer，并把它们交给 executor 执行。
+ * 它不选择 task，也不关心 task 内部如何导出数据。
+ */
+public final class ExportJobRunner {
+
+    private static final AtomicLong NEXT_JOB_ID = new AtomicLong(1L);
+
+    private final ExportPlanRegistry planRegistry;
+    private final BundleWriterRegistry bundleWriterRegistry;
+    private final ExportPlanExecutor executor;
+
+    /** 创建可注入 plan registry、bundle writer registry 和 executor 的 runner。 */
+    public ExportJobRunner(ExportPlanRegistry planRegistry, BundleWriterRegistry bundleWriterRegistry,
+        ExportPlanExecutor executor) {
+        this.planRegistry = planRegistry;
+        this.bundleWriterRegistry = bundleWriterRegistry;
+        this.executor = executor;
+    }
+
+    /** 使用当前默认 plan、bundle writer 和 executor 创建 runner。 */
+    public static ExportJobRunner defaults() {
+        return new ExportJobRunner(
+            ExportPlanRegistry.defaults(),
+            BundleWriterRegistry.defaults(),
+            new ExportPlanExecutor());
+    }
+
+    /** 创建 session 并在后台线程执行导出。 */
+    public ExportJobSession submit(final ExportRequest request, final IExportJobListener listener) {
+        final IExportPlan plan = planRegistry.get(request.planId());
+        final ExportJobSession session = new ExportJobSession(
+            NEXT_JOB_ID.getAndIncrement(),
+            plan == null ? 0
+                : plan.tasks()
+                    .size());
+        session.start();
+        listener.onStarted(session.snapshot());
+
+        Thread thread = new Thread(new Runnable() {
+
+            @Override
+            public void run() {
+                runJob(request, plan, session, listener);
+            }
+        }, "WebNEI Exporter");
+        thread.setDaemon(true);
+        thread.start();
+        return session;
+    }
+
+    private void runJob(ExportRequest request, IExportPlan plan, ExportJobSession session,
+        IExportJobListener listener) {
+        try {
+            if (plan == null) {
+                fail(session, listener, "unknown export plan: " + request.planId());
+                return;
+            }
+
+            IBundleWriter bundleWriter = bundleWriter(request);
+            ExportExecutionContext context = new ExportExecutionContext(request, session);
+            BundleResult result = executor.execute(plan, bundleWriter, context, session, listener);
+            if (!result.isSuccess()) {
+                fail(session, listener, result.getErrorMessage());
+                return;
+            }
+
+            session.finishBundle(result.getOutputFiles());
+            session.finish();
+            listener.onFinished(session.snapshot());
+        } catch (Throwable t) {
+            WebneiExporterMod.LOG.error("Failed to run WebNEI export job", t);
+            fail(
+                session,
+                listener,
+                t.getClass()
+                    .getSimpleName() + (t.getMessage() == null ? "" : ": " + t.getMessage()));
+        }
+    }
+
+    private IBundleWriter bundleWriter(ExportRequest request) throws BundleException {
+        return bundleWriterRegistry.writerFor(request.bundleFormat());
+    }
+
+    private static void fail(ExportJobSession session, IExportJobListener listener, String reason) {
+        session.fail(reason);
+        listener.onFailed(session.snapshot());
+    }
+}

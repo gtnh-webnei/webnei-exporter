@@ -1,6 +1,6 @@
 package moe.takochan.webnei.exporter.command;
 
-import moe.takochan.webnei.exporter.plan.ExportPlanIds;
+import moe.takochan.webnei.exporter.export.ExportPlan;
 
 /**
  * 当前对外保留的统一导出命令。
@@ -23,6 +23,6 @@ public final class AllExportSubcommand extends BundleExportSubcommand {
     private static final String USAGE_KEY = "webnei.command.usage.export.all";
 
     public AllExportSubcommand() {
-        super(NAME, HELP_KEY, USAGE_KEY, ExportPlanIds.ALL);
+        super(NAME, HELP_KEY, USAGE_KEY, ExportPlan.ALL);
     }
 }

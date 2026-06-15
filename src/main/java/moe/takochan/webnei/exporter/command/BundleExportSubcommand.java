@@ -4,13 +4,14 @@ import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
+import moe.takochan.webnei.exporter.export.ExportPlan;
 import net.minecraft.command.ICommandSender;
 
 import moe.takochan.webnei.exporter.bundle.BundleFormat;
-import moe.takochan.webnei.exporter.export.ExportJobRunner;
-import moe.takochan.webnei.exporter.export.ExportRequest;
-import moe.takochan.webnei.exporter.export.ExportRequestOptions;
-import moe.takochan.webnei.exporter.export.listener.ChatExportJobListener;
+import moe.takochan.webnei.exporter.engine.ExportRequest;
+import moe.takochan.webnei.exporter.engine.ExportRequestOptions;
+import moe.takochan.webnei.exporter.engine.job.ChatExportJobListener;
+import moe.takochan.webnei.exporter.engine.job.ExportJobRunner;
 
 /**
  * 需要 pack、variant 和 bundle format 参数的导出子命令基类。
@@ -37,11 +38,11 @@ public abstract class BundleExportSubcommand implements ExportSubcommand {
      */
     private final String planId;
 
-    protected BundleExportSubcommand(String name, String descriptionKey, String usageKey, String planId) {
+    protected BundleExportSubcommand(String name, String descriptionKey, String usageKey, ExportPlan plan) {
         this.name = name;
         this.descriptionKey = descriptionKey;
         this.usageKey = usageKey;
-        this.planId = planId;
+        this.planId = plan.getId();
     }
 
     @Override
