@@ -16,7 +16,8 @@ import moe.takochan.webnei.exporter.domain.ExportModelSet;
 import moe.takochan.webnei.exporter.domain.IExportModel;
 import moe.takochan.webnei.exporter.domain.dataset.DatasetExportModel;
 import moe.takochan.webnei.exporter.domain.dataset.model.DatasetRow;
-import moe.takochan.webnei.exporter.domain.dataset.model.ModRow;
+import moe.takochan.webnei.exporter.domain.mod.ModExportModel;
+import moe.takochan.webnei.exporter.domain.mod.model.ModRow;
 import moe.takochan.webnei.exporter.domain.item.ItemExportModel;
 import moe.takochan.webnei.exporter.domain.item.model.ItemRow;
 import moe.takochan.webnei.exporter.domain.item.model.ItemToolClassRow;
@@ -92,6 +93,8 @@ public final class TsvBundleWriter implements IBundleWriter {
         for (IExportModel model : models) {
             if (model instanceof DatasetExportModel datasetMod) {
                 addDatasetModSections(sections, datasetMod);
+            } else if (model instanceof ModExportModel mod) {
+                sections.add(modSection(mod.getMods()));
             } else if (model instanceof ItemExportModel item) {
                 addItemSections(sections, item);
             } else if (model instanceof HandlerDiscoveryExportModel handlerDiscovery) {
@@ -118,7 +121,6 @@ public final class TsvBundleWriter implements IBundleWriter {
 
     private static void addDatasetModSections(List<TsvSection> sections, DatasetExportModel model) {
         sections.add(datasetSection(model.getDataset()));
-        sections.add(modSection(model.getMods()));
     }
 
     private static TsvSection datasetSection(DatasetRow dataset) {
