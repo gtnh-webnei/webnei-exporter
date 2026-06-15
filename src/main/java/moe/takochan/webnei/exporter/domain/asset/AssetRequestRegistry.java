@@ -6,8 +6,8 @@ import java.util.List;
 
 import net.minecraft.item.ItemStack;
 
-import moe.takochan.webnei.exporter.domain.item.ItemIdentity;
-import moe.takochan.webnei.exporter.domain.item.ItemVariantIdentity;
+import moe.takochan.webnei.exporter.domain.item.internal.ItemIdentity;
+import moe.takochan.webnei.exporter.domain.item.internal.ItemVariantIdentity;
 
 /** 收集跨数据域的资源渲染请求，供后续 AssetExportStep 统一消费。 */
 public final class AssetRequestRegistry {

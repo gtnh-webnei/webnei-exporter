@@ -1,4 +1,4 @@
-package moe.takochan.webnei.exporter.domain.item;
+package moe.takochan.webnei.exporter.domain.item.internal;
 
 import net.minecraft.init.Items;
 import net.minecraft.item.Item;
@@ -16,9 +16,8 @@ import moe.takochan.webnei.exporter.util.StableNbtText;
  * registry id 使用 GameRegistry.findUniqueIdentifierFor；damage 使用 raw ItemStack damage，避免被 Item 覆写后的逻辑值影响；
  * NBT 使用 canonical 文本和 hash 参与 variant id。
  */
-public final class ForgeItemIdentityResolver implements IItemIdentityResolver {
+public final class ForgeItemIdentityResolver {
 
-    @Override
     public ItemIdentity resolveItem(Item item) {
         UniqueIdentifier identifier = GameRegistry.findUniqueIdentifierFor(item);
         if (identifier != null) {
@@ -33,7 +32,6 @@ public final class ForgeItemIdentityResolver implements IItemIdentityResolver {
         return new ItemIdentity(itemId, "", itemId);
     }
 
-    @Override
     public ItemVariantIdentity resolveVariant(ItemStack stack) {
         ItemIdentity item = resolveItem(stack.getItem());
         int damage = Items.feather.getDamage(stack);

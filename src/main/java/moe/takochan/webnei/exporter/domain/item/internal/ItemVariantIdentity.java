@@ -1,4 +1,4 @@
-package moe.takochan.webnei.exporter.domain.item;
+package moe.takochan.webnei.exporter.domain.item.internal;
 
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;

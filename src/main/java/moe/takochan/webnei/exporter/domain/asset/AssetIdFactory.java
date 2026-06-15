@@ -1,7 +1,7 @@
 package moe.takochan.webnei.exporter.domain.asset;
 
-import moe.takochan.webnei.exporter.domain.item.ItemIdentity;
-import moe.takochan.webnei.exporter.domain.item.ItemVariantIdentity;
+import moe.takochan.webnei.exporter.domain.item.internal.ItemIdentity;
+import moe.takochan.webnei.exporter.domain.item.internal.ItemVariantIdentity;
 
 /** 根据领域身份生成稳定、路径安全的 asset_id。 */
 public final class AssetIdFactory {

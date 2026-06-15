@@ -1,4 +1,4 @@
-package moe.takochan.webnei.exporter.domain.item;
+package moe.takochan.webnei.exporter.domain.item.internal;
 
 import java.util.List;
 
@@ -7,7 +7,6 @@ import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.EnumChatFormatting;
 
-import moe.takochan.webnei.exporter.domain.dataset.task.DatasetIdentity;
 import moe.takochan.webnei.exporter.domain.item.model.ItemRow;
 import moe.takochan.webnei.exporter.domain.item.model.ItemVariantRow;
 
@@ -17,13 +16,12 @@ import moe.takochan.webnei.exporter.domain.item.model.ItemVariantRow;
  * <p>
  * tooltip 使用普通玩家 tooltip，不导出高级调试 tooltip；display/tooltip 会去掉格式码，避免把 UI 控制字符写入搜索字段。
  */
-public final class ItemStackDetailCollector implements IItemDetailCollector {
+public final class ItemStackDetailCollector {
 
-    @Override
-    public ItemRow collectItem(DatasetIdentity dataset, ItemIdentity item, ItemStack stack) {
+    public ItemRow collectItem(String datasetId, ItemIdentity item, ItemStack stack) {
         Item mcItem = stack.getItem();
         return new ItemRow(
-            dataset.getDatasetId(),
+            datasetId,
             item.getItemId(),
             item.getModId(),
             item.getRegistryName(),
@@ -33,11 +31,10 @@ public final class ItemStackDetailCollector implements IItemDetailCollector {
             Item.getIdFromItem(mcItem));
     }
 
-    @Override
-    public ItemVariantRow collectVariant(DatasetIdentity dataset, ItemVariantIdentity variant, ItemStack stack,
+    public ItemVariantRow collectVariant(String datasetId, ItemVariantIdentity variant, ItemStack stack,
         String assetId) {
         return new ItemVariantRow(
-            dataset.getDatasetId(),
+            datasetId,
             variant.getItemVariantId(),
             variant.getItemId(),
             variant.getDamage(),
