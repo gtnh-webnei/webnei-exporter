@@ -69,7 +69,7 @@ public final class DatasetDomainStore implements IDomainStore<DatasetDomainStore
         return format.format(new Date());
     }
 
-    private static final String SCHEMA_VERSION = "2";
+    private static final String SCHEMA_VERSION = "3";
 
     /** dataset store 的输入参数。 */
     public static final class Input {

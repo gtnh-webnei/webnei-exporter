@@ -5,7 +5,6 @@ import java.util.List;
 import net.minecraft.client.Minecraft;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
-import net.minecraft.util.EnumChatFormatting;
 
 import moe.takochan.webnei.exporter.domain.item.model.ItemRow;
 import moe.takochan.webnei.exporter.domain.item.model.ItemVariantRow;
@@ -14,7 +13,8 @@ import moe.takochan.webnei.exporter.domain.item.model.ItemVariantRow;
  * 使用 Minecraft ItemStack API 采集展示字段。
  *
  * <p>
- * tooltip 使用普通玩家 tooltip，不导出高级调试 tooltip；display/tooltip 会去掉格式码，避免把 UI 控制字符写入搜索字段。
+ * tooltip 使用普通玩家 tooltip，不导出高级调试 tooltip。tooltip_text 保留原始格式码（§x），
+ * display_name 去除格式码用于搜索和展示。
  */
 public final class ItemStackDetailCollector {
 
@@ -39,7 +39,7 @@ public final class ItemStackDetailCollector {
             variant.getDamage(),
             variant.getNbtHash(),
             variant.getNbtText(),
-            stripFormatting(value(stack.getDisplayName())),
+            value(stack.getDisplayName()),
             tooltipText(stack));
     }
 
@@ -52,16 +52,12 @@ public final class ItemStackDetailCollector {
                 if (i > 0) {
                     builder.append('\n');
                 }
-                builder.append(stripFormatting(value(tooltip.get(i))));
+                builder.append(value(tooltip.get(i)));
             }
             return builder.toString();
         } catch (RuntimeException e) {
             return "";
         }
-    }
-
-    private static String stripFormatting(String value) {
-        return EnumChatFormatting.getTextWithoutFormattingCodes(value);
     }
 
     private static String value(String value) {
