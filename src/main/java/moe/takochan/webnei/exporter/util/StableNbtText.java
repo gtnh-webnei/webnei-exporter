@@ -41,7 +41,6 @@ public final class StableNbtText {
 
     /** 写出 compound：key 按字典序排序，value 递归写出。 */
     private static String writeCompound(NBTTagCompound tag) {
-        @SuppressWarnings("unchecked")
         Set<String> keySet = tag.func_150296_c();
         List<String> keys = new ArrayList<>(keySet);
         Collections.sort(keys);
