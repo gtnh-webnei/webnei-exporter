@@ -20,12 +20,11 @@ import moe.takochan.webnei.exporter.engine.store.IDomainStore;
  * 持有本次导出的 DatasetRow，供其他 domain 通过 store 获取 dataset_id 等信息。
  * 外部只需 {@code context.store(DatasetDomainStore.class).get(null).getDatasetId()}。
  */
-public final class DatasetDomainStore implements IDomainStore<DatasetDomainStore.Input, DatasetRow> {
+public final class DatasetDomainStore implements IDomainStore {
 
     private DatasetRow row;
 
-    @Override
-    public DatasetRow add(Input input) {
+        public DatasetRow add(Input input) {
         this.row = new DatasetRow(
             buildDatasetId(input),
             input.packSlug,
@@ -40,13 +39,11 @@ public final class DatasetDomainStore implements IDomainStore<DatasetDomainStore
         return row;
     }
 
-    @Override
-    public DatasetRow get(String key) {
+        public DatasetRow get(String key) {
         return row;
     }
 
-    @Override
-    public List<DatasetRow> list() {
+        public List<DatasetRow> list() {
         return row == null ? Collections.emptyList() : Collections.singletonList(row);
     }
 

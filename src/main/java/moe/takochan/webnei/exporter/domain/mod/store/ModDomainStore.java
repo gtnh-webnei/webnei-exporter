@@ -25,7 +25,7 @@ import cpw.mods.fml.common.ModContainer;
  * 输入为 ModContainer（Forge 运行时 mod 实例），内部处理来源类型判断、文件哈希等逻辑，
  * 输出为 ModRow。
  */
-public final class ModDomainStore implements IDomainStore<ModContainer, ModRow> {
+public final class ModDomainStore implements IDomainStore {
 
     private static final String UNKNOWN = "";
     private static final String SOURCE_TYPE_UNKNOWN = "unknown";
@@ -38,8 +38,7 @@ public final class ModDomainStore implements IDomainStore<ModContainer, ModRow> 
         this.datasetId = datasetId;
     }
 
-    @Override
-    public ModRow add(ModContainer mod) {
+        public ModRow add(ModContainer mod) {
         ModRow row = new ModRow(
             datasetId,
             value(mod.getModId()),
@@ -53,8 +52,7 @@ public final class ModDomainStore implements IDomainStore<ModContainer, ModRow> 
         return row;
     }
 
-    @Override
-    public ModRow get(String key) {
+        public ModRow get(String key) {
         for (ModRow row : rows) {
             if (row.getModId().equals(key)) {
                 return row;
@@ -63,8 +61,7 @@ public final class ModDomainStore implements IDomainStore<ModContainer, ModRow> 
         return null;
     }
 
-    @Override
-    public List<ModRow> list() {
+        public List<ModRow> list() {
         return Collections.unmodifiableList(rows);
     }
 

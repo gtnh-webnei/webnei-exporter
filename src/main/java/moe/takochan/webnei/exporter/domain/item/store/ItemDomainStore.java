@@ -32,7 +32,7 @@ import moe.takochan.webnei.exporter.engine.store.IDomainStore;
  * 输入 ItemStack，内部处理身份解析、去重、字段采集和 adapter 补充，
  * 输出 ItemVariantRow。任何 domain 遇到真实 ItemStack 时都应调用 {@link #add}。
  */
-public final class ItemDomainStore implements IDomainStore<ItemStack, ItemVariantRow> {
+public final class ItemDomainStore implements IDomainStore {
 
     private final String datasetId;
     private final ForgeItemIdentityResolver identityResolver;
@@ -57,8 +57,7 @@ public final class ItemDomainStore implements IDomainStore<ItemStack, ItemVarian
         this.adapterContext = new AdapterContext();
     }
 
-    @Override
-    public ItemVariantRow add(ItemStack input) {
+        public ItemVariantRow add(ItemStack input) {
         ItemStack copy = input.copy();
         ItemIdentity itemIdentity = identityResolver.resolveItem(copy.getItem());
         ItemVariantIdentity variantIdentity = identityResolver.resolveVariant(copy);
@@ -66,13 +65,11 @@ public final class ItemDomainStore implements IDomainStore<ItemStack, ItemVarian
         return ensureVariant(itemIdentity, variantIdentity, copy);
     }
 
-    @Override
-    public ItemVariantRow get(String key) {
+        public ItemVariantRow get(String key) {
         return variants.get(key);
     }
 
-    @Override
-    public List<ItemVariantRow> list() {
+        public List<ItemVariantRow> list() {
         return Collections.unmodifiableList(new ArrayList<>(variants.values()));
     }
 
