@@ -22,7 +22,7 @@ public final class NeiItemPanelSource {
         for (int i = 0; i < items.size(); i++) {
             ItemStack stack = items.get(i);
             if (stack != null && stack.getItem() != null) {
-                ItemVariantRow row = store.add(stack);
+                ItemVariantRow row = store.register(stack);
                 store.addListEntry(row.getItemVariantId(), i);
             }
         }

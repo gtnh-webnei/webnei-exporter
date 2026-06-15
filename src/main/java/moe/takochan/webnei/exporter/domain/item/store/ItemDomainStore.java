@@ -57,7 +57,7 @@ public final class ItemDomainStore implements IDomainStore {
         this.adapterContext = new AdapterContext();
     }
 
-        public ItemVariantRow add(ItemStack input) {
+    public ItemVariantRow register(ItemStack input) {
         ItemStack copy = input.copy();
         ItemIdentity itemIdentity = identityResolver.resolveItem(copy.getItem());
         ItemVariantIdentity variantIdentity = identityResolver.resolveVariant(copy);
@@ -65,11 +65,7 @@ public final class ItemDomainStore implements IDomainStore {
         return ensureVariant(itemIdentity, variantIdentity, copy);
     }
 
-        public ItemVariantRow get(String key) {
-        return variants.get(key);
-    }
-
-        public List<ItemVariantRow> list() {
+    public List<ItemVariantRow> variants() {
         return Collections.unmodifiableList(new ArrayList<>(variants.values()));
     }
 
@@ -82,12 +78,16 @@ public final class ItemDomainStore implements IDomainStore {
             new ArrayList<>(listEntries.values()));
     }
 
-    /** 获取所有已注册的 variantId → ItemStack 映射，供 asset 渲染使用。 */
+    /**
+     * 获取所有已注册的 variantId → ItemStack 映射，供 asset 渲染使用。
+     */
     public Map<String, ItemStack> stacks() {
         return Collections.unmodifiableMap(stacks);
     }
 
-    /** 记录物品列表展示入口。 */
+    /**
+     * 记录物品列表展示入口。
+     */
     public void addListEntry(String itemVariantId, int listIndex) {
         if (!listEntries.containsKey(itemVariantId)) {
             listEntries.put(
@@ -103,7 +103,7 @@ public final class ItemDomainStore implements IDomainStore {
     }
 
     private ItemVariantRow ensureVariant(ItemIdentity itemIdentity, ItemVariantIdentity variantIdentity,
-        ItemStack stack) {
+                                         ItemStack stack) {
         ItemVariantRow existing = variants.get(variantIdentity.getItemVariantId());
         if (existing != null) {
             return existing;

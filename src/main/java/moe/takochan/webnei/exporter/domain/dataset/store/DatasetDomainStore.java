@@ -1,9 +1,7 @@
 package moe.takochan.webnei.exporter.domain.dataset.store;
 
 import java.text.SimpleDateFormat;
-import java.util.Collections;
 import java.util.Date;
-import java.util.List;
 import java.util.TimeZone;
 
 import cpw.mods.fml.common.Loader;
@@ -17,14 +15,13 @@ import moe.takochan.webnei.exporter.engine.store.IDomainStore;
  * dataset domain store。
  *
  * <p>
- * 持有本次导出的 DatasetRow，供其他 domain 通过 store 获取 dataset_id 等信息。
- * 外部只需 {@code context.store(DatasetDomainStore.class).get(null).getDatasetId()}。
+ * 持有本次导出的 DatasetRow，供其他 domain 获取 dataset_id 等信息。
  */
 public final class DatasetDomainStore implements IDomainStore {
 
     private DatasetRow row;
 
-        public DatasetRow add(Input input) {
+    public void initialize(Input input) {
         this.row = new DatasetRow(
             buildDatasetId(input),
             input.packSlug,
@@ -36,15 +33,10 @@ public final class DatasetDomainStore implements IDomainStore {
             Tags.VERSION,
             exportedAt(),
             Loader.MC_VERSION);
-        return row;
     }
 
-        public DatasetRow get(String key) {
+    public DatasetRow row() {
         return row;
-    }
-
-        public List<DatasetRow> list() {
-        return row == null ? Collections.emptyList() : Collections.singletonList(row);
     }
 
     @Override

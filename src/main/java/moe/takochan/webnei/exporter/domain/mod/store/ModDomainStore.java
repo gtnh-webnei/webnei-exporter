@@ -38,7 +38,7 @@ public final class ModDomainStore implements IDomainStore {
         this.datasetId = datasetId;
     }
 
-        public ModRow add(ModContainer mod) {
+    public void register(ModContainer mod) {
         ModRow row = new ModRow(
             datasetId,
             value(mod.getModId()),
@@ -49,19 +49,18 @@ public final class ModDomainStore implements IDomainStore {
             sourceSha256(mod, mod.getSource()),
             true);
         rows.add(row);
-        return row;
     }
 
-        public ModRow get(String key) {
+    public ModRow findByModId(String modId) {
         for (ModRow row : rows) {
-            if (row.getModId().equals(key)) {
+            if (row.getModId().equals(modId)) {
                 return row;
             }
         }
         return null;
     }
 
-        public List<ModRow> list() {
+    public List<ModRow> mods() {
         return Collections.unmodifiableList(rows);
     }
 

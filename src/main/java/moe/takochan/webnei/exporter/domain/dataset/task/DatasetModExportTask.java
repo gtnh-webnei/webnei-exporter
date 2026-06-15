@@ -34,7 +34,7 @@ public final class DatasetModExportTask implements IExportTask {
         String language = currentLanguage();
 
         DatasetDomainStore store = new DatasetDomainStore();
-        store.add(new DatasetDomainStore.Input(packSlug, packVersion, variant, language));
+        store.initialize(new DatasetDomainStore.Input(packSlug, packVersion, variant, language));
         context.register(DatasetDomainStore.class, store);
     }
 
