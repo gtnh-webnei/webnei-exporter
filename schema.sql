@@ -1,4 +1,4 @@
--- NESQL Exporter PostgreSQL schema v2
+-- NESQL Exporter PostgreSQL schema v3
 CREATE EXTENSION IF NOT EXISTS pg_trgm;
 
 CREATE TABLE IF NOT EXISTS dataset (
@@ -29,69 +29,14 @@ CREATE TABLE IF NOT EXISTS mod (
 
 CREATE TABLE IF NOT EXISTS asset (
   dataset_id TEXT NOT NULL REFERENCES dataset(dataset_id) ON DELETE CASCADE,
-  asset_id TEXT NOT NULL,
-  kind TEXT NOT NULL,
-  usage TEXT NOT NULL,
-  path TEXT NOT NULL,
-  sha256 TEXT NOT NULL,
-  width INTEGER NOT NULL,
-  height INTEGER NOT NULL,
-  content_type TEXT NOT NULL,
-  render_style TEXT NOT NULL,
-  generated BOOLEAN NOT NULL,
-  frame_count INTEGER NOT NULL,
-  representative_frame INTEGER NOT NULL,
-  PRIMARY KEY (dataset_id, asset_id)
-);
-
-CREATE TABLE IF NOT EXISTS asset_usage (
-  dataset_id TEXT NOT NULL REFERENCES dataset(dataset_id) ON DELETE CASCADE,
-  asset_id TEXT NOT NULL,
   owner_type TEXT NOT NULL,
   owner_id TEXT NOT NULL,
-  usage TEXT NOT NULL,
-  display_order INTEGER NOT NULL,
-  PRIMARY KEY (dataset_id, asset_id, owner_type, owner_id, usage)
-);
-
-CREATE TABLE IF NOT EXISTS asset_source (
-  dataset_id TEXT NOT NULL REFERENCES dataset(dataset_id) ON DELETE CASCADE,
-  asset_id TEXT NOT NULL,
-  source_type TEXT NOT NULL,
-  resource_domain TEXT NOT NULL,
-  resource_path TEXT NOT NULL,
-  atlas TEXT NOT NULL,
-  sprite_name TEXT NOT NULL,
-  renderer_class TEXT NOT NULL,
-  render_notes TEXT NOT NULL,
-  PRIMARY KEY (dataset_id, asset_id, source_type)
-);
-
-CREATE TABLE IF NOT EXISTS asset_frame (
-  dataset_id TEXT NOT NULL REFERENCES dataset(dataset_id) ON DELETE CASCADE,
-  asset_id TEXT NOT NULL,
-  frame_index INTEGER NOT NULL,
+  kind TEXT NOT NULL,
   path TEXT NOT NULL,
   sha256 TEXT NOT NULL,
-  duration_ms INTEGER NOT NULL,
   width INTEGER NOT NULL,
   height INTEGER NOT NULL,
-  PRIMARY KEY (dataset_id, asset_id, frame_index)
-);
-
-CREATE TABLE IF NOT EXISTS render_profile (
-  dataset_id TEXT NOT NULL REFERENCES dataset(dataset_id) ON DELETE CASCADE,
-  asset_id TEXT NOT NULL,
-  profile_id TEXT NOT NULL,
-  renderer_version TEXT NOT NULL,
-  image_size INTEGER NOT NULL,
-  background TEXT NOT NULL,
-  camera_yaw DOUBLE PRECISION NOT NULL,
-  camera_pitch DOUBLE PRECISION NOT NULL,
-  scale DOUBLE PRECISION NOT NULL,
-  pose TEXT NOT NULL,
-  render_nbt TEXT NOT NULL,
-  PRIMARY KEY (dataset_id, asset_id, profile_id)
+  PRIMARY KEY (dataset_id, owner_type, owner_id, kind)
 );
 
 CREATE TABLE IF NOT EXISTS item (
@@ -122,7 +67,6 @@ CREATE TABLE IF NOT EXISTS item_variant (
   search_text TEXT GENERATED ALWAYS AS (
     lower(item_variant_id || ' ' || item_id || ' ' || display_name || ' ' || regexp_replace(tooltip_text, '§.', '', 'g'))
   ) STORED,
-  asset_id TEXT NOT NULL,
   PRIMARY KEY (dataset_id, item_variant_id)
 );
 
@@ -172,7 +116,6 @@ CREATE TABLE IF NOT EXISTS fluid_variant (
   search_text TEXT GENERATED ALWAYS AS (
     lower(fluid_variant_id || ' ' || fluid_id || ' ' || chemical_expression)
   ) STORED,
-  asset_id TEXT NOT NULL,
   PRIMARY KEY (dataset_id, fluid_variant_id)
 );
 
@@ -197,7 +140,6 @@ CREATE TABLE IF NOT EXISTS mob_variant (
   mob_id TEXT NOT NULL,
   nbt_hash TEXT NOT NULL,
   nbt_text TEXT NOT NULL,
-  asset_id TEXT NOT NULL,
   PRIMARY KEY (dataset_id, mob_variant_id)
 );
 
@@ -208,7 +150,6 @@ CREATE TABLE IF NOT EXISTS recipe_category (
   handler_id TEXT NOT NULL,
   display_name TEXT NOT NULL,
   shapeless BOOLEAN NOT NULL,
-  rendered_icon_asset_id TEXT NOT NULL DEFAULT '',
   icon_info TEXT NOT NULL,
   item_input_width INTEGER NOT NULL,
   item_input_height INTEGER NOT NULL,
@@ -254,7 +195,6 @@ CREATE TABLE IF NOT EXISTS recipe_category_layout (
   category_id TEXT NOT NULL,
   canvas_width INTEGER NOT NULL,
   canvas_height INTEGER NOT NULL,
-  background_asset_id TEXT NOT NULL,
   layout_version TEXT NOT NULL,
   PRIMARY KEY (dataset_id, category_id)
 );
@@ -342,9 +282,6 @@ CREATE TABLE IF NOT EXISTS recipe_slot_metadata (
   value_json JSONB,
   PRIMARY KEY (dataset_id, recipe_id, role, slot_index, metadata_key)
 );
-
-ALTER TABLE recipe_slot ADD COLUMN IF NOT EXISTS slot_group_key TEXT NOT NULL DEFAULT '';
-ALTER TABLE recipe_slot ADD COLUMN IF NOT EXISTS slot_group_order INTEGER NOT NULL DEFAULT 0;
 
 CREATE TABLE IF NOT EXISTS recipe_lookup_index (
   dataset_id TEXT NOT NULL REFERENCES dataset(dataset_id) ON DELETE CASCADE,
@@ -562,12 +499,10 @@ CREATE TABLE IF NOT EXISTS aspect_item (
 );
 
 -- Query indexes for frontend browsing and NEI-style lookups.
-CREATE INDEX IF NOT EXISTS idx_nesql_asset_kind_usage
-  ON asset (dataset_id, kind, usage);
-CREATE INDEX IF NOT EXISTS idx_nesql_asset_usage_owner
-  ON asset_usage (dataset_id, owner_type, owner_id, usage, display_order);
-CREATE INDEX IF NOT EXISTS idx_nesql_asset_source_resource
-  ON asset_source (dataset_id, source_type, resource_domain, resource_path);
+CREATE INDEX IF NOT EXISTS idx_asset_owner
+  ON asset (dataset_id, owner_id, owner_type);
+CREATE INDEX IF NOT EXISTS idx_asset_kind
+  ON asset (dataset_id, kind, owner_type);
 CREATE INDEX IF NOT EXISTS idx_nesql_item_mod_registry
   ON item (dataset_id, mod_id, registry_name);
 CREATE INDEX IF NOT EXISTS idx_nesql_item_variant_item_damage
@@ -678,7 +613,6 @@ DROP VIEW IF EXISTS v_recipe_slot_browser;
 DROP VIEW IF EXISTS v_recipe_browser;
 DROP VIEW IF EXISTS v_recipe_lookup_detail;
 DROP VIEW IF EXISTS v_nei_item_panel;
-DROP VIEW IF EXISTS v_asset_with_source;
 
 CREATE OR REPLACE VIEW v_item_mod_option AS
 SELECT
@@ -703,7 +637,6 @@ SELECT
   COALESCE(m.name, i.mod_id) AS mod_name,
   iv.display_name,
   iv.tooltip_text,
-  iv.asset_id,
   a.path AS asset_path,
   a.sha256 AS asset_sha256
 FROM item_variant iv
@@ -715,7 +648,9 @@ LEFT JOIN mod m
  AND m.mod_id = i.mod_id
 LEFT JOIN asset a
   ON a.dataset_id = iv.dataset_id
- AND a.asset_id = iv.asset_id;
+ AND a.owner_type = 'item_variant'
+ AND a.owner_id = iv.item_variant_id
+ AND a.kind = 'item_icon';
 
 CREATE OR REPLACE VIEW v_item_detail AS
 SELECT
@@ -766,7 +701,9 @@ LEFT JOIN mod m
  AND m.mod_id = i.mod_id
 LEFT JOIN asset a
   ON a.dataset_id = iv.dataset_id
- AND a.asset_id = iv.asset_id;
+ AND a.owner_type = 'item_variant'
+ AND a.owner_id = iv.item_variant_id
+ AND a.kind = 'item_icon';
 
 CREATE OR REPLACE VIEW v_fluid_mod_option AS
 SELECT
@@ -792,7 +729,6 @@ SELECT
   f.display_name,
   f.gaseous,
   f.temperature,
-  fv.asset_id,
   a.path AS asset_path
 FROM fluid_variant fv
 JOIN fluid f
@@ -803,7 +739,9 @@ LEFT JOIN mod m
  AND m.mod_id = f.mod_id
 LEFT JOIN asset a
   ON a.dataset_id = fv.dataset_id
- AND a.asset_id = fv.asset_id;
+ AND a.owner_type = 'fluid_variant'
+ AND a.owner_id = fv.fluid_variant_id
+ AND a.kind = 'fluid_icon';
 
 CREATE OR REPLACE VIEW v_fluid_detail AS
 SELECT
@@ -855,7 +793,9 @@ LEFT JOIN mod m
  AND m.mod_id = f.mod_id
 LEFT JOIN asset a
   ON a.dataset_id = fv.dataset_id
- AND a.asset_id = fv.asset_id;
+ AND a.owner_type = 'fluid_variant'
+ AND a.owner_id = fv.fluid_variant_id
+ AND a.kind = 'fluid_icon';
 
 CREATE OR REPLACE VIEW v_mob_variant_browser AS
 SELECT
@@ -873,7 +813,6 @@ SELECT
   m.leashable,
   mv.nbt_hash,
   mv.nbt_text,
-  mv.asset_id,
   a.path AS asset_path,
   COALESCE(mod.name, m.mod_id) AS mod_name
 FROM mob_variant mv
@@ -885,7 +824,9 @@ LEFT JOIN mod
  AND mod.mod_id = m.mod_id
 LEFT JOIN asset a
   ON a.dataset_id = mv.dataset_id
- AND a.asset_id = mv.asset_id;
+ AND a.owner_type = 'mob_variant'
+ AND a.owner_id = mv.mob_variant_id
+ AND a.kind = 'mob_render';
 
 CREATE OR REPLACE VIEW v_mob_mod_option AS
 SELECT
@@ -1102,9 +1043,7 @@ SELECT
   rc.handler_id,
   rc.display_name,
   rc.shapeless,
-  rc.rendered_icon_asset_id,
   '' AS icon_display_name,
-  rendered_icon.asset_id AS icon_asset_id,
   rendered_icon.path AS icon_asset_path,
   rc.icon_info,
   rc.item_input_width,
@@ -1133,19 +1072,16 @@ SELECT
   rc.icon_image_texture_width,
   rc.icon_image_texture_height,
   rcl.canvas_width,
-  rcl.canvas_height,
-  rcl.background_asset_id,
-  bg.path AS background_asset_path
+  rcl.canvas_height
 FROM recipe_category rc
 LEFT JOIN recipe_category_layout rcl
   ON rcl.dataset_id = rc.dataset_id
  AND rcl.category_id = rc.category_id
-LEFT JOIN asset bg
-  ON bg.dataset_id = rc.dataset_id
- AND bg.asset_id = rcl.background_asset_id
 LEFT JOIN asset rendered_icon
   ON rendered_icon.dataset_id = rc.dataset_id
- AND rendered_icon.asset_id = rc.rendered_icon_asset_id;
+ AND rendered_icon.owner_type = 'recipe_category'
+ AND rendered_icon.owner_id = rc.category_id
+ AND rendered_icon.kind = 'recipe_category_icon';
 
 CREATE OR REPLACE VIEW v_recipe_category_counts AS
 SELECT
@@ -1210,7 +1146,6 @@ SELECT
   rs.probability,
   rs.group_id,
   iv.display_name,
-  iv.asset_id,
   iv.asset_path
 FROM recipe_slot rs
 JOIN recipe r
@@ -1238,7 +1173,6 @@ SELECT
   rs.group_id,
   fv.fluid_id,
   fv.display_name,
-  fv.asset_id,
   fv.asset_path
 FROM recipe_slot rs
 JOIN recipe r
