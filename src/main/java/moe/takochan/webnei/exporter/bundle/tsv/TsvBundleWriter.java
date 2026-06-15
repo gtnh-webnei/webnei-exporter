@@ -22,7 +22,7 @@ import moe.takochan.webnei.exporter.domain.item.ItemExportModel;
 import moe.takochan.webnei.exporter.domain.item.model.ItemRow;
 import moe.takochan.webnei.exporter.domain.item.model.ItemToolClassRow;
 import moe.takochan.webnei.exporter.domain.item.model.ItemVariantRow;
-import moe.takochan.webnei.exporter.domain.item.model.NeiItemPanelEntryRow;
+import moe.takochan.webnei.exporter.domain.item.model.ItemListEntryRow;
 import moe.takochan.webnei.exporter.domain.nei.recipe.ExtractedCandidate;
 import moe.takochan.webnei.exporter.domain.nei.recipe.ExtractedHandler;
 import moe.takochan.webnei.exporter.domain.nei.recipe.ExtractedRecipe;
@@ -185,7 +185,7 @@ public final class TsvBundleWriter implements IBundleWriter {
         sections.add(itemSection(model.getItems()));
         sections.add(itemVariantSection(model.getVariants()));
         sections.add(itemToolClassSection(model.getToolClasses()));
-        sections.add(neiItemPanelEntrySection(model.getPanelEntries()));
+        sections.add(itemListEntrySection(model.getListEntries()));
     }
 
     private static TsvSection itemSection(List<ItemRow> items) {
@@ -262,25 +262,21 @@ public final class TsvBundleWriter implements IBundleWriter {
             rows);
     }
 
-    private static TsvSection neiItemPanelEntrySection(List<NeiItemPanelEntryRow> panelEntries) {
+    private static TsvSection itemListEntrySection(List<ItemListEntryRow> entries) {
         List<List<String>> rows = new ArrayList<>();
-        for (NeiItemPanelEntryRow entry : panelEntries) {
+        for (ItemListEntryRow entry : entries) {
             rows.add(
                 row(
                     entry.getDatasetId(),
                     entry.getItemVariantId(),
-                    Integer.toString(entry.getPanelIndex()),
-                    entry.getCollapsibleCollectionId(),
-                    Boolean.toString(entry.isVisibleWhenCollapsed())));
+                    Integer.toString(entry.getListIndex())));
         }
         return new TsvSection(
-            "nei_item_panel_entry",
+            "item_list_entry",
             Arrays.asList(
                 "dataset_id",
                 "item_variant_id",
-                "panel_index",
-                "collapsible_collection_id",
-                "visible_when_collapsed"),
+                "list_index"),
             rows);
     }
 

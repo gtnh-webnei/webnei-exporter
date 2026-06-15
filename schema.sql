@@ -78,12 +78,10 @@ CREATE TABLE IF NOT EXISTS item_tool_class (
   PRIMARY KEY (dataset_id, item_variant_id, tool_class)
 );
 
-CREATE TABLE IF NOT EXISTS nei_item_panel_entry (
+CREATE TABLE IF NOT EXISTS item_list_entry (
   dataset_id TEXT NOT NULL REFERENCES dataset(dataset_id) ON DELETE CASCADE,
   item_variant_id TEXT NOT NULL,
-  panel_index INTEGER NOT NULL,
-  collapsible_collection_id TEXT NOT NULL,
-  visible_when_collapsed BOOLEAN NOT NULL,
+  list_index INTEGER NOT NULL,
   PRIMARY KEY (dataset_id, item_variant_id)
 );
 
@@ -513,8 +511,8 @@ CREATE INDEX IF NOT EXISTS idx_nesql_item_search_trgm
   ON item USING gin (search_text gin_trgm_ops);
 CREATE INDEX IF NOT EXISTS idx_nesql_item_variant_search_trgm
   ON item_variant USING gin (search_text gin_trgm_ops);
-CREATE INDEX IF NOT EXISTS idx_nesql_nei_item_panel_order
-  ON nei_item_panel_entry (dataset_id, panel_index);
+CREATE INDEX IF NOT EXISTS idx_item_list_entry_order
+  ON item_list_entry (dataset_id, list_index);
 CREATE INDEX IF NOT EXISTS idx_nesql_fluid_mod_registry
   ON fluid (dataset_id, mod_id, registry_name);
 CREATE INDEX IF NOT EXISTS idx_nesql_fluid_variant_fluid
@@ -612,7 +610,7 @@ DROP VIEW IF EXISTS v_recipe_search_entry;
 DROP VIEW IF EXISTS v_recipe_slot_browser;
 DROP VIEW IF EXISTS v_recipe_browser;
 DROP VIEW IF EXISTS v_recipe_lookup_detail;
-DROP VIEW IF EXISTS v_nei_item_panel;
+DROP VIEW IF EXISTS v_item_list;
 
 CREATE OR REPLACE VIEW v_item_mod_option AS
 SELECT
@@ -688,9 +686,8 @@ SELECT
   iv.display_name,
   a.path AS asset_path,
   a.sha256 AS asset_sha256,
-  p.panel_index
-FROM nei_item_panel_entry p
-JOIN item_variant iv
+  p.list_index
+FROM item_list_entry pJOIN item_variant iv
   ON iv.dataset_id = p.dataset_id
  AND iv.item_variant_id = p.item_variant_id
 JOIN item i
@@ -1233,9 +1230,9 @@ SELECT
   p.item_variant_id,
   iv.item_id,
   i.mod_id,
-  p.panel_index,
+  p.list_index,
   lower(i.search_text || ' ' || iv.search_text || ' ' || i.mod_id || ' ' || coalesce(od.ore_names, '')) AS search_text
-FROM nei_item_panel_entry p
+FROM item_list_entry p
 JOIN item_variant iv
   ON iv.dataset_id = p.dataset_id
  AND iv.item_variant_id = p.item_variant_id
@@ -1257,9 +1254,9 @@ WITH DATA;
 CREATE UNIQUE INDEX IF NOT EXISTS idx_nesql_item_search_document_unique
   ON item_search_document (dataset_id, item_variant_id);
 CREATE INDEX IF NOT EXISTS idx_nesql_item_search_document_order
-  ON item_search_document (dataset_id, panel_index, item_variant_id);
+  ON item_search_document (dataset_id, list_index, item_variant_id);
 CREATE INDEX IF NOT EXISTS idx_nesql_item_search_document_mod_order
-  ON item_search_document (dataset_id, mod_id, panel_index, item_variant_id);
+  ON item_search_document (dataset_id, mod_id, list_index, item_variant_id);
 CREATE INDEX IF NOT EXISTS idx_nesql_item_search_document_trgm
   ON item_search_document USING gin (search_text gin_trgm_ops);
 

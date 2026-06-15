@@ -12,8 +12,8 @@ import moe.takochan.webnei.exporter.domain.item.store.ItemDomainStore;
  * 读取 NEI 当前 item panel 列表。
  *
  * <p>
- * {@code ItemList.items} 是展示源，不是全量 ItemStack 权威。这里用它作为当前 item 阶段的初始种子：每个 stack 先进入
- * store.add，再额外记录 panel_index。
+ * {@code ItemList.items} 是展示源，不是全量 ItemStack 权威。这里用它作为 item 列表的初始种子：
+ * 每个 stack 进入 store.add，再记录展示顺序。
  */
 public final class NeiItemPanelSource {
 
@@ -23,7 +23,7 @@ public final class NeiItemPanelSource {
             ItemStack stack = items.get(i);
             if (stack != null && stack.getItem() != null) {
                 ItemVariantRow row = store.add(stack);
-                store.addPanelEntry(row.getItemVariantId(), i);
+                store.addListEntry(row.getItemVariantId(), i);
             }
         }
     }

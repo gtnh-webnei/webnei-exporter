@@ -22,7 +22,7 @@ import moe.takochan.webnei.exporter.domain.item.internal.ItemVariantIdentity;
 import moe.takochan.webnei.exporter.domain.item.model.ItemRow;
 import moe.takochan.webnei.exporter.domain.item.model.ItemToolClassRow;
 import moe.takochan.webnei.exporter.domain.item.model.ItemVariantRow;
-import moe.takochan.webnei.exporter.domain.item.model.NeiItemPanelEntryRow;
+import moe.takochan.webnei.exporter.domain.item.model.ItemListEntryRow;
 import moe.takochan.webnei.exporter.engine.store.IDomainStore;
 
 /**
@@ -44,7 +44,7 @@ public final class ItemDomainStore implements IDomainStore<ItemStack, ItemVarian
     private final Map<String, ItemRow> items = new LinkedHashMap<>();
     private final Map<String, ItemVariantRow> variants = new LinkedHashMap<>();
     private final List<ItemToolClassRow> toolClasses = new ArrayList<>();
-    private final Map<String, NeiItemPanelEntryRow> panelEntries = new LinkedHashMap<>();
+    private final Map<String, ItemListEntryRow> listEntries = new LinkedHashMap<>();
     private final Set<String> toolClassKeys = new LinkedHashSet<>();
 
     public ItemDomainStore(String datasetId) {
@@ -81,15 +81,15 @@ public final class ItemDomainStore implements IDomainStore<ItemStack, ItemVarian
             new ArrayList<>(items.values()),
             new ArrayList<>(variants.values()),
             new ArrayList<>(toolClasses),
-            new ArrayList<>(panelEntries.values()));
+            new ArrayList<>(listEntries.values()));
     }
 
-    /** 记录 NEI 面板展示入口。 */
-    public void addPanelEntry(String itemVariantId, int panelIndex) {
-        if (!panelEntries.containsKey(itemVariantId)) {
-            panelEntries.put(
+    /** 记录物品列表展示入口。 */
+    public void addListEntry(String itemVariantId, int listIndex) {
+        if (!listEntries.containsKey(itemVariantId)) {
+            listEntries.put(
                 itemVariantId,
-                new NeiItemPanelEntryRow(datasetId, itemVariantId, panelIndex, "", true));
+                new ItemListEntryRow(datasetId, itemVariantId, listIndex));
         }
     }
 
