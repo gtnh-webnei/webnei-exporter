@@ -17,4 +17,3 @@ public final class CommandMessageSender {
         sender.addChatMessage(new ChatComponentTranslation(key, args));
     }
 }
-zai 
