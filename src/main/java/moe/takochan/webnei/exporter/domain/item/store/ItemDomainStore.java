@@ -13,7 +13,6 @@ import net.minecraft.item.ItemStack;
 import moe.takochan.webnei.exporter.adapter.AdapterContext;
 import moe.takochan.webnei.exporter.adapter.AdapterRegistry;
 import moe.takochan.webnei.exporter.domain.IExportModel;
-import moe.takochan.webnei.exporter.domain.asset.AssetRequestRegistry;
 import moe.takochan.webnei.exporter.domain.item.ItemExportModel;
 import moe.takochan.webnei.exporter.domain.item.internal.ForgeItemIdentityResolver;
 import moe.takochan.webnei.exporter.domain.item.internal.ItemIdentity;
@@ -30,7 +29,7 @@ import moe.takochan.webnei.exporter.engine.store.IDomainStore;
  * item domain store。
  *
  * <p>
- * 输入 ItemStack，内部处理身份解析、去重、字段采集、asset request 和 adapter 补充，
+ * 输入 ItemStack，内部处理身份解析、去重、字段采集和 adapter 补充，
  * 输出 ItemVariantRow。任何 domain 遇到真实 ItemStack 时都应调用 {@link #add}。
  */
 public final class ItemDomainStore implements IDomainStore<ItemStack, ItemVariantRow> {
@@ -39,7 +38,6 @@ public final class ItemDomainStore implements IDomainStore<ItemStack, ItemVarian
     private final ForgeItemIdentityResolver identityResolver;
     private final ItemStackDetailCollector detailCollector;
     private final ItemToolClassCollector toolClassCollector;
-    private final AssetRequestRegistry assetRequestRegistry;
     private final AdapterRegistry adapterRegistry;
     private final AdapterContext adapterContext;
 
@@ -49,12 +47,11 @@ public final class ItemDomainStore implements IDomainStore<ItemStack, ItemVarian
     private final Map<String, NeiItemPanelEntryRow> panelEntries = new LinkedHashMap<>();
     private final Set<String> toolClassKeys = new LinkedHashSet<>();
 
-    public ItemDomainStore(String datasetId, AssetRequestRegistry assetRequestRegistry) {
+    public ItemDomainStore(String datasetId) {
         this.datasetId = datasetId;
         this.identityResolver = new ForgeItemIdentityResolver();
         this.detailCollector = new ItemStackDetailCollector();
         this.toolClassCollector = new ItemToolClassCollector();
-        this.assetRequestRegistry = assetRequestRegistry;
         this.adapterRegistry = AdapterRegistry.defaults();
         this.adapterContext = new AdapterContext();
     }
@@ -108,8 +105,7 @@ public final class ItemDomainStore implements IDomainStore<ItemStack, ItemVarian
         if (existing != null) {
             return existing;
         }
-        String assetId = assetRequestRegistry.requestItemIcon(stack, itemIdentity, variantIdentity);
-        ItemVariantRow row = detailCollector.collectVariant(datasetId, variantIdentity, stack, assetId);
+        ItemVariantRow row = detailCollector.collectVariant(datasetId, variantIdentity, stack);
         adapterRegistry.fillItemVariant(stack, row, adapterContext);
         variants.put(variantIdentity.getItemVariantId(), row);
         addToolClasses(variantIdentity, stack);

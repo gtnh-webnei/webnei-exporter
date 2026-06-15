@@ -229,8 +229,7 @@ public final class TsvBundleWriter implements IBundleWriter {
                     variant.getNbtText(),
                     variant.getDisplayName(),
                     variant.getTooltipText(),
-                    variant.getChemicalExpression(),
-                    variant.getAssetId()));
+                    variant.getChemicalExpression()));
         }
         return new TsvSection(
             "item_variant",
@@ -243,8 +242,7 @@ public final class TsvBundleWriter implements IBundleWriter {
                 "nbt_text",
                 "display_name",
                 "tooltip_text",
-                "chemical_expression",
-                "asset_id"),
+                "chemical_expression"),
             rows);
     }
 

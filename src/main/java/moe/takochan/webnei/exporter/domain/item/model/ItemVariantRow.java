@@ -33,9 +33,6 @@ public final class ItemVariantRow {
     /** 当前普通玩家 tooltip 文本，按行用换行符连接并去除格式码。 */
     private final String tooltipText;
 
-    /** item icon 的 asset_id，由 asset 请求阶段后续渲染。 */
-    private final String assetId;
-
     /** 由 mod adapter 补充的化学式或材料表达式；未知时为空。 */
     @Setter
     private String chemicalExpression = "";

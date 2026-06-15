@@ -31,8 +31,7 @@ public final class ItemStackDetailCollector {
             Item.getIdFromItem(mcItem));
     }
 
-    public ItemVariantRow collectVariant(String datasetId, ItemVariantIdentity variant, ItemStack stack,
-        String assetId) {
+    public ItemVariantRow collectVariant(String datasetId, ItemVariantIdentity variant, ItemStack stack) {
         return new ItemVariantRow(
             datasetId,
             variant.getItemVariantId(),
@@ -41,8 +40,7 @@ public final class ItemStackDetailCollector {
             variant.getNbtHash(),
             variant.getNbtText(),
             stripFormatting(value(stack.getDisplayName())),
-            tooltipText(stack),
-            assetId);
+            tooltipText(stack));
     }
 
     private static String tooltipText(ItemStack stack) {

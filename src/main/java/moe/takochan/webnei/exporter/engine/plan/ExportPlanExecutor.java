@@ -25,7 +25,7 @@ import moe.takochan.webnei.exporter.domain.ExportModelSet;
  * <p>
  * executor 只负责执行已经解析好的 plan：创建 task context、按顺序运行 tasks、
  * 汇总领域模型并交给调用方已选择的 bundle writer。它不决定本次有哪些 task、也不决定使用哪种 bundle。
- * task 之间需要共享 ItemStackCatalog、AssetRequestRegistry 等对象时，通过 ExportTaskContext values 传递。
+ * task 之间通过 DomainStoreRegistry 共享数据。
  */
 public final class ExportPlanExecutor {
 

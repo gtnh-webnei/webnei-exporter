@@ -7,7 +7,6 @@ import java.util.List;
 import net.minecraft.item.ItemStack;
 
 import moe.takochan.webnei.exporter.adapter.gregtech.GregTechAdapter;
-import moe.takochan.webnei.exporter.adapter.railcraft.RailcraftAdapter;
 import moe.takochan.webnei.exporter.domain.item.model.ItemVariantRow;
 import moe.takochan.webnei.exporter.domain.nei.scan.NeiHandlerEntry;
 
@@ -23,7 +22,6 @@ public final class AdapterRegistry {
     public static AdapterRegistry defaults() {
         List<IModAdapter> adapters = new ArrayList<>();
         adapters.add(new GregTechAdapter());
-        adapters.add(new RailcraftAdapter());
         return new AdapterRegistry(adapters);
     }
 
