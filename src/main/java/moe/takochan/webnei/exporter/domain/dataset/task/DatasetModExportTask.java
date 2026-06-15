@@ -1,26 +1,20 @@
 package moe.takochan.webnei.exporter.domain.dataset.task;
 
-import java.text.SimpleDateFormat;
-import java.util.Date;
-import java.util.TimeZone;
-
-import cpw.mods.fml.common.Loader;
-import moe.takochan.webnei.exporter.Tags;
+import cpw.mods.fml.common.FMLCommonHandler;
+import moe.takochan.webnei.exporter.domain.dataset.store.DatasetDomainStore;
+import moe.takochan.webnei.exporter.engine.ExportRequestOptions;
 import moe.takochan.webnei.exporter.engine.task.ExportTaskContext;
 import moe.takochan.webnei.exporter.engine.task.IExportTask;
-import moe.takochan.webnei.exporter.domain.dataset.DatasetExportModel;
-import moe.takochan.webnei.exporter.domain.dataset.model.DatasetRow;
 
 /**
- * dataset 基础数据导出任务。
+ * dataset 数据域导出任务。
  *
  * <p>
- * dataset 是一次导出的核心关联索引。后续 item、fluid、recipe、asset 等数据都必须挂在同一个
+ * 从请求参数构建 dataset 信息并注册 DatasetDomainStore，供后续所有 domain 获取 dataset_id。
  */
 public final class DatasetModExportTask implements IExportTask {
 
     public static final String ID = "dataset-export";
-    public static final String SCHEMA_VERSION = "2";
 
     @Override
     public String id() {
@@ -34,27 +28,23 @@ public final class DatasetModExportTask implements IExportTask {
 
     @Override
     public void execute(ExportTaskContext context) {
-        DatasetIdentity identity = DatasetIdentity.from(context);
-        context.addModel(new DatasetExportModel(datasetRow(identity)));
+        String packSlug = context.executionContext().request().option(ExportRequestOptions.PACK_SLUG);
+        String packVersion = context.executionContext().request().option(ExportRequestOptions.PACK_VERSION);
+        String variant = context.executionContext().request().option(ExportRequestOptions.VARIANT);
+        String language = currentLanguage();
+
+        DatasetDomainStore store = new DatasetDomainStore();
+        store.add(new DatasetDomainStore.Input(packSlug, packVersion, variant, language));
+        context.register(DatasetDomainStore.class, store);
     }
 
-    private static DatasetRow datasetRow(DatasetIdentity identity) {
-        return new DatasetRow(
-            identity.getDatasetId(),
-            identity.getPackSlug(),
-            identity.getPackVersion(),
-            identity.getVariant(),
-            identity.getLanguage(),
-            identity.getDisplayName(),
-            SCHEMA_VERSION,
-            Tags.VERSION,
-            exportedAt(),
-            Loader.MC_VERSION);
-    }
-
-    private static String exportedAt() {
-        SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'");
-        format.setTimeZone(TimeZone.getTimeZone("UTC"));
-        return format.format(new Date());
+    private static String currentLanguage() {
+        try {
+            String language = FMLCommonHandler.instance().getCurrentLanguage();
+            if (language != null && !language.trim().isEmpty()) {
+                return language.trim();
+            }
+        } catch (Throwable ignored) {}
+        return "en_US";
     }
 }
