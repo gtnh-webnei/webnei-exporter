@@ -1,0 +1,42 @@
+package moe.takochan.webnei.exporter.model.item;
+
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
+import lombok.Setter;
+
+/** item_variant 表行：具体 ItemStack 身份和展示详情。 */
+@Getter
+@RequiredArgsConstructor
+public final class ItemVariantRow {
+
+    /** 所属 dataset ID。 */
+    private final String datasetId;
+
+    /** ItemStack variant 稳定 ID，由 itemId、raw damage 和 canonical NBT hash 组合。 */
+    private final String itemVariantId;
+
+    /** 所属 registry item 稳定 ID。 */
+    private final String itemId;
+
+    /** ItemStack 原始 damage/meta 值。 */
+    private final int damage;
+
+    /** canonical NBT 文本的短 hash；无 NBT 时为空。 */
+    private final String nbtHash;
+
+    /** canonical NBT 文本；无 NBT 时为空。 */
+    private final String nbtText;
+
+    /** 当前语言环境下的显示名称，已去除 Minecraft 格式码。 */
+    private final String displayName;
+
+    /** 当前普通玩家 tooltip 文本，按行用换行符连接并去除格式码。 */
+    private final String tooltipText;
+
+    /** item icon 的 asset_id，由 asset 请求阶段后续渲染。 */
+    private final String assetId;
+
+    /** 由 mod adapter 补充的化学式或材料表达式；未知时为空。 */
+    @Setter
+    private String chemicalExpression = "";
+}

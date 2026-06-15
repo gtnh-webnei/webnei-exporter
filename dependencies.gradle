@@ -39,10 +39,16 @@ elytraModpackVersion {
 }
 
 dependencies {
+    // lombok
+    def lombokVersion = "1.18.46"
+    compileOnly("org.projectlombok:lombok:$lombokVersion")
+    annotationProcessor("org.projectlombok:lombok:$lombokVersion")
+
     // NEI
     api(gtnhDev("NotEnoughItems"))
 
     // Mod integrations used by explicit mod adapters.
+    devOnlyNonPublishable(gtnhDev("GT5-Unofficial"))
     devOnlyNonPublishable(gtnhDev("NEI-Integration"))
 }
 

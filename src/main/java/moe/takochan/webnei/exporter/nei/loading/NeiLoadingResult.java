@@ -1,15 +1,29 @@
 package moe.takochan.webnei.exporter.nei.loading;
 
 import codechicken.nei.recipe.IRecipeHandler;
+import lombok.Getter;
 
+/** NEI handler 加载支持返回的结果。 */
+@Getter
 public final class NeiLoadingResult {
 
-    public final NeiLoadingStatus status;
-    public final IRecipeHandler handler;
-    public final NeiLoadingSource source;
-    public final String provider;
-    public final String key;
-    public final String reason;
+    /** 加载状态。 */
+    private final NeiLoadingStatus status;
+
+    /** 成功加载出的实际 recipe handler；非成功状态下为空。 */
+    private final IRecipeHandler handler;
+
+    /** 本次加载使用的来源。 */
+    private final NeiLoadingSource source;
+
+    /** 加载实现或 provider 名称。 */
+    private final String provider;
+
+    /** 加载来源使用的 key。 */
+    private final String key;
+
+    /** 状态补充说明或错误原因。 */
+    private final String reason;
 
     private NeiLoadingResult(NeiLoadingStatus status, IRecipeHandler handler, NeiLoadingSource source, String provider,
         String key, String reason) {
@@ -42,10 +56,11 @@ public final class NeiLoadingResult {
 
     public String describe() {
         StringBuilder out = new StringBuilder();
-        if (!source.label.isEmpty()) {
+        if (!source.getLabel()
+            .isEmpty()) {
             appendSeparator(out);
             out.append("source=")
-                .append(source.label);
+                .append(source.getLabel());
         }
         if (!provider.isEmpty()) {
             appendSeparator(out);

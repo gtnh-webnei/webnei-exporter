@@ -1,5 +1,9 @@
 package moe.takochan.webnei.exporter.nei.loading;
 
+import lombok.Getter;
+
+/** 通用 NEI handler 加载来源类型。 */
+@Getter
 public enum NeiLoadingSource {
 
     NONE(""),
@@ -7,7 +11,8 @@ public enum NeiLoadingSource {
     MOD_ADAPTER("mod-adapter"),
     REGISTERED("registered");
 
-    public final String label;
+    /** 写入诊断结果的来源标签。 */
+    private final String label;
 
     NeiLoadingSource(String label) {
         this.label = label;
