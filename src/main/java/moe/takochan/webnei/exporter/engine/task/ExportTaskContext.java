@@ -1,32 +1,24 @@
 package moe.takochan.webnei.exporter.engine.task;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
 import moe.takochan.webnei.exporter.engine.ExportExecutionContext;
-import moe.takochan.webnei.exporter.domain.IExportModel;
+import moe.takochan.webnei.exporter.engine.store.DomainStoreRegistry;
+import moe.takochan.webnei.exporter.engine.store.IDomainStore;
 
 /**
- * task 之间共享的导出上下文。
+ * task 执行时的上下文。
  *
  * <p>
- * 它负责两件事：
- * <ol>
- * <li>收集 task 输出的领域中间模型。</li>
- * <li>保存同一次 plan 内的临时中间结果，例如 handler 扫描结果。</li>
- * </ol>
- * 这里不放 TSV/JSON/SQL 写出逻辑，最终格式和输出位置仍由 bundle writer 决定。
+ * task 通过 {@link #store(Class)} 获取前置 domain 已注册的 store，
+ * 通过 {@link #register(Class, IDomainStore)} 在自己执行完成后注册本 domain 的 store。
  */
 public final class ExportTaskContext {
 
     private final ExportExecutionContext executionContext;
-    private final List<IExportModel> models = new ArrayList<>();
-    private final Map<String, Object> values = new HashMap<>();
+    private final DomainStoreRegistry storeRegistry;
 
-    public ExportTaskContext(ExportExecutionContext executionContext) {
+    public ExportTaskContext(ExportExecutionContext executionContext, DomainStoreRegistry storeRegistry) {
         this.executionContext = executionContext;
+        this.storeRegistry = storeRegistry;
     }
 
     /** job/session 级上下文，供 task 读取当前导出状态。 */
@@ -34,23 +26,13 @@ public final class ExportTaskContext {
         return executionContext;
     }
 
-    /** 添加一个领域中间模型，由 executor 最后统一交给 bundle writer；不要在 task 中添加 TSV section。 */
-    public void addModel(IExportModel model) {
-        models.add(model);
+    /** 获取前置 domain 已注册的 store。 */
+    public <T extends IDomainStore<?, ?>> T store(Class<T> type) {
+        return storeRegistry.get(type);
     }
 
-    /** 返回当前已收集的模型副本，避免外部直接修改内部列表。 */
-    public List<IExportModel> models() {
-        return new ArrayList<>(models);
-    }
-
-    /** 保存 plan 内临时中间结果；key 应由提供方集中定义。 */
-    public void put(String key, Object value) {
-        values.put(key, value);
-    }
-
-    /** 读取 plan 内临时中间结果。 */
-    public Object get(String key) {
-        return values.get(key);
+    /** task 执行完成后注册自己的 domain store，供后续 task 使用。 */
+    public <I, M> void register(Class<? extends IDomainStore<I, M>> type, IDomainStore<I, M> store) {
+        storeRegistry.register(type, store);
     }
 }

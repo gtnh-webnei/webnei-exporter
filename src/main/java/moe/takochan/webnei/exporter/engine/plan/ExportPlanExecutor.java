@@ -13,6 +13,7 @@ import moe.takochan.webnei.exporter.bundle.IBundleWriter;
 import moe.takochan.webnei.exporter.engine.ExportExecutionContext;
 import moe.takochan.webnei.exporter.engine.job.ExportJobSession;
 import moe.takochan.webnei.exporter.engine.job.IExportJobListener;
+import moe.takochan.webnei.exporter.engine.store.DomainStoreRegistry;
 import moe.takochan.webnei.exporter.engine.task.ExportTaskContext;
 import moe.takochan.webnei.exporter.engine.task.ExportTaskException;
 import moe.takochan.webnei.exporter.engine.task.IExportTask;
@@ -30,8 +31,9 @@ public final class ExportPlanExecutor {
 
     /** 执行一个导出计划，并在所有 task 完成后统一写出 bundle。 */
     public BundleResult execute(IExportPlan plan, IBundleWriter bundleWriter, ExportExecutionContext executionContext,
+                                DomainStoreRegistry storeRegistry,
                                 ExportJobSession session, IExportJobListener listener) {
-        ExportTaskContext taskContext = new ExportTaskContext(executionContext);
+        ExportTaskContext taskContext = new ExportTaskContext(executionContext, storeRegistry);
         for (IExportTask task : plan.tasks()) {
             session.startTask(task);
             listener.onTaskStarted(session.snapshot());
@@ -47,7 +49,7 @@ public final class ExportPlanExecutor {
 
         try {
             return bundleWriter
-                .write(new ExportModelSet(plan.id(), taskContext.models()), defaultTarget(), BundleContext.defaults());
+                .write(new ExportModelSet(plan.id(), storeRegistry.collectModels()), defaultTarget(), BundleContext.defaults());
         } catch (BundleException e) {
             WebneiExporterMod.LOG.error("Failed to write WebNEI export bundle", e);
             return BundleResult.failure(bundleWriter.format(), e.getMessage());

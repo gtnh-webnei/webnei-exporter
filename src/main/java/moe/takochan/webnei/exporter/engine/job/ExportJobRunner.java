@@ -10,6 +10,7 @@ import moe.takochan.webnei.exporter.bundle.IBundleWriter;
 import moe.takochan.webnei.exporter.engine.ExportExecutionContext;
 import moe.takochan.webnei.exporter.engine.ExportRequest;
 import moe.takochan.webnei.exporter.engine.plan.ExportPlanExecutor;
+import moe.takochan.webnei.exporter.engine.store.DomainStoreRegistry;
 import moe.takochan.webnei.exporter.export.ExportPlanRegistry;
 import moe.takochan.webnei.exporter.engine.plan.IExportPlan;
 
@@ -77,7 +78,8 @@ public final class ExportJobRunner {
 
             IBundleWriter bundleWriter = bundleWriter(request);
             ExportExecutionContext context = new ExportExecutionContext(request, session);
-            BundleResult result = executor.execute(plan, bundleWriter, context, session, listener);
+            DomainStoreRegistry storeRegistry = new DomainStoreRegistry();
+            BundleResult result = executor.execute(plan, bundleWriter, context, storeRegistry, session, listener);
             if (!result.isSuccess()) {
                 fail(session, listener, result.getErrorMessage());
                 return;
