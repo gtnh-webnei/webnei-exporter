@@ -8,8 +8,7 @@ import net.minecraft.util.ChatComponentTranslation;
  */
 public final class CommandMessageSender {
 
-    private CommandMessageSender() {
-    }
+    private CommandMessageSender() {}
 
     /**
      * 向命令发送者发送一条可本地化聊天消息。
@@ -18,3 +17,4 @@ public final class CommandMessageSender {
         sender.addChatMessage(new ChatComponentTranslation(key, args));
     }
 }
+zai 
