@@ -1,4 +1,4 @@
-package moe.takochan.webnei.exporter.adapter.gregtech;
+package moe.takochan.webnei.exporter.hook.gregtech;
 
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
@@ -19,11 +19,19 @@ import gtPlusPlus.core.item.base.BaseItemComponent;
 import gtPlusPlus.core.item.base.ore.BaseOreComponent;
 import gtPlusPlus.core.material.Material;
 
-/** 从 GregTech/GT++/BartWorks 的真实 API 读取 item chemical expression */
+/**
+ * 从 GregTech/GT++/BartWorks 的真实 API 读取 item chemical expression。
+ */
 final class GregTechChemicalExpressionExtractor {
 
     private GregTechChemicalExpressionExtractor() {}
 
+    /**
+     * 按 GT++ → BartWorks → GT 矿石 → GT 通用顺序尝试提取化学式，命中即返回。
+     *
+     * @param stack 当前正在注册的 ItemStack
+     * @return 化学式，未识别时为空字符串
+     */
     static String itemExpression(ItemStack stack) {
         String gtpp = gtPlusPlusItemExpression(stack);
         if (!gtpp.isEmpty()) {
@@ -40,6 +48,12 @@ final class GregTechChemicalExpressionExtractor {
         return gregTechItemExpression(stack);
     }
 
+    /**
+     * 通过 GT OreDict 关联获取通用材料化学式。
+     *
+     * @param stack 当前正在注册的 ItemStack
+     * @return 化学式，未识别时为空字符串
+     */
     private static String gregTechItemExpression(ItemStack stack) {
         try {
             ItemData association = GTOreDictUnificator.getAssociation(stack);
@@ -58,6 +72,12 @@ final class GregTechChemicalExpressionExtractor {
         }
     }
 
+    /**
+     * 从 GT++ BaseItemComponent / BaseOreComponent 获取化学式。
+     *
+     * @param stack 当前正在注册的 ItemStack
+     * @return 化学式，未识别时为空字符串
+     */
     private static String gtPlusPlusItemExpression(ItemStack stack) {
         try {
             Item item = stack.getItem();
@@ -73,6 +93,12 @@ final class GregTechChemicalExpressionExtractor {
         }
     }
 
+    /**
+     * 从 GT++ Material 对象读取 vChemicalFormula 并清理特殊字符。
+     *
+     * @param material GT++ 材料对象
+     * @return 化学式，未识别时为空字符串
+     */
     private static String gtPlusPlusMaterialExpression(Material material) {
         if (material == null || material.vChemicalFormula == null || material.vChemicalFormula.isEmpty()) {
             return "";
@@ -83,6 +109,12 @@ final class GregTechChemicalExpressionExtractor {
         return clean(sanitized);
     }
 
+    /**
+     * 从 BartWorks BWGTMetaItems / BWMetaGeneratedItems / BWItemMetaGeneratedBlock 获取 Werkstoff 化学式。
+     *
+     * @param stack 当前正在注册的 ItemStack
+     * @return 化学式，未识别时为空字符串
+     */
     private static String bartWorksWerkstoffExpression(ItemStack stack) {
         try {
             Item item = stack.getItem();
@@ -100,6 +132,12 @@ final class GregTechChemicalExpressionExtractor {
         }
     }
 
+    /**
+     * 从 GT 矿石方块的 damage % 1000 索引 sGeneratedMaterials 获取化学式。
+     *
+     * @param stack 当前正在注册的 ItemStack
+     * @return 化学式，未识别时为空字符串
+     */
     private static String gregTechOreBlockExpression(ItemStack stack) {
         try {
             if (!(stack.getItem() instanceof ItemOres)) {
@@ -116,6 +154,12 @@ final class GregTechChemicalExpressionExtractor {
         }
     }
 
+    /**
+     * 去除 Minecraft 格式码并 trim。
+     *
+     * @param value 原始文本
+     * @return 清理后的文本，null 时返回空字符串
+     */
     private static String clean(String value) {
         String cleaned = EnumChatFormatting.getTextWithoutFormattingCodes(value);
         return cleaned == null ? "" : cleaned.trim();

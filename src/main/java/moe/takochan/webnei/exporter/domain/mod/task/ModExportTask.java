@@ -35,14 +35,22 @@ public final class ModExportTask implements IExportTask {
 
     @Override
     public void execute(ExportTaskContext context) {
-        String datasetId = context.store(DatasetDomainStore.class).row().getDatasetId();
+        String datasetId = context.store(DatasetDomainStore.class)
+            .row()
+            .getDatasetId();
 
         ModDomainStore store = new ModDomainStore();
         ModRegistrar registrar = new ModRegistrar(store, datasetId);
 
-        List<ModContainer> mods = new ArrayList<>(Loader.instance().getActiveModList());
-        mods.sort(Comparator.comparing((ModContainer m) -> nullToEmpty(m.getModId()))
-            .thenComparing(m -> m.getSource() == null ? "" : m.getSource().getName()));
+        List<ModContainer> mods = new ArrayList<>(
+            Loader.instance()
+                .getActiveModList());
+        mods.sort(
+            Comparator.comparing((ModContainer m) -> nullToEmpty(m.getModId()))
+                .thenComparing(
+                    m -> m.getSource() == null ? ""
+                        : m.getSource()
+                            .getName()));
 
         for (ModContainer mod : mods) {
             registrar.register(mod);

@@ -2,14 +2,15 @@ package moe.takochan.webnei.exporter.engine.plan;
 
 import java.io.File;
 
-import moe.takochan.webnei.exporter.WebneiExporterMod;
 import net.minecraft.client.Minecraft;
 
+import moe.takochan.webnei.exporter.WebneiExporterMod;
 import moe.takochan.webnei.exporter.bundle.BundleContext;
 import moe.takochan.webnei.exporter.bundle.BundleException;
 import moe.takochan.webnei.exporter.bundle.BundleResult;
 import moe.takochan.webnei.exporter.bundle.BundleTarget;
 import moe.takochan.webnei.exporter.bundle.IBundleWriter;
+import moe.takochan.webnei.exporter.domain.ExportModelSet;
 import moe.takochan.webnei.exporter.engine.ExportExecutionContext;
 import moe.takochan.webnei.exporter.engine.job.ExportJobSession;
 import moe.takochan.webnei.exporter.engine.job.IExportJobListener;
@@ -17,7 +18,6 @@ import moe.takochan.webnei.exporter.engine.store.DomainStoreRegistry;
 import moe.takochan.webnei.exporter.engine.task.ExportTaskContext;
 import moe.takochan.webnei.exporter.engine.task.ExportTaskException;
 import moe.takochan.webnei.exporter.engine.task.IExportTask;
-import moe.takochan.webnei.exporter.domain.ExportModelSet;
 
 /**
  * 通用导出流程执行器。
@@ -31,8 +31,7 @@ public final class ExportPlanExecutor {
 
     /** 执行一个导出计划，并在所有 task 完成后统一写出 bundle。 */
     public BundleResult execute(IExportPlan plan, IBundleWriter bundleWriter, ExportExecutionContext executionContext,
-                                DomainStoreRegistry storeRegistry,
-                                ExportJobSession session, IExportJobListener listener) {
+        DomainStoreRegistry storeRegistry, ExportJobSession session, IExportJobListener listener) {
         ExportTaskContext taskContext = new ExportTaskContext(executionContext, storeRegistry);
         for (IExportTask task : plan.tasks()) {
             session.startTask(task);
@@ -48,8 +47,10 @@ public final class ExportPlanExecutor {
         }
 
         try {
-            return bundleWriter
-                .write(new ExportModelSet(plan.id(), storeRegistry.collectModels()), defaultTarget(), BundleContext.defaults());
+            return bundleWriter.write(
+                new ExportModelSet(plan.id(), storeRegistry.collectModels()),
+                defaultTarget(),
+                BundleContext.defaults());
         } catch (BundleException e) {
             WebneiExporterMod.LOG.error("Failed to write WebNEI export bundle", e);
             return BundleResult.failure(bundleWriter.format(), e.getMessage());

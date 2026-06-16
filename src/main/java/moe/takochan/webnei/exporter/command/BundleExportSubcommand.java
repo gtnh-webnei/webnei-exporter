@@ -4,7 +4,6 @@ import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
-import moe.takochan.webnei.exporter.export.ExportPlan;
 import net.minecraft.command.ICommandSender;
 
 import moe.takochan.webnei.exporter.bundle.BundleFormat;
@@ -12,6 +11,7 @@ import moe.takochan.webnei.exporter.engine.ExportRequest;
 import moe.takochan.webnei.exporter.engine.ExportRequestOptions;
 import moe.takochan.webnei.exporter.engine.job.ChatExportJobListener;
 import moe.takochan.webnei.exporter.engine.job.ExportJobRunner;
+import moe.takochan.webnei.exporter.export.ExportPlan;
 
 /**
  * 需要 pack、variant 和 bundle format 参数的导出子命令基类。

@@ -16,7 +16,7 @@ public final class ExtractedHandler {
     /** 成功加载后的 recipe 数量；错误时为 -1。 */
     private final int recipeCount;
 
-    /** 抽取状态，例如 core、adapter、generic、error、skipped。 */
+    /** 抽取状态，例如 core、generic、error、unsupported_loading。 */
     private final String status;
 
     /** 状态补充说明或错误原因。 */

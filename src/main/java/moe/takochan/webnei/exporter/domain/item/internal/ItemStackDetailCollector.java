@@ -13,8 +13,7 @@ import moe.takochan.webnei.exporter.domain.item.model.ItemVariantRow;
  * 使用 Minecraft ItemStack API 采集展示字段。
  *
  * <p>
- * tooltip 使用普通玩家 tooltip，不导出高级调试 tooltip。tooltip_text 保留原始格式码（§x），
- * display_name 去除格式码用于搜索和展示。
+ * tooltip 使用普通玩家 tooltip，不导出高级调试 tooltip。display_name 和 tooltip_text 保留原始格式码（§x）。
  */
 public final class ItemStackDetailCollector {
 

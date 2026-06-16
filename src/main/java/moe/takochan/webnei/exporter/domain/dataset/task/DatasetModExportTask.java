@@ -28,9 +28,15 @@ public final class DatasetModExportTask implements IExportTask {
 
     @Override
     public void execute(ExportTaskContext context) {
-        String packSlug = context.executionContext().request().option(ExportRequestOptions.PACK_SLUG);
-        String packVersion = context.executionContext().request().option(ExportRequestOptions.PACK_VERSION);
-        String variant = context.executionContext().request().option(ExportRequestOptions.VARIANT);
+        String packSlug = context.executionContext()
+            .request()
+            .option(ExportRequestOptions.PACK_SLUG);
+        String packVersion = context.executionContext()
+            .request()
+            .option(ExportRequestOptions.PACK_VERSION);
+        String variant = context.executionContext()
+            .request()
+            .option(ExportRequestOptions.VARIANT);
         String language = currentLanguage();
 
         DatasetDomainStore store = new DatasetDomainStore();
@@ -40,8 +46,10 @@ public final class DatasetModExportTask implements IExportTask {
 
     private static String currentLanguage() {
         try {
-            String language = FMLCommonHandler.instance().getCurrentLanguage();
-            if (language != null && !language.trim().isEmpty()) {
+            String language = FMLCommonHandler.instance()
+                .getCurrentLanguage();
+            if (language != null && !language.trim()
+                .isEmpty()) {
                 return language.trim();
             }
         } catch (Throwable ignored) {}

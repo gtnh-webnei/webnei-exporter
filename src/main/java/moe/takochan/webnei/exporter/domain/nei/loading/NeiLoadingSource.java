@@ -8,7 +8,6 @@ public enum NeiLoadingSource {
 
     NONE(""),
     CORE_NEI_BUILTIN("core:nei-builtin"),
-    MOD_ADAPTER("mod-adapter"),
     REGISTERED("registered");
 
     /** 写入诊断结果的来源标签。 */

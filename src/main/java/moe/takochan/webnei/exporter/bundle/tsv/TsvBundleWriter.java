@@ -16,13 +16,13 @@ import moe.takochan.webnei.exporter.domain.ExportModelSet;
 import moe.takochan.webnei.exporter.domain.IExportModel;
 import moe.takochan.webnei.exporter.domain.dataset.DatasetExportModel;
 import moe.takochan.webnei.exporter.domain.dataset.model.DatasetRow;
-import moe.takochan.webnei.exporter.domain.mod.ModExportModel;
-import moe.takochan.webnei.exporter.domain.mod.model.ModRow;
 import moe.takochan.webnei.exporter.domain.item.ItemExportModel;
+import moe.takochan.webnei.exporter.domain.item.model.ItemListEntryRow;
 import moe.takochan.webnei.exporter.domain.item.model.ItemRow;
 import moe.takochan.webnei.exporter.domain.item.model.ItemToolClassRow;
 import moe.takochan.webnei.exporter.domain.item.model.ItemVariantRow;
-import moe.takochan.webnei.exporter.domain.item.model.ItemListEntryRow;
+import moe.takochan.webnei.exporter.domain.mod.ModExportModel;
+import moe.takochan.webnei.exporter.domain.mod.model.ModRow;
 import moe.takochan.webnei.exporter.domain.nei.recipe.ExtractedCandidate;
 import moe.takochan.webnei.exporter.domain.nei.recipe.ExtractedHandler;
 import moe.takochan.webnei.exporter.domain.nei.recipe.ExtractedRecipe;
@@ -265,19 +265,9 @@ public final class TsvBundleWriter implements IBundleWriter {
     private static TsvSection itemListEntrySection(List<ItemListEntryRow> entries) {
         List<List<String>> rows = new ArrayList<>();
         for (ItemListEntryRow entry : entries) {
-            rows.add(
-                row(
-                    entry.getDatasetId(),
-                    entry.getItemVariantId(),
-                    Integer.toString(entry.getListIndex())));
+            rows.add(row(entry.getDatasetId(), entry.getItemVariantId(), Integer.toString(entry.getListIndex())));
         }
-        return new TsvSection(
-            "item_list_entry",
-            Arrays.asList(
-                "dataset_id",
-                "item_variant_id",
-                "list_index"),
-            rows);
+        return new TsvSection("item_list_entry", Arrays.asList("dataset_id", "item_variant_id", "list_index"), rows);
     }
 
     private static TsvSection handlerDiscoverySection(HandlerDiscoveryExportModel model) {

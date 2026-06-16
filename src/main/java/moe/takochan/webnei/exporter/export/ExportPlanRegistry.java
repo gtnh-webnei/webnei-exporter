@@ -31,11 +31,7 @@ public final class ExportPlanRegistry {
      * 当前默认注册的导出计划。
      */
     public static ExportPlanRegistry defaults() {
-        return new ExportPlanRegistry(
-            Arrays.asList(
-                new StaticExportPlan("webnei.task.all", ExportPlan.ALL)
-            )
-        );
+        return new ExportPlanRegistry(Arrays.asList(new StaticExportPlan("webnei.task.all", ExportPlan.ALL)));
     }
 
     public IExportPlan get(String id) {

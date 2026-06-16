@@ -12,10 +12,6 @@ import net.minecraft.item.ItemStack;
 
 import codechicken.nei.PositionedStack;
 import codechicken.nei.recipe.IRecipeHandler;
-import moe.takochan.webnei.exporter.adapter.AdapterContext;
-import moe.takochan.webnei.exporter.adapter.AdapterRegistry;
-import moe.takochan.webnei.exporter.adapter.AdapterResult;
-import moe.takochan.webnei.exporter.adapter.AdapterStatus;
 import moe.takochan.webnei.exporter.domain.nei.loading.BuiltinNeiLoadingSupport;
 import moe.takochan.webnei.exporter.domain.nei.loading.INeiLoadingSupport;
 import moe.takochan.webnei.exporter.domain.nei.loading.NeiLoadingResult;
@@ -23,23 +19,20 @@ import moe.takochan.webnei.exporter.domain.nei.loading.NeiLoadingStatus;
 import moe.takochan.webnei.exporter.domain.nei.scan.NeiHandlerDescriptor;
 import moe.takochan.webnei.exporter.domain.nei.scan.NeiHandlerEntry;
 
+/** 遍历 NEI handler 列表，逐个加载 recipe 并提取输入/输出/其他格子数据。 */
 public final class StandardSlotExtractor {
 
     private final INeiLoadingSupport coreLoadingSupport;
-    private final AdapterRegistry adapterRegistry;
-    private final AdapterContext adapterContext;
 
     public StandardSlotExtractor() {
-        this(new BuiltinNeiLoadingSupport(), AdapterRegistry.defaults(), new AdapterContext());
+        this(new BuiltinNeiLoadingSupport());
     }
 
-    StandardSlotExtractor(INeiLoadingSupport coreLoadingSupport, AdapterRegistry adapterRegistry,
-        AdapterContext adapterContext) {
+    StandardSlotExtractor(INeiLoadingSupport coreLoadingSupport) {
         this.coreLoadingSupport = coreLoadingSupport;
-        this.adapterRegistry = adapterRegistry;
-        this.adapterContext = adapterContext;
     }
 
+    /** 提取所有 entry 的 recipe 格子数据，返回聚合结果。 */
     public SlotExtraction extract(List<NeiHandlerEntry> entries) {
         List<ExtractedHandler> handlers = new ArrayList<>();
         List<ExtractedRecipe> recipes = new ArrayList<>();
@@ -52,32 +45,19 @@ public final class StandardSlotExtractor {
         return new SlotExtraction(handlers, recipes, stacks, candidates);
     }
 
+    /**
+     * 处理单个 handler entry：优先走 core loading，否则 fallback 到 registered handler。
+     *
+     * @param entry      待处理的 NEI handler
+     * @param handlers   handler 级结果输出
+     * @param recipes    recipe 级结果输出
+     * @param stacks     格子级结果输出
+     * @param candidates 候选 ItemStack 结果输出
+     */
     private void extractHandler(NeiHandlerEntry entry, List<ExtractedHandler> handlers, List<ExtractedRecipe> recipes,
         List<ExtractedStack> stacks, List<ExtractedCandidate> candidates) {
         if (coreLoadingSupport.supports(entry)) {
             extractCore(entry, handlers, recipes, stacks, candidates);
-            return;
-        }
-
-        AdapterResult adapterResult = adapterRegistry.extractNeiHandler(entry, adapterContext);
-        if (adapterResult.getStatus() == AdapterStatus.SKIPPED) {
-            handlers.add(new ExtractedHandler(entry.getDescriptor(), 0, "skipped", adapterResult.describe()));
-            return;
-        }
-        if (adapterResult.getStatus() == AdapterStatus.ERROR) {
-            handlers.add(new ExtractedHandler(entry.getDescriptor(), -1, "error", adapterResult.describe()));
-            return;
-        }
-        if (adapterResult.getStatus() == AdapterStatus.EXTRACTED) {
-            extractLoaded(
-                entry,
-                adapterResult.getLoadedHandler(),
-                "adapter",
-                adapterResult.describe(),
-                handlers,
-                recipes,
-                stacks,
-                candidates);
             return;
         }
 
@@ -87,13 +67,13 @@ public final class StandardSlotExtractor {
             return;
         }
         if (registered.recipeCount == 0) {
-            handlers
-                .add(new ExtractedHandler(entry.getDescriptor(), 0, "unsupported_loading", adapterResult.describe()));
+            handlers.add(new ExtractedHandler(entry.getDescriptor(), 0, "unsupported_loading", "no loading support"));
             return;
         }
         addLoaded(entry, registered, "generic", handlers, recipes, stacks, candidates);
     }
 
+    /** 使用 core loading support 加载 handler 并提取 recipe。 */
     private void extractCore(NeiHandlerEntry entry, List<ExtractedHandler> handlers, List<ExtractedRecipe> recipes,
         List<ExtractedStack> stacks, List<ExtractedCandidate> candidates) {
         NeiLoadingResult result = coreLoadingSupport.load(entry);
@@ -108,6 +88,7 @@ public final class StandardSlotExtractor {
         extractLoaded(entry, result.getHandler(), "core", result.describe(), handlers, recipes, stacks, candidates);
     }
 
+    /** 包装 tryLoaded + addLoaded，处理 handler 为 null 的 error 情况。 */
     private static void extractLoaded(NeiHandlerEntry entry, IRecipeHandler handler, String status, String reason,
         List<ExtractedHandler> handlers, List<ExtractedRecipe> recipes, List<ExtractedStack> stacks,
         List<ExtractedCandidate> candidates) {
@@ -119,6 +100,7 @@ public final class StandardSlotExtractor {
         addLoaded(entry, loaded, status, handlers, recipes, stacks, candidates);
     }
 
+    /** 验证 handler 可用后，遍历所有 recipe 调用 extractRecipe。 */
     private static void addLoaded(NeiHandlerEntry entry, LoadedHandler loaded, String status,
         List<ExtractedHandler> handlers, List<ExtractedRecipe> recipes, List<ExtractedStack> stacks,
         List<ExtractedCandidate> candidates) {
@@ -128,6 +110,7 @@ public final class StandardSlotExtractor {
         }
     }
 
+    /** 尝试从已加载的 handler 获取 recipe 数量，失败时包装错误信息。 */
     private static LoadedHandler tryLoaded(IRecipeHandler handler, String reason) {
         if (handler == null) {
             return new LoadedHandler(null, -1, reason + ": null handler");
@@ -139,6 +122,7 @@ public final class StandardSlotExtractor {
         }
     }
 
+    /** 提取单个 recipe 的三类格子（ingredient/result/other），计算内容指纹。 */
     private static void extractRecipe(NeiHandlerDescriptor descriptor, IRecipeHandler handler, int recipeIndex,
         List<ExtractedRecipe> recipes, List<ExtractedStack> stacks, List<ExtractedCandidate> candidates) {
         SourceStacks ingredients = getIngredientStacks(handler, recipeIndex);
@@ -198,6 +182,7 @@ public final class StandardSlotExtractor {
         }
     }
 
+    /** 过滤 null，返回安全列表。 */
     private static List<PositionedStack> safeList(List<PositionedStack> stacks) {
         if (stacks == null) {
             return Collections.emptyList();
@@ -211,6 +196,7 @@ public final class StandardSlotExtractor {
         return out;
     }
 
+    /** 将一组 PositionedStack 展开为 ExtractedStack + ExtractedCandidate 写入输出列表。 */
     private static void extractStacks(String handlerKey, int recipeIndex, String source,
         List<PositionedStack> sourceStacks, List<ExtractedStack> stacks, List<ExtractedCandidate> candidates) {
         for (int stackIndex = 0; stackIndex < sourceStacks.size(); stackIndex++) {
@@ -247,6 +233,7 @@ public final class StandardSlotExtractor {
         }
     }
 
+    /** 从 PositionedStack 取候选 ItemStack 列表，优先 items 数组，fallback 到单个 item。 */
     private static List<ItemStack> candidates(PositionedStack stack) {
         List<ItemStack> candidates = new ArrayList<>();
         if (stack.items != null) {
@@ -262,6 +249,7 @@ public final class StandardSlotExtractor {
         return candidates;
     }
 
+    /** 将格子候选序列化为指纹字符串片段（格式：source:relx,rely[stackId;...]|）。 */
     private static void appendStacks(StringBuilder out, String source, List<PositionedStack> stacks) {
         out.append(source)
             .append(':');
@@ -279,6 +267,7 @@ public final class StandardSlotExtractor {
         out.append('|');
     }
 
+    /** 取 ItemStack 的 registry name，fallback 到 class name。 */
     private static String itemId(ItemStack stack) {
         if (stack == null || stack.getItem() == null) return "";
         Item item = stack.getItem();
@@ -287,6 +276,7 @@ public final class StandardSlotExtractor {
             .getName() : registryName.toString();
     }
 
+    /** 格式：registryName@damage×stackSize。 */
     private static String stackId(ItemStack stack) {
         if (stack == null) return "";
         return itemId(stack) + "@" + stack.getItemDamage() + "x" + stack.stackSize;
@@ -319,6 +309,7 @@ public final class StandardSlotExtractor {
             .getSimpleName() + (t.getMessage() == null ? "" : ": " + t.getMessage());
     }
 
+    /** 对指纹字符串做 SHA-1 摘要，用于 recipe 内容去重。 */
     private static String sha1(String value) {
         try {
             MessageDigest digest = MessageDigest.getInstance("SHA-1");

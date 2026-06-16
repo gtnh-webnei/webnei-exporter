@@ -22,7 +22,8 @@ public final class ModDomainStore implements IDomainStore {
 
     public ModRow findByModId(String modId) {
         for (ModRow row : rows) {
-            if (row.getModId().equals(modId)) {
+            if (row.getModId()
+                .equals(modId)) {
                 return row;
             }
         }
