@@ -299,9 +299,19 @@ CREATE TABLE IF NOT EXISTS recipe_lookup_index (
 
 CREATE TABLE IF NOT EXISTS ore_dictionary (
   dataset_id TEXT NOT NULL REFERENCES dataset(dataset_id) ON DELETE CASCADE,
-  ore_name TEXT NOT NULL,
-  group_id TEXT NOT NULL,
-  PRIMARY KEY (dataset_id, ore_name)
+  dictionary_name TEXT NOT NULL,
+  PRIMARY KEY (dataset_id, dictionary_name)
+);
+
+CREATE TABLE IF NOT EXISTS ore_dictionary_entry (
+  dataset_id TEXT NOT NULL REFERENCES dataset(dataset_id) ON DELETE CASCADE,
+  dictionary_name TEXT NOT NULL,
+  item_variant_id TEXT NOT NULL,
+  list_index INTEGER NOT NULL,
+  PRIMARY KEY (dataset_id, dictionary_name, item_variant_id),
+  FOREIGN KEY (dataset_id, dictionary_name)
+    REFERENCES ore_dictionary(dataset_id, dictionary_name)
+    ON DELETE CASCADE
 );
 
 CREATE TABLE IF NOT EXISTS fluid_container (
@@ -557,8 +567,10 @@ CREATE INDEX IF NOT EXISTS idx_nesql_recipe_lookup_target_order_recipe
   ON recipe_lookup_index (dataset_id, target_domain, target_id, lookup_kind, display_order, recipe_id, category_id);
 CREATE INDEX IF NOT EXISTS idx_nesql_recipe_lookup_target_kind_recipe
   ON recipe_lookup_index (dataset_id, target_id, lookup_kind, recipe_id);
-CREATE INDEX IF NOT EXISTS idx_nesql_ore_dictionary_group
-  ON ore_dictionary (dataset_id, group_id);
+CREATE INDEX IF NOT EXISTS idx_nesql_ore_dictionary_entry_item
+  ON ore_dictionary_entry (dataset_id, item_variant_id, dictionary_name);
+CREATE INDEX IF NOT EXISTS idx_nesql_ore_dictionary_entry_name_order
+  ON ore_dictionary_entry (dataset_id, dictionary_name, list_index, item_variant_id);
 CREATE INDEX IF NOT EXISTS idx_nesql_fluid_container_container
   ON fluid_container (dataset_id, container_item_variant_id);
 CREATE INDEX IF NOT EXISTS idx_nesql_fluid_container_empty
@@ -596,7 +608,6 @@ DROP VIEW IF EXISTS v_recipe_lookup_count;
 DROP VIEW IF EXISTS v_fluid_block_browser;
 DROP VIEW IF EXISTS v_item_aspect_browser;
 DROP VIEW IF EXISTS v_fluid_container_browser;
-DROP VIEW IF EXISTS v_item_ore_dictionary_name;
 DROP VIEW IF EXISTS v_mob_drop_browser;
 DROP VIEW IF EXISTS v_mob_mod_option;
 DROP VIEW IF EXISTS v_fluid_mod_option;
@@ -851,16 +862,6 @@ SELECT
   d.lootable,
   d.player_only
 FROM mob_drop d;
-
-CREATE OR REPLACE VIEW v_item_ore_dictionary_name AS
-SELECT DISTINCT
-  od.dataset_id,
-  ie.item_variant_id,
-  od.ore_name
-FROM ore_dictionary od
-JOIN ingredient_entry ie
-  ON ie.dataset_id = od.dataset_id
- AND ie.group_id = od.group_id;
 
 CREATE OR REPLACE VIEW v_fluid_container_browser AS
 SELECT
@@ -1231,7 +1232,7 @@ SELECT
   iv.item_id,
   i.mod_id,
   p.list_index,
-  lower(i.search_text || ' ' || iv.search_text || ' ' || i.mod_id || ' ' || coalesce(od.ore_names, '')) AS search_text
+  lower(i.search_text || ' ' || iv.search_text || ' ' || i.mod_id || ' ' || coalesce(od.dictionary_names, '')) AS search_text
 FROM item_list_entry p
 JOIN item_variant iv
   ON iv.dataset_id = p.dataset_id
@@ -1243,8 +1244,8 @@ LEFT JOIN (
   SELECT
     dataset_id,
     item_variant_id,
-    string_agg(DISTINCT ore_name, ' ') AS ore_names
-  FROM v_item_ore_dictionary_name
+    string_agg(DISTINCT dictionary_name, ' ') AS dictionary_names
+  FROM ore_dictionary_entry
   GROUP BY dataset_id, item_variant_id
 ) od
   ON od.dataset_id = p.dataset_id
