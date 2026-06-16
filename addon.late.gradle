@@ -1,0 +1,123 @@
+import java.lang.reflect.Modifier
+
+String hookServiceType = 'moe.takochan.webnei.exporter.engine.hook.IExportHook'
+def compileJavaTask = tasks.named('compileJava')
+def classesDirProvider = compileJavaTask.flatMap { task -> task.destinationDirectory }
+def generatedHookServicesDir = layout.buildDirectory.dir('generated/webnei-hook-services')
+def hookServiceClasspath = sourceSets.main.compileClasspath
+
+def hookClassName = { File classesDir, File classFile ->
+    String relativePath = classesDir.toPath()
+        .relativize(classFile.toPath())
+        .toString()
+        .replace(File.separatorChar, '/' as char)
+    relativePath.substring(0, relativePath.length() - '.class'.length())
+        .replace('/', '.')
+}
+
+def shouldSkipHookCandidate = { String serviceType, String className ->
+    className == serviceType
+        || className.contains('$')
+        || className.endsWith('package-info')
+        || className.endsWith('module-info')
+}
+
+def loadHookCandidate = { ClassLoader classLoader, String className ->
+    try {
+        Class.forName(className, false, classLoader)
+    } catch (ClassNotFoundException | LinkageError ignored) {
+        null
+    }
+}
+
+def isHookProvider = { Class<?> hookType, Class<?> candidate ->
+    int modifiers = candidate.modifiers
+    hookType.isAssignableFrom(candidate)
+        && !candidate.isInterface()
+        && !candidate.isEnum()
+        && !candidate.isAnnotation()
+        && !Modifier.isAbstract(modifiers)
+        && Modifier.isPublic(modifiers)
+}
+
+def validateHookProvider = { Class<?> provider ->
+    try {
+        provider.getConstructor()
+    } catch (NoSuchMethodException e) {
+        throw new GradleException(
+            "Hook provider ${provider.name} must declare a public no-arg constructor for ServiceLoader.",
+            e)
+    }
+}
+
+def writeHookServiceFile = { File serviceFile, List<String> providers ->
+    serviceFile.parentFile.mkdirs()
+    serviceFile.text = providers.isEmpty()
+        ? ''
+        : providers.join(System.lineSeparator()) + System.lineSeparator()
+}
+
+def generateHookServices = tasks.register('generateHookServices') {
+    group = 'webnei'
+    description = 'Generates ServiceLoader provider file for WebNEI export hooks.'
+
+    dependsOn compileJavaTask
+
+    inputs.dir(classesDirProvider)
+    inputs.files(hookServiceClasspath)
+        .withPropertyName('compileClasspath')
+        .withNormalizer(ClasspathNormalizer)
+    outputs.dir(generatedHookServicesDir)
+
+    doLast {
+        File classesDir = classesDirProvider.get().asFile
+        File serviceFile = generatedHookServicesDir.get()
+            .file("META-INF/services/${hookServiceType}")
+            .asFile
+
+        if (!classesDir.isDirectory()) {
+            writeHookServiceFile(serviceFile, [])
+            return
+        }
+
+        List<URL> urls = hookServiceClasspath.files.collect { File file -> file.toURI().toURL() }
+        urls.add(classesDir.toURI().toURL())
+        URL[] classpathUrls = urls.toArray(new URL[urls.size()])
+
+        List<String> providers = []
+        URLClassLoader classLoader = new URLClassLoader(classpathUrls, (ClassLoader) null)
+        try {
+            Class<?> hookType = classLoader.loadClass(hookServiceType)
+            classesDir.eachFileRecurse { File file ->
+                if (!file.isFile() || !file.name.endsWith('.class')) {
+                    return
+                }
+
+                String className = hookClassName(classesDir, file)
+                if (shouldSkipHookCandidate(hookServiceType, className)) {
+                    return
+                }
+
+                Class<?> candidate = loadHookCandidate(classLoader, className)
+                if (candidate == null || !isHookProvider(hookType, candidate)) {
+                    return
+                }
+
+                validateHookProvider(candidate)
+                providers.add(candidate.name)
+            }
+        } finally {
+            classLoader.close()
+        }
+
+        providers = providers.sort()
+        writeHookServiceFile(serviceFile, providers)
+        logger.lifecycle("Generated ${serviceFile} with ${providers.size()} hook provider(s)")
+    }
+}
+
+sourceSets.main.output.dir(generatedHookServicesDir, builtBy: generateHookServices)
+
+tasks.named('classes') {
+    dependsOn generateHookServices
+}
