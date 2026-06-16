@@ -60,7 +60,7 @@ public final class ItemRegistrar {
      * 首次遇到该 variant 时采集详情、执行 hook 补充、写入 store 并收集 tool class。
      */
     private ItemVariantRow ensureVariant(ItemIdentity itemIdentity, ItemVariantIdentity variantIdentity,
-                                         ItemStack stack) {
+        ItemStack stack) {
         ItemVariantRow existing = store.getVariant(variantIdentity.getItemVariantId());
         if (existing != null) {
             return existing;

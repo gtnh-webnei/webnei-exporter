@@ -27,7 +27,8 @@ public final class HookRegistry {
         for (Class<?> clazz : HookProviderDiscovery.scanAll()) {
             if (IExportHook.class.isAssignableFrom(clazz) && !clazz.isInterface() && !clazz.isEnum()) {
                 try {
-                    IExportHook hook = (IExportHook) clazz.getDeclaredConstructor().newInstance();
+                    IExportHook hook = (IExportHook) clazz.getDeclaredConstructor()
+                        .newInstance();
                     if (hook.isAvailable()) {
                         hooks.add(hook);
                     }

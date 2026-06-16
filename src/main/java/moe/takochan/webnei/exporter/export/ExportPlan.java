@@ -3,6 +3,7 @@ package moe.takochan.webnei.exporter.export;
 import lombok.Getter;
 import moe.takochan.webnei.exporter.domain.dataset.task.DatasetModExportTask;
 import moe.takochan.webnei.exporter.domain.item.task.ItemExportTask;
+import moe.takochan.webnei.exporter.domain.mod.task.ModExportTask;
 import moe.takochan.webnei.exporter.engine.task.IExportTask;
 
 /**
@@ -11,7 +12,7 @@ import moe.takochan.webnei.exporter.engine.task.IExportTask;
 @Getter
 public enum ExportPlan {
 
-    ALL("all", new DatasetModExportTask(), new ItemExportTask());
+    ALL("all", new DatasetModExportTask(), new ModExportTask(), new ItemExportTask());
 
     private final String id;
     private final IExportTask[] tasks;

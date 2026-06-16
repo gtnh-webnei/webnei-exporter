@@ -22,7 +22,8 @@ final class HookProviderDiscovery {
      * @return 扫描到的所有 class
      */
     static List<Class<?>> scanAll() {
-        String basePackage = WebneiExporterMod.class.getPackage().getName();
+        String basePackage = WebneiExporterMod.class.getPackage()
+            .getName();
         try {
             return scanPackage(basePackage);
         } catch (Exception e) {
@@ -39,7 +40,8 @@ final class HookProviderDiscovery {
      */
     private static List<Class<?>> scanPackage(String packageName) throws Exception {
         String path = packageName.replace('.', '/');
-        ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
+        ClassLoader classLoader = Thread.currentThread()
+            .getContextClassLoader();
         Enumeration<URL> resources = classLoader.getResources(path);
         List<Class<?>> classes = new ArrayList<>();
         while (resources.hasMoreElements()) {
@@ -66,14 +68,17 @@ final class HookProviderDiscovery {
         for (File file : files) {
             if (file.isDirectory()) {
                 scanDirectory(file, packageName + "." + file.getName(), classes);
-            } else if (file.getName().endsWith(".class")) {
-                String className = packageName + "." + file.getName().replace(".class", "");
-                try {
-                    classes.add(Class.forName(className));
-                } catch (ClassNotFoundException | NoClassDefFoundError ignored) {
-                    // mod 依赖不在时跳过
+            } else if (file.getName()
+                .endsWith(".class")) {
+                    String className = packageName + "."
+                        + file.getName()
+                            .replace(".class", "");
+                    try {
+                        classes.add(Class.forName(className));
+                    } catch (ClassNotFoundException | NoClassDefFoundError ignored) {
+                        // mod 依赖不在时跳过
+                    }
                 }
-            }
         }
     }
 }
