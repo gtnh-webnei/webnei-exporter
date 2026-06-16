@@ -9,7 +9,7 @@ import moe.takochan.webnei.exporter.engine.hook.IExportHook;
  * item variant 字段补充扩展点。
  *
  * <p>
- * 在 ItemRegistrar 完成基础字段采集后、写入 store 前被调用，用于从 mod 特有 API 提取额外字段写入 ItemVariantRow。
+ * 在 item store 完成基础字段采集后、写入 variant 前被调用，用于从 mod 特有 API 提取额外字段写入 ItemVariantRow。
  */
 public interface IItemVariantEnrichmentHook extends IExportHook {
 

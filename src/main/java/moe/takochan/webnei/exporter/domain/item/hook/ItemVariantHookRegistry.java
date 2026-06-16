@@ -7,7 +7,7 @@ import net.minecraft.item.ItemStack;
 import moe.takochan.webnei.exporter.domain.item.model.ItemVariantRow;
 import moe.takochan.webnei.exporter.engine.hook.HookRegistry;
 
-/** 持有所有可用的 item variant enrichment hook，由 ItemRegistrar 在注册 variant 时调用。 */
+/** 持有所有可用的 item variant enrichment hook，由 item store 在注册 variant 时调用。 */
 public final class ItemVariantHookRegistry {
 
     private final List<IItemVariantEnrichmentHook> hooks;
