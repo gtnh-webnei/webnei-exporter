@@ -92,29 +92,16 @@ CREATE TABLE IF NOT EXISTS fluid (
   registry_name TEXT NOT NULL,
   unlocalized_name TEXT NOT NULL,
   display_name TEXT NOT NULL,
+  chemical_expression TEXT NOT NULL DEFAULT '',
   search_text TEXT GENERATED ALWAYS AS (
-    lower(fluid_id || ' ' || display_name)
+    lower(fluid_id || ' ' || registry_name || ' ' || display_name || ' ' || chemical_expression)
   ) STORED,
-  runtime_fluid_id INTEGER NOT NULL,
   luminosity INTEGER NOT NULL,
   density INTEGER NOT NULL,
   temperature INTEGER NOT NULL,
   viscosity INTEGER NOT NULL,
   gaseous BOOLEAN NOT NULL,
   PRIMARY KEY (dataset_id, fluid_id)
-);
-
-CREATE TABLE IF NOT EXISTS fluid_variant (
-  dataset_id TEXT NOT NULL REFERENCES dataset(dataset_id) ON DELETE CASCADE,
-  fluid_variant_id TEXT NOT NULL,
-  fluid_id TEXT NOT NULL,
-  nbt_hash TEXT NOT NULL,
-  nbt_text TEXT NOT NULL,
-  chemical_expression TEXT NOT NULL DEFAULT '',
-  search_text TEXT GENERATED ALWAYS AS (
-    lower(fluid_variant_id || ' ' || fluid_id || ' ' || chemical_expression)
-  ) STORED,
-  PRIMARY KEY (dataset_id, fluid_variant_id)
 );
 
 CREATE TABLE IF NOT EXISTS mob (
@@ -249,9 +236,9 @@ CREATE TABLE IF NOT EXISTS ingredient_entry (
   dataset_id TEXT NOT NULL REFERENCES dataset(dataset_id) ON DELETE CASCADE,
   group_id TEXT NOT NULL,
   item_variant_id TEXT NOT NULL,
-  fluid_variant_id TEXT NOT NULL,
+  fluid_id TEXT NOT NULL,
   amount INTEGER NOT NULL,
-  PRIMARY KEY (dataset_id, group_id, item_variant_id, fluid_variant_id, amount)
+  PRIMARY KEY (dataset_id, group_id, item_variant_id, fluid_id, amount)
 );
 
 CREATE TABLE IF NOT EXISTS recipe_slot (
@@ -261,7 +248,7 @@ CREATE TABLE IF NOT EXISTS recipe_slot (
   slot_index INTEGER NOT NULL,
   group_id TEXT NOT NULL,
   item_variant_id TEXT NOT NULL,
-  fluid_variant_id TEXT NOT NULL,
+  fluid_id TEXT NOT NULL,
   amount INTEGER NOT NULL,
   probability DOUBLE PRECISION NOT NULL,
   slot_group_key TEXT NOT NULL DEFAULT '',
@@ -316,18 +303,18 @@ CREATE TABLE IF NOT EXISTS ore_dictionary_entry (
 
 CREATE TABLE IF NOT EXISTS fluid_container (
   dataset_id TEXT NOT NULL REFERENCES dataset(dataset_id) ON DELETE CASCADE,
-  fluid_variant_id TEXT NOT NULL,
+  fluid_id TEXT NOT NULL,
   amount INTEGER NOT NULL,
   container_item_variant_id TEXT NOT NULL,
   empty_container_item_variant_id TEXT NOT NULL,
-  PRIMARY KEY (dataset_id, fluid_variant_id, amount, container_item_variant_id, empty_container_item_variant_id)
+  PRIMARY KEY (dataset_id, fluid_id, amount, container_item_variant_id, empty_container_item_variant_id)
 );
 
 CREATE TABLE IF NOT EXISTS fluid_block (
   dataset_id TEXT NOT NULL REFERENCES dataset(dataset_id) ON DELETE CASCADE,
-  fluid_variant_id TEXT NOT NULL,
+  fluid_id TEXT NOT NULL,
   block_item_variant_id TEXT NOT NULL,
-  PRIMARY KEY (dataset_id, fluid_variant_id, block_item_variant_id)
+  PRIMARY KEY (dataset_id, fluid_id, block_item_variant_id)
 );
 
 -- Generic recipe metadata (EAV). Any mod's extra recipe data lives here as
@@ -454,7 +441,7 @@ CREATE TABLE IF NOT EXISTS quest_task_fluid (
   dataset_id TEXT NOT NULL REFERENCES dataset(dataset_id) ON DELETE CASCADE,
   task_id TEXT NOT NULL,
   list_index INTEGER NOT NULL,
-  fluid_variant_id TEXT NOT NULL,
+  fluid_id TEXT NOT NULL,
   amount INTEGER NOT NULL,
   PRIMARY KEY (dataset_id, task_id, list_index)
 );
@@ -525,12 +512,8 @@ CREATE INDEX IF NOT EXISTS idx_item_list_entry_order
   ON item_list_entry (dataset_id, list_index);
 CREATE INDEX IF NOT EXISTS idx_nesql_fluid_mod_registry
   ON fluid (dataset_id, mod_id, registry_name);
-CREATE INDEX IF NOT EXISTS idx_nesql_fluid_variant_fluid
-  ON fluid_variant (dataset_id, fluid_id);
 CREATE INDEX IF NOT EXISTS idx_nesql_fluid_search_trgm
   ON fluid USING gin (search_text gin_trgm_ops);
-CREATE INDEX IF NOT EXISTS idx_nesql_fluid_variant_search_trgm
-  ON fluid_variant USING gin (search_text gin_trgm_ops);
 CREATE INDEX IF NOT EXISTS idx_nesql_mob_mod_entity
   ON mob (dataset_id, mod_id, entity_name);
 CREATE INDEX IF NOT EXISTS idx_nesql_mob_variant_mob
@@ -552,7 +535,7 @@ CREATE INDEX IF NOT EXISTS idx_nesql_recipe_source_map
 CREATE INDEX IF NOT EXISTS idx_nesql_ingredient_entry_item
   ON ingredient_entry (dataset_id, item_variant_id, group_id);
 CREATE INDEX IF NOT EXISTS idx_nesql_ingredient_entry_fluid
-  ON ingredient_entry (dataset_id, fluid_variant_id, group_id);
+  ON ingredient_entry (dataset_id, fluid_id, group_id);
 CREATE INDEX IF NOT EXISTS idx_nesql_ingredient_entry_group
   ON ingredient_entry (dataset_id, group_id);
 CREATE INDEX IF NOT EXISTS idx_nesql_recipe_slot_group
@@ -560,7 +543,7 @@ CREATE INDEX IF NOT EXISTS idx_nesql_recipe_slot_group
 CREATE INDEX IF NOT EXISTS idx_nesql_recipe_slot_item
   ON recipe_slot (dataset_id, item_variant_id, role);
 CREATE INDEX IF NOT EXISTS idx_nesql_recipe_slot_fluid
-  ON recipe_slot (dataset_id, fluid_variant_id, role);
+  ON recipe_slot (dataset_id, fluid_id, role);
 CREATE INDEX IF NOT EXISTS idx_nesql_recipe_slot_metadata_recipe
   ON recipe_slot_metadata (dataset_id, recipe_id);
 CREATE INDEX IF NOT EXISTS idx_nesql_recipe_lookup_target_order_recipe
@@ -729,33 +712,28 @@ LEFT JOIN mod m
 
 CREATE OR REPLACE VIEW v_fluid_ref AS
 SELECT
-  fv.dataset_id,
-  fv.fluid_variant_id,
-  fv.fluid_id,
+  f.dataset_id,
+  f.fluid_id,
   f.mod_id,
   COALESCE(m.name, f.mod_id) AS mod_name,
   f.display_name,
   f.gaseous,
   f.temperature,
   a.path AS asset_path
-FROM fluid_variant fv
-JOIN fluid f
-  ON f.dataset_id = fv.dataset_id
- AND f.fluid_id = fv.fluid_id
+FROM fluid f
 LEFT JOIN mod m
   ON m.dataset_id = f.dataset_id
  AND m.mod_id = f.mod_id
 LEFT JOIN asset a
-  ON a.dataset_id = fv.dataset_id
- AND a.owner_type = 'fluid_variant'
- AND a.owner_id = fv.fluid_variant_id
+  ON a.dataset_id = f.dataset_id
+ AND a.owner_type = 'fluid'
+ AND a.owner_id = f.fluid_id
  AND a.kind = 'fluid_icon';
 
 CREATE OR REPLACE VIEW v_fluid_detail AS
 SELECT
-  fv.dataset_id,
-  fv.fluid_variant_id,
-  fv.fluid_id,
+  f.dataset_id,
+  f.fluid_id,
   f.mod_id,
   COALESCE(m.name, f.mod_id) AS mod_name,
   f.registry_name,
@@ -766,22 +744,16 @@ SELECT
   f.temperature,
   f.viscosity,
   f.luminosity,
-  f.runtime_fluid_id,
-  fv.nbt_text,
-  fv.chemical_expression
-FROM fluid_variant fv
-JOIN fluid f
-  ON f.dataset_id = fv.dataset_id
- AND f.fluid_id = fv.fluid_id
+  f.chemical_expression
+FROM fluid f
 LEFT JOIN mod m
   ON m.dataset_id = f.dataset_id
  AND m.mod_id = f.mod_id;
 
 CREATE OR REPLACE VIEW v_fluid_list AS
 SELECT
-  fv.dataset_id,
-  fv.fluid_variant_id,
-  fv.fluid_id,
+  f.dataset_id,
+  f.fluid_id,
   f.mod_id,
   COALESCE(m.name, f.mod_id) AS mod_name,
   f.registry_name,
@@ -792,17 +764,14 @@ SELECT
   f.viscosity,
   f.luminosity,
   a.path AS asset_path
-FROM fluid_variant fv
-JOIN fluid f
-  ON f.dataset_id = fv.dataset_id
- AND f.fluid_id = fv.fluid_id
+FROM fluid f
 LEFT JOIN mod m
   ON m.dataset_id = f.dataset_id
  AND m.mod_id = f.mod_id
 LEFT JOIN asset a
-  ON a.dataset_id = fv.dataset_id
- AND a.owner_type = 'fluid_variant'
- AND a.owner_id = fv.fluid_variant_id
+  ON a.dataset_id = f.dataset_id
+ AND a.owner_type = 'fluid'
+ AND a.owner_id = f.fluid_id
  AND a.kind = 'fluid_icon';
 
 CREATE OR REPLACE VIEW v_mob_variant_browser AS
@@ -866,7 +835,7 @@ FROM mob_drop d;
 CREATE OR REPLACE VIEW v_fluid_container_browser AS
 SELECT
   fc.dataset_id,
-  fc.fluid_variant_id,
+  fc.fluid_id,
   fc.container_item_variant_id,
   fc.empty_container_item_variant_id,
   fc.amount
@@ -895,7 +864,7 @@ LEFT JOIN v_item_ref iv
 CREATE OR REPLACE VIEW v_fluid_block_browser AS
 SELECT
   fb.dataset_id,
-  fb.fluid_variant_id,
+  fb.fluid_id,
   fb.block_item_variant_id
 FROM fluid_block fb;
 
@@ -992,7 +961,7 @@ SELECT
   qi.list_index,
   qi.group_id,
   COALESCE(ie.item_variant_id, '') AS item_variant_id,
-  COALESCE(ie.fluid_variant_id, '') AS fluid_variant_id,
+  COALESCE(ie.fluid_id, '') AS fluid_id,
   COALESCE(ie.amount, 0) AS amount,
   COALESCE(iv.display_name, fv.display_name) AS display_name,
   COALESCE(iv.mod_id, fv.mod_id) AS mod_id,
@@ -1007,7 +976,7 @@ LEFT JOIN v_item_ref iv
  AND iv.item_variant_id = ie.item_variant_id
 LEFT JOIN v_fluid_ref fv
   ON fv.dataset_id = ie.dataset_id
- AND fv.fluid_variant_id = ie.fluid_variant_id;
+ AND fv.fluid_id = ie.fluid_id;
 
 CREATE OR REPLACE VIEW v_quest_reward_item_browser AS
 SELECT
@@ -1016,7 +985,7 @@ SELECT
   qi.list_index,
   qi.group_id,
   COALESCE(ie.item_variant_id, '') AS item_variant_id,
-  COALESCE(ie.fluid_variant_id, '') AS fluid_variant_id,
+  COALESCE(ie.fluid_id, '') AS fluid_id,
   COALESCE(ie.amount, 0) AS amount,
   COALESCE(iv.display_name, fv.display_name) AS display_name,
   COALESCE(iv.mod_id, fv.mod_id) AS mod_id,
@@ -1031,7 +1000,7 @@ LEFT JOIN v_item_ref iv
  AND iv.item_variant_id = ie.item_variant_id
 LEFT JOIN v_fluid_ref fv
   ON fv.dataset_id = ie.dataset_id
- AND fv.fluid_variant_id = ie.fluid_variant_id;
+ AND fv.fluid_id = ie.fluid_id;
 
 CREATE OR REPLACE VIEW v_recipe_category_base AS
 SELECT
@@ -1165,11 +1134,10 @@ SELECT
   r.category_id,
   rs.role,
   rs.slot_index,
-  COALESCE(NULLIF(rs.fluid_variant_id, ''), ie.fluid_variant_id) AS fluid_variant_id,
-  CASE WHEN rs.fluid_variant_id <> '' THEN rs.amount ELSE ie.amount END AS amount,
+  COALESCE(NULLIF(rs.fluid_id, ''), ie.fluid_id) AS fluid_id,
+  CASE WHEN rs.fluid_id <> '' THEN rs.amount ELSE ie.amount END AS amount,
   rs.probability,
   rs.group_id,
-  fv.fluid_id,
   fv.display_name,
   fv.asset_path
 FROM recipe_slot rs
@@ -1179,11 +1147,11 @@ JOIN recipe r
 LEFT JOIN ingredient_entry ie
   ON ie.dataset_id = rs.dataset_id
  AND ie.group_id = rs.group_id
- AND ie.fluid_variant_id <> ''
+ AND ie.fluid_id <> ''
 LEFT JOIN v_fluid_ref fv
   ON fv.dataset_id = rs.dataset_id
- AND fv.fluid_variant_id = COALESCE(NULLIF(rs.fluid_variant_id, ''), ie.fluid_variant_id)
-WHERE rs.fluid_variant_id <> '' OR ie.fluid_variant_id <> '';
+ AND fv.fluid_id = COALESCE(NULLIF(rs.fluid_id, ''), ie.fluid_id)
+WHERE rs.fluid_id <> '' OR ie.fluid_id <> '';
 
 CREATE OR REPLACE VIEW v_recipe_slot_browser AS
 SELECT
@@ -1198,7 +1166,7 @@ SELECT
   rs.slot_group_key,
   rs.slot_group_order,
   NULLIF(rs.item_variant_id, '') AS item_variant_id,
-  NULLIF(rs.fluid_variant_id, '') AS fluid_variant_id
+  NULLIF(rs.fluid_id, '') AS fluid_id
 FROM recipe_slot rs
 JOIN recipe r
   ON r.dataset_id = rs.dataset_id
@@ -1220,9 +1188,9 @@ SELECT
   recipe_id,
   category_id,
   'fluid' AS target_domain,
-  fluid_variant_id AS target_id,
+  fluid_id AS target_id,
   display_name AS display_name,
-  lower(coalesce(display_name, '') || ' ' || coalesce(fluid_variant_id, '')) AS search_text
+  lower(coalesce(display_name, '') || ' ' || coalesce(fluid_id, '')) AS search_text
 FROM v_recipe_fluid_slot;
 
 CREATE MATERIALIZED VIEW IF NOT EXISTS item_search_document AS
@@ -1263,22 +1231,18 @@ CREATE INDEX IF NOT EXISTS idx_nesql_item_search_document_trgm
 
 CREATE MATERIALIZED VIEW IF NOT EXISTS fluid_search_document AS
 SELECT
-  fv.dataset_id,
-  fv.fluid_variant_id,
-  fv.fluid_id,
+  f.dataset_id,
+  f.fluid_id,
   f.mod_id,
   f.display_name,
-  lower(f.search_text || ' ' || fv.search_text || ' ' || f.mod_id) AS search_text
-FROM fluid_variant fv
-JOIN fluid f
-  ON f.dataset_id = fv.dataset_id
- AND f.fluid_id = fv.fluid_id
+  lower(f.search_text || ' ' || f.mod_id) AS search_text
+FROM fluid f
 WITH DATA;
 
 CREATE UNIQUE INDEX IF NOT EXISTS idx_nesql_fluid_search_document_unique
-  ON fluid_search_document (dataset_id, fluid_variant_id);
+  ON fluid_search_document (dataset_id, fluid_id);
 CREATE INDEX IF NOT EXISTS idx_nesql_fluid_search_document_order
-  ON fluid_search_document (dataset_id, mod_id, display_name, fluid_variant_id);
+  ON fluid_search_document (dataset_id, mod_id, display_name, fluid_id);
 CREATE INDEX IF NOT EXISTS idx_nesql_fluid_search_document_trgm
   ON fluid_search_document USING gin (search_text gin_trgm_ops);
 
@@ -1336,15 +1300,12 @@ LEFT JOIN (
   SELECT
     rs.dataset_id,
     rs.recipe_id,
-    fv.search_text || ' ' || f.search_text AS search_text
+    f.search_text AS search_text
   FROM recipe_slot rs
-  JOIN fluid_variant fv
-    ON fv.dataset_id = rs.dataset_id
-   AND fv.fluid_variant_id = rs.fluid_variant_id
   JOIN fluid f
-    ON f.dataset_id = fv.dataset_id
-   AND f.fluid_id = fv.fluid_id
-  WHERE rs.fluid_variant_id <> ''
+    ON f.dataset_id = rs.dataset_id
+   AND f.fluid_id = rs.fluid_id
+  WHERE rs.fluid_id <> ''
 
   UNION ALL
 
@@ -1370,19 +1331,16 @@ LEFT JOIN (
   SELECT
     rs.dataset_id,
     rs.recipe_id,
-    fv.search_text || ' ' || f.search_text AS search_text
+    f.search_text AS search_text
   FROM recipe_slot rs
   JOIN ingredient_entry ie
     ON ie.dataset_id = rs.dataset_id
    AND ie.group_id = rs.group_id
-  JOIN fluid_variant fv
-    ON fv.dataset_id = ie.dataset_id
-   AND fv.fluid_variant_id = ie.fluid_variant_id
   JOIN fluid f
-    ON f.dataset_id = fv.dataset_id
-   AND f.fluid_id = fv.fluid_id
+    ON f.dataset_id = ie.dataset_id
+   AND f.fluid_id = ie.fluid_id
   WHERE rs.group_id <> ''
-    AND ie.fluid_variant_id <> ''
+    AND ie.fluid_id <> ''
 ) part
   ON part.dataset_id = r.dataset_id
  AND part.recipe_id = r.recipe_id
@@ -1528,7 +1486,7 @@ CREATE TABLE IF NOT EXISTS diagram_slot_entry (
   entry_index INTEGER NOT NULL,
   component_type TEXT NOT NULL,
   item_variant_id TEXT NOT NULL DEFAULT '',
-  fluid_variant_id TEXT NOT NULL DEFAULT '',
+  fluid_id TEXT NOT NULL DEFAULT '',
   stack_size INTEGER NOT NULL DEFAULT 0,
   additional_info TEXT NOT NULL DEFAULT '',
   tooltip_text TEXT NOT NULL DEFAULT '',
@@ -1568,14 +1526,14 @@ CREATE TABLE IF NOT EXISTS diagram_match (
   recipe_type TEXT NOT NULL,
   component_type TEXT NOT NULL,
   item_variant_id TEXT NOT NULL DEFAULT '',
-  fluid_variant_id TEXT NOT NULL DEFAULT '',
-  PRIMARY KEY (dataset_id, group_id, diagram_id, recipe_type, component_type, item_variant_id, fluid_variant_id)
+  fluid_id TEXT NOT NULL DEFAULT '',
+  PRIMARY KEY (dataset_id, group_id, diagram_id, recipe_type, component_type, item_variant_id, fluid_id)
 );
 
 CREATE INDEX IF NOT EXISTS idx_nesql_diagram_match_item
   ON diagram_match (dataset_id, item_variant_id, recipe_type);
 CREATE INDEX IF NOT EXISTS idx_nesql_diagram_match_fluid
-  ON diagram_match (dataset_id, fluid_variant_id, recipe_type);
+  ON diagram_match (dataset_id, fluid_id, recipe_type);
 CREATE INDEX IF NOT EXISTS idx_nesql_diagram_by_group
   ON diagram (dataset_id, group_id, display_order);
 
@@ -1673,7 +1631,6 @@ CREATE TABLE IF NOT EXISTS gt_ore_small_dimension (
 CREATE TABLE IF NOT EXISTS gt_underground_fluid (
   dataset_id TEXT NOT NULL REFERENCES dataset(dataset_id) ON DELETE CASCADE,
   fluid_id TEXT NOT NULL,
-  fluid_variant_id TEXT NOT NULL DEFAULT '',
   dimension TEXT NOT NULL,
   chance INTEGER NOT NULL DEFAULT 0,
   min_amount INTEGER NOT NULL DEFAULT 0,
@@ -1736,7 +1693,6 @@ CREATE OR REPLACE VIEW v_gt_underground_fluid_browser AS
 SELECT
   uf.dataset_id,
   uf.fluid_id,
-  uf.fluid_variant_id,
   uf.dimension,
   uf.chance,
   uf.min_amount,
@@ -1751,7 +1707,7 @@ SELECT
 FROM gt_underground_fluid uf
 LEFT JOIN v_fluid_ref fv
   ON fv.dataset_id = uf.dataset_id
- AND fv.fluid_variant_id = uf.fluid_variant_id
+ AND fv.fluid_id = uf.fluid_id
 LEFT JOIN gt_dimension_display dd
   ON dd.dataset_id = uf.dataset_id
  AND dd.dimension = uf.dimension;
