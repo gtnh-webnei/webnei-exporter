@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.Map;
 
 import moe.takochan.webnei.exporter.bundle.record.mapper.DatasetRecordSetMapper;
+import moe.takochan.webnei.exporter.bundle.record.mapper.FluidRecordSetMapper;
 import moe.takochan.webnei.exporter.bundle.record.mapper.ItemRecordSetMapper;
 import moe.takochan.webnei.exporter.bundle.record.mapper.ModRecordSetMapper;
 import moe.takochan.webnei.exporter.bundle.record.mapper.OreDictionaryRecordSetMapper;
@@ -31,6 +32,7 @@ public final class BundleRecordSetMapperRegistry {
         mappers.add(new DatasetRecordSetMapper());
         mappers.add(new ModRecordSetMapper());
         mappers.add(new ItemRecordSetMapper());
+        mappers.add(new FluidRecordSetMapper());
         mappers.add(new OreDictionaryRecordSetMapper());
         return new BundleRecordSetMapperRegistry(mappers);
     }
