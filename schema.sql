@@ -305,16 +305,15 @@ CREATE TABLE IF NOT EXISTS fluid_container (
   dataset_id TEXT NOT NULL REFERENCES dataset(dataset_id) ON DELETE CASCADE,
   fluid_id TEXT NOT NULL,
   amount INTEGER NOT NULL,
-  container_item_variant_id TEXT NOT NULL,
-  empty_container_item_variant_id TEXT NOT NULL,
-  PRIMARY KEY (dataset_id, fluid_id, amount, container_item_variant_id, empty_container_item_variant_id)
+  item_variant_id TEXT NOT NULL,
+  PRIMARY KEY (dataset_id, fluid_id, item_variant_id)
 );
 
 CREATE TABLE IF NOT EXISTS fluid_block (
   dataset_id TEXT NOT NULL REFERENCES dataset(dataset_id) ON DELETE CASCADE,
   fluid_id TEXT NOT NULL,
-  block_item_variant_id TEXT NOT NULL,
-  PRIMARY KEY (dataset_id, fluid_id, block_item_variant_id)
+  item_variant_id TEXT NOT NULL,
+  PRIMARY KEY (dataset_id, fluid_id, item_variant_id)
 );
 
 -- Generic recipe metadata (EAV). Any mod's extra recipe data lives here as
@@ -510,8 +509,8 @@ CREATE INDEX IF NOT EXISTS idx_nesql_item_variant_search_trgm
   ON item_variant USING gin (search_text gin_trgm_ops);
 CREATE INDEX IF NOT EXISTS idx_item_list_entry_order
   ON item_list_entry (dataset_id, list_index);
-CREATE INDEX IF NOT EXISTS idx_nesql_fluid_mod_registry
-  ON fluid (dataset_id, mod_id, registry_name);
+CREATE INDEX IF NOT EXISTS idx_nesql_fluid_mod_display
+  ON fluid (dataset_id, mod_id, display_name, fluid_id);
 CREATE INDEX IF NOT EXISTS idx_nesql_fluid_search_trgm
   ON fluid USING gin (search_text gin_trgm_ops);
 CREATE INDEX IF NOT EXISTS idx_nesql_mob_mod_entity
@@ -554,12 +553,12 @@ CREATE INDEX IF NOT EXISTS idx_nesql_ore_dictionary_entry_item
   ON ore_dictionary_entry (dataset_id, item_variant_id, dictionary_name);
 CREATE INDEX IF NOT EXISTS idx_nesql_ore_dictionary_entry_name_order
   ON ore_dictionary_entry (dataset_id, dictionary_name, list_index, item_variant_id);
-CREATE INDEX IF NOT EXISTS idx_nesql_fluid_container_container
-  ON fluid_container (dataset_id, container_item_variant_id);
-CREATE INDEX IF NOT EXISTS idx_nesql_fluid_container_empty
-  ON fluid_container (dataset_id, empty_container_item_variant_id);
+CREATE INDEX IF NOT EXISTS idx_nesql_fluid_container_fluid_order
+  ON fluid_container (dataset_id, fluid_id, amount, item_variant_id);
+CREATE INDEX IF NOT EXISTS idx_nesql_fluid_container_item
+  ON fluid_container (dataset_id, item_variant_id, fluid_id);
 CREATE INDEX IF NOT EXISTS idx_nesql_fluid_block_item
-  ON fluid_block (dataset_id, block_item_variant_id);
+  ON fluid_block (dataset_id, item_variant_id, fluid_id);
 CREATE INDEX IF NOT EXISTS idx_nesql_recipe_metadata_key
   ON recipe_metadata (dataset_id, metadata_key);
 CREATE INDEX IF NOT EXISTS idx_nesql_recipe_metadata_recipe
@@ -836,8 +835,7 @@ CREATE OR REPLACE VIEW v_fluid_container_browser AS
 SELECT
   fc.dataset_id,
   fc.fluid_id,
-  fc.container_item_variant_id,
-  fc.empty_container_item_variant_id,
+  fc.item_variant_id,
   fc.amount
 FROM fluid_container fc;
 
@@ -865,7 +863,7 @@ CREATE OR REPLACE VIEW v_fluid_block_browser AS
 SELECT
   fb.dataset_id,
   fb.fluid_id,
-  fb.block_item_variant_id
+  fb.item_variant_id
 FROM fluid_block fb;
 
 CREATE OR REPLACE VIEW v_recipe_lookup_count AS
