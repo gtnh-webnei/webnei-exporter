@@ -26,8 +26,7 @@ public final class OreDictionaryExportTask implements IExportTask {
     @Override
     public void execute(ExportTaskContext context) {
         String datasetId = context.store(DatasetDomainStore.class)
-            .row()
-            .getDatasetId();
+            .datasetId();
         ItemDomainStore itemStore = context.store(ItemDomainStore.class);
 
         OreDictionaryDomainStore oreStore = new OreDictionaryDomainStore(datasetId);

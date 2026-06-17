@@ -36,8 +36,7 @@ public final class ModExportTask implements IExportTask {
     @Override
     public void execute(ExportTaskContext context) {
         String datasetId = context.store(DatasetDomainStore.class)
-            .row()
-            .getDatasetId();
+            .datasetId();
 
         ModDomainStore store = new ModDomainStore();
         ModRegistrar registrar = new ModRegistrar(store, datasetId);

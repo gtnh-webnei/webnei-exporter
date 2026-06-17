@@ -39,7 +39,8 @@ public final class ForgeItemIdentityResolver {
 
         // fallback：正常情况下 Forge GameRegistry 应能取得 UniqueIdentifier；命中此分支说明存在特殊物品或注册表解析异常。
         String itemId = String.valueOf(Item.itemRegistry.getNameForObject(item));
-        WebneiExporterMod.LOG.warn("Unexpected fallback to itemRegistry name for item identity: item={}, itemId={}", item, itemId);
+        WebneiExporterMod.LOG
+            .warn("Unexpected fallback to itemRegistry name for item identity: item={}, itemId={}", item, itemId);
         int separator = itemId.indexOf(':');
         if (separator > 0) {
             return new ItemIdentity(itemId, itemId.substring(0, separator), itemId.substring(separator + 1));
@@ -51,7 +52,7 @@ public final class ForgeItemIdentityResolver {
      * 基于已解析的物品身份解析 ItemStack 的稳定变体身份，避免调用方重复解析 item。
      *
      * @param stack 待解析的物品堆
-     * @param item 已解析的物品身份
+     * @param item  已解析的物品身份
      * @return 包含 itemId、damage、NBT hash 和 NBT 文本的物品变体身份
      */
     public ItemVariantIdentity resolveVariant(ItemStack stack, ItemIdentity item) {
