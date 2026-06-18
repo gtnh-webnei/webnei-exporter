@@ -2,6 +2,7 @@ package moe.takochan.webnei.exporter.domain.fluid.model;
 
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
+import lombok.Setter;
 
 /** fluid 表行：registry fluid 维度的基础字段。 */
 @Getter
@@ -26,8 +27,9 @@ public final class FluidRow {
     /** 当前语言环境下的显示名称，保留 Minecraft 格式码。 */
     private final String displayName;
 
-    /** 由 fluid domain 或后续 hook 补充的化学式；未知时为空。 */
-    private final String chemicalExpression;
+    /** 由 fluid hook 补充的化学式；未知时为空。 */
+    @Setter
+    private String chemicalExpression = "";
 
     /** 流体发光等级。 */
     private final int luminosity;

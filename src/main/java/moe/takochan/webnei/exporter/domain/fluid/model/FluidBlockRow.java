@@ -3,7 +3,7 @@ package moe.takochan.webnei.exporter.domain.fluid.model;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
-/** fluid_block 表行：流体与对应方块 item variant 的关联。 */
+/** fluid_block 表行：流体与游戏内 Block 的关联。 */
 @Getter
 @RequiredArgsConstructor
 public final class FluidBlockRow {
@@ -14,6 +14,6 @@ public final class FluidBlockRow {
     /** 对应的 fluid 稳定 ID。 */
     private final String fluidId;
 
-    /** 表示该流体方块的 item variant ID。 */
+    /** 流体在世界中的 Block 对应 item variant ID。 */
     private final String itemVariantId;
 }
