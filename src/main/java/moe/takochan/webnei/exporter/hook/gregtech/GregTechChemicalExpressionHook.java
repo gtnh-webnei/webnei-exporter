@@ -1,16 +1,19 @@
 package moe.takochan.webnei.exporter.hook.gregtech;
 
 import net.minecraft.item.ItemStack;
+import net.minecraftforge.fluids.FluidStack;
 
 import cpw.mods.fml.common.Loader;
 import gregtech.api.enums.Mods;
+import moe.takochan.webnei.exporter.domain.fluid.hook.IFluidEnrichmentHook;
+import moe.takochan.webnei.exporter.domain.fluid.model.FluidRow;
 import moe.takochan.webnei.exporter.domain.item.hook.IItemVariantEnrichmentHook;
 import moe.takochan.webnei.exporter.domain.item.model.ItemVariantRow;
 
 /**
  * 当 GregTech 加载时，从 GT/GT++/BartWorks 材料系统提取化学式写入 chemical_expression。
  */
-public final class GregTechChemicalExpressionHook implements IItemVariantEnrichmentHook {
+public final class GregTechChemicalExpressionHook implements IItemVariantEnrichmentHook, IFluidEnrichmentHook {
 
     /**
      * 检查 GregTech 是否已加载。
@@ -31,6 +34,20 @@ public final class GregTechChemicalExpressionHook implements IItemVariantEnrichm
     @Override
     public void enrich(ItemStack stack, ItemVariantRow row) {
         String expression = GregTechChemicalExpressionExtractor.itemExpression(stack);
+        if (!expression.isEmpty()) {
+            row.setChemicalExpression(expression);
+        }
+    }
+
+    /**
+     * 提取 FluidStack 对应材料的化学式并写入 row。
+     *
+     * @param stack 当前正在注册的 FluidStack
+     * @param row   基础字段已填充的 fluid 行
+     */
+    @Override
+    public void enrich(FluidStack stack, FluidRow row) {
+        String expression = GregTechChemicalExpressionExtractor.fluidExpression(stack);
         if (!expression.isEmpty()) {
             row.setChemicalExpression(expression);
         }

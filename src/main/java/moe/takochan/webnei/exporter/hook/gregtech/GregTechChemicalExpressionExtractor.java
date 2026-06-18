@@ -3,6 +3,7 @@ package moe.takochan.webnei.exporter.hook.gregtech;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.EnumChatFormatting;
+import net.minecraftforge.fluids.FluidStack;
 
 import bartworks.system.material.BWItemMetaGeneratedBlock;
 import bartworks.system.material.BWMetaGeneratedItems;
@@ -15,6 +16,7 @@ import gregtech.api.objects.ItemData;
 import gregtech.api.util.GTOreDictUnificator;
 import gregtech.api.util.StringUtils;
 import gregtech.common.blocks.ItemOres;
+import gregtech.common.items.ItemFluidDisplay;
 import gtPlusPlus.core.item.base.BaseItemComponent;
 import gtPlusPlus.core.item.base.ore.BaseOreComponent;
 import gtPlusPlus.core.material.Material;
@@ -46,6 +48,20 @@ final class GregTechChemicalExpressionExtractor {
             return gregTechOre;
         }
         return gregTechItemExpression(stack);
+    }
+
+    /**
+     * 从 GT fluid display API 获取流体化学式。
+     *
+     * @param stack 当前正在注册的 FluidStack
+     * @return 化学式，未识别时为空字符串
+     */
+    static String fluidExpression(FluidStack stack) {
+        try {
+            return clean(ItemFluidDisplay.getChemicalFormula(stack));
+        } catch (Throwable ignored) {
+            return "";
+        }
     }
 
     /**
