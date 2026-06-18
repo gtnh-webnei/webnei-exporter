@@ -1,7 +1,10 @@
 package moe.takochan.webnei.exporter.domain.fluid.store;
 
+import java.util.Map;
+
 import net.minecraft.item.ItemStack;
 import net.minecraftforge.fluids.Fluid;
+import net.minecraftforge.fluids.FluidStack;
 
 import moe.takochan.webnei.exporter.domain.IExportModel;
 import moe.takochan.webnei.exporter.domain.fluid.internal.FluidDomainData;
@@ -27,6 +30,11 @@ public final class FluidDomainStore implements IDomainStore {
     /** 获取 fluid 对应行；不存在时补齐 fluid 基础字段并挂接其方块、容器关系。 */
     public FluidRow getOrRegisterFluid(Fluid fluid) {
         return data.getOrRegisterFluid(fluid);
+    }
+
+    /** 返回已注册 fluid 对应的代表 FluidStack，供后续图标渲染使用。 */
+    public Map<String, FluidStack> stacks() {
+        return data.stacks();
     }
 
     /**

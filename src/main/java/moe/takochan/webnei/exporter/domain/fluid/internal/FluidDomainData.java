@@ -1,6 +1,7 @@
 package moe.takochan.webnei.exporter.domain.fluid.internal;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
@@ -30,6 +31,7 @@ public final class FluidDomainData {
     private final FluidBlockCollector blockCollector;
     private final FluidContainerCollector containerCollector;
     private final Map<String, FluidRow> fluids = new LinkedHashMap<>();
+    private final Map<String, FluidStack> stacks = new LinkedHashMap<>();
     private final Map<String, FluidContainerRow> containers = new LinkedHashMap<>();
     private final Map<String, FluidBlockRow> blocks = new LinkedHashMap<>();
 
@@ -45,11 +47,18 @@ public final class FluidDomainData {
         if (existing != null) {
             return existing;
         }
-        FluidRow row = detailCollector.collect(datasetId, identity, new FluidStack(fluid, 1));
+        FluidStack stack = new FluidStack(fluid, 1);
+        FluidRow row = detailCollector.collect(datasetId, identity, stack);
         fluids.put(identity.getFluidId(), row);
+        stacks.put(identity.getFluidId(), stack);
         addBlock(row.getFluidId(), fluid);
         addContainers(row.getFluidId(), fluid);
         return row;
+    }
+
+    /** 返回已注册 fluid 对应的代表 FluidStack。 */
+    public Map<String, FluidStack> stacks() {
+        return Collections.unmodifiableMap(stacks);
     }
 
     /**
