@@ -1,8 +1,9 @@
-package moe.takochan.webnei.exporter.bundle.tsv;
+package moe.takochan.webnei.exporter.bundle.pgsql;
 
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 import moe.takochan.webnei.exporter.bundle.BundleContext;
@@ -18,22 +19,24 @@ import moe.takochan.webnei.exporter.bundle.record.IBundleRecordSetMapper;
 import moe.takochan.webnei.exporter.domain.ExportModelSet;
 import moe.takochan.webnei.exporter.domain.IExportModel;
 
-/** 把领域中间模型写成 TSV bundle。 */
-public final class TsvBundleWriter implements IBundleWriter {
+/** 把领域中间模型写成 PostgreSQL 数据导入脚本。 */
+public final class PgsqlBundleWriter implements IBundleWriter {
+
+    private static final String OUTPUT_FILE_NAME = "pgsql_data.sql";
 
     private final BundleRecordSetMapperRegistry mapperRegistry;
 
-    public TsvBundleWriter() {
+    public PgsqlBundleWriter() {
         this(BundleRecordSetMapperRegistry.defaults());
     }
 
-    public TsvBundleWriter(BundleRecordSetMapperRegistry mapperRegistry) {
+    public PgsqlBundleWriter(BundleRecordSetMapperRegistry mapperRegistry) {
         this.mapperRegistry = mapperRegistry;
     }
 
     @Override
     public BundleFormat format() {
-        return BundleFormat.TSV;
+        return BundleFormat.PGSQL;
     }
 
     @Override
@@ -44,16 +47,15 @@ public final class TsvBundleWriter implements IBundleWriter {
             throw new BundleException("Unable to create bundle directory: " + outputDirectory.getAbsolutePath());
         }
 
-        List<String> files = new ArrayList<>();
-        for (BundleRecordSet recordSet : recordSets(models.getModels())) {
-            File file = new File(outputDirectory, recordSet.getName() + ".tsv");
-            writeRecordSet(recordSet, file);
-            files.add(file.getAbsolutePath());
+        File file = new File(outputDirectory, OUTPUT_FILE_NAME);
+        try {
+            new PgsqlScriptWriter().write(recordSets(models.getModels()), file);
+        } catch (IOException e) {
+            throw new BundleException("Unable to write PostgreSQL script: " + file.getAbsolutePath(), e);
         }
-        return BundleResult.success(format(), files);
+        return BundleResult.success(format(), Collections.singletonList(file.getAbsolutePath()));
     }
 
-    /** 将所有 model 映射成 bundle record set。 */
     private List<BundleRecordSet> recordSets(List<IExportModel> models) throws BundleException {
         List<BundleRecordSet> recordSets = new ArrayList<>();
         for (IExportModel model : models) {
@@ -64,17 +66,5 @@ public final class TsvBundleWriter implements IBundleWriter {
             recordSets.addAll(mapper.recordSetsFor(model));
         }
         return recordSets;
-    }
-
-    /** 写出单个 TSV 文件。 */
-    private static void writeRecordSet(BundleRecordSet recordSet, File file) throws BundleException {
-        try (TsvRowWriter writer = new TsvRowWriter(file)) {
-            writer.writeRow(recordSet.getFields());
-            for (List<String> record : recordSet.getRecords()) {
-                writer.writeRow(record);
-            }
-        } catch (IOException e) {
-            throw new BundleException("Unable to write TSV file: " + file.getAbsolutePath(), e);
-        }
     }
 }

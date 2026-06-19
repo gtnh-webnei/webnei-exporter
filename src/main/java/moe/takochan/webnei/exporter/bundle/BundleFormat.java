@@ -5,7 +5,8 @@ import java.util.Locale;
 /** bundle writer 支持的输出格式。 */
 public enum BundleFormat {
 
-    TSV;
+    TSV,
+    PGSQL;
 
     /** 未显式传入格式时使用的默认输出格式。 */
     private static final BundleFormat DEFAULT = TSV;
