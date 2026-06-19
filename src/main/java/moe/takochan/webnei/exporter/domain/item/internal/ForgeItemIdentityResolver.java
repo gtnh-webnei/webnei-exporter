@@ -60,7 +60,7 @@ public final class ForgeItemIdentityResolver {
         int damage = Items.feather.getDamage(stack);
         String nbtText = StableNbtText.of(stack.getTagCompound());
         String nbtHash = StableHash.shortHash(nbtText);
-        String itemVariantId = item.getItemId() + "@" + damage + (nbtHash.isEmpty() ? "" : "~" + nbtHash);
+        String itemVariantId = item.getItemId() + "@" + damage + (nbtHash.isEmpty() ? "" : "#" + nbtHash);
         return new ItemVariantIdentity(itemVariantId, item.getItemId(), damage, nbtHash, nbtText);
     }
 }

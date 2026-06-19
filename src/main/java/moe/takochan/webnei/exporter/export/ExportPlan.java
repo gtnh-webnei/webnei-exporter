@@ -1,6 +1,7 @@
 package moe.takochan.webnei.exporter.export;
 
 import lombok.Getter;
+import moe.takochan.webnei.exporter.domain.asset.task.AssetExportTask;
 import moe.takochan.webnei.exporter.domain.dataset.task.DatasetModExportTask;
 import moe.takochan.webnei.exporter.domain.fluid.task.FluidExportTask;
 import moe.takochan.webnei.exporter.domain.item.task.ItemExportTask;
@@ -14,8 +15,16 @@ import moe.takochan.webnei.exporter.engine.task.IExportTask;
 @Getter
 public enum ExportPlan {
 
-    ALL("all", new DatasetModExportTask(), new ModExportTask(), new ItemExportTask(), new FluidExportTask(),
-        new OreDictionaryExportTask());
+    // spotless:off
+    ALL("all",
+        new DatasetModExportTask(),
+        new ModExportTask(),
+        new ItemExportTask(),
+        new FluidExportTask(),
+        new OreDictionaryExportTask(),
+        new AssetExportTask()
+    );
+    // spotless:on
 
     private final String id;
     private final IExportTask[] tasks;
