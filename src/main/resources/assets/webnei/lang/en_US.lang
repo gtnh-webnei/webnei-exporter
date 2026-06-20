@@ -16,6 +16,7 @@ webnei.task.items=Item export
 webnei.task.items.description=Export item, item_variant, item_tool_class, and NEI item panel entry.
 webnei.task.fluids=Fluid export
 webnei.task.fluids.description=Export fluid, fluid_container, and fluid_block data.
+webnei.task.recipes=Recipe export
 webnei.task.assets=Asset export
 webnei.task.handlers=Handler scan
 webnei.task.handlers.description=Export NEI handler registrations and category mapping.

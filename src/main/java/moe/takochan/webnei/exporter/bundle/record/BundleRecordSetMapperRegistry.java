@@ -12,6 +12,7 @@ import moe.takochan.webnei.exporter.bundle.record.mapper.FluidRecordSetMapper;
 import moe.takochan.webnei.exporter.bundle.record.mapper.ItemRecordSetMapper;
 import moe.takochan.webnei.exporter.bundle.record.mapper.ModRecordSetMapper;
 import moe.takochan.webnei.exporter.bundle.record.mapper.OreDictionaryRecordSetMapper;
+import moe.takochan.webnei.exporter.bundle.record.mapper.RecipeRecordSetMapper;
 import moe.takochan.webnei.exporter.domain.IExportModel;
 
 /** bundle record set mapper 注册表。 */
@@ -35,6 +36,7 @@ public final class BundleRecordSetMapperRegistry {
         mappers.add(new ItemRecordSetMapper());
         mappers.add(new FluidRecordSetMapper());
         mappers.add(new OreDictionaryRecordSetMapper());
+        mappers.add(new RecipeRecordSetMapper());
         mappers.add(new AssetRecordSetMapper());
         return new BundleRecordSetMapperRegistry(mappers);
     }

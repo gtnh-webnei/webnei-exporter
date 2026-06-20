@@ -7,6 +7,7 @@ import moe.takochan.webnei.exporter.domain.fluid.task.FluidExportTask;
 import moe.takochan.webnei.exporter.domain.item.task.ItemExportTask;
 import moe.takochan.webnei.exporter.domain.mod.task.ModExportTask;
 import moe.takochan.webnei.exporter.domain.oredictionary.task.OreDictionaryExportTask;
+import moe.takochan.webnei.exporter.domain.recipe.task.RecipeExportTask;
 import moe.takochan.webnei.exporter.engine.task.IExportTask;
 
 /**
@@ -22,6 +23,7 @@ public enum ExportPlan {
         new ItemExportTask(),
         new FluidExportTask(),
         new OreDictionaryExportTask(),
+        new RecipeExportTask(),
         new AssetExportTask()
     );
     // spotless:on
