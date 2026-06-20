@@ -29,15 +29,21 @@ public final class AssetRenderJob {
     }
 
     public static AssetRenderJob itemIcon(String datasetId, String itemVariantId, ItemStack stack) {
-        ItemStack copy = stack.copy();
-        copy.stackSize = 1;
-        return new AssetRenderJob(
+        return itemStackIcon(
             datasetId,
             AssetContract.OWNER_TYPE_ITEM_VARIANT,
             itemVariantId,
             AssetContract.KIND_ITEM_ICON,
-            copy,
-            null);
+            stack);
+    }
+
+    public static AssetRenderJob recipeCategoryIcon(String datasetId, String categoryId, ItemStack stack) {
+        return itemStackIcon(
+            datasetId,
+            AssetContract.OWNER_TYPE_RECIPE_CATEGORY,
+            categoryId,
+            AssetContract.KIND_RECIPE_CATEGORY_ICON,
+            stack);
     }
 
     public static AssetRenderJob fluidIcon(String datasetId, String fluidId, FluidStack stack) {
@@ -52,5 +58,12 @@ public final class AssetRenderJob {
 
     public String key() {
         return ownerType + KEY_SEPARATOR + ownerId + KEY_SEPARATOR + kind;
+    }
+
+    private static AssetRenderJob itemStackIcon(String datasetId, String ownerType, String ownerId, String kind,
+        ItemStack stack) {
+        ItemStack copy = stack.copy();
+        copy.stackSize = 1;
+        return new AssetRenderJob(datasetId, ownerType, ownerId, kind, copy, null);
     }
 }

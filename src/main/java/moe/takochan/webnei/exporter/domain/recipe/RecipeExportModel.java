@@ -1,12 +1,22 @@
 package moe.takochan.webnei.exporter.domain.recipe;
 
-import moe.takochan.webnei.exporter.domain.IExportModel;
+import java.util.Collections;
+import java.util.List;
 
-/** recipe 数据域中间模型。 */
+import lombok.Getter;
+import moe.takochan.webnei.exporter.domain.IExportModel;
+import moe.takochan.webnei.exporter.domain.recipe.model.RecipeCategoryRow;
+
+@Getter
 public final class RecipeExportModel implements IExportModel {
 
-    /** 模型类型标识，供 bundle writer 选择具体映射逻辑。 */
     public static final String TYPE = "recipe";
+
+    private final List<RecipeCategoryRow> categories;
+
+    public RecipeExportModel(List<RecipeCategoryRow> categories) {
+        this.categories = Collections.unmodifiableList(categories);
+    }
 
     @Override
     public String type() {

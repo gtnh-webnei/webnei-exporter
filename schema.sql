@@ -133,36 +133,8 @@ CREATE TABLE IF NOT EXISTS mob_variant (
 CREATE TABLE IF NOT EXISTS recipe_category (
   dataset_id TEXT NOT NULL REFERENCES dataset(dataset_id) ON DELETE CASCADE,
   category_id TEXT NOT NULL,
-  plugin TEXT NOT NULL,
-  handler_id TEXT NOT NULL,
   display_name TEXT NOT NULL,
-  shapeless BOOLEAN NOT NULL,
-  icon_info TEXT NOT NULL,
-  item_input_width INTEGER NOT NULL,
-  item_input_height INTEGER NOT NULL,
-  fluid_input_width INTEGER NOT NULL,
-  fluid_input_height INTEGER NOT NULL,
-  item_output_width INTEGER NOT NULL,
-  item_output_height INTEGER NOT NULL,
-  fluid_output_width INTEGER NOT NULL,
-  fluid_output_height INTEGER NOT NULL,
-  supports_recipe_lookup BOOLEAN NOT NULL,
-  supports_usage_lookup BOOLEAN NOT NULL,
-  display_order INTEGER NOT NULL,
-  mod_id TEXT NOT NULL DEFAULT '',
-  mod_name TEXT NOT NULL DEFAULT '',
-  handler_class TEXT NOT NULL DEFAULT '',
-  handler_canvas_width INTEGER NOT NULL DEFAULT 0,
-  handler_canvas_height INTEGER NOT NULL DEFAULT 0,
-  handler_y_shift INTEGER NOT NULL DEFAULT 0,
-  handler_multiple_widgets_allowed BOOLEAN NOT NULL DEFAULT FALSE,
-  icon_image_resource TEXT NOT NULL DEFAULT '',
-  icon_image_x INTEGER NOT NULL DEFAULT 0,
-  icon_image_y INTEGER NOT NULL DEFAULT 0,
-  icon_image_width INTEGER NOT NULL DEFAULT 0,
-  icon_image_height INTEGER NOT NULL DEFAULT 0,
-  icon_image_texture_width INTEGER NOT NULL DEFAULT 0,
-  icon_image_texture_height INTEGER NOT NULL DEFAULT 0,
+  mod_id TEXT NOT NULL,
   PRIMARY KEY (dataset_id, category_id)
 );
 
@@ -519,12 +491,6 @@ CREATE INDEX IF NOT EXISTS idx_nesql_mob_mod_entity
   ON mob (dataset_id, mod_id, entity_name);
 CREATE INDEX IF NOT EXISTS idx_nesql_mob_variant_mob
   ON mob_variant (dataset_id, mob_id);
-CREATE INDEX IF NOT EXISTS idx_nesql_recipe_category_plugin_order
-  ON recipe_category (dataset_id, plugin, display_order);
-CREATE INDEX IF NOT EXISTS idx_nesql_recipe_category_display_order
-  ON recipe_category (dataset_id, display_order, category_id);
-CREATE INDEX IF NOT EXISTS idx_nesql_recipe_category_handler
-  ON recipe_category (dataset_id, handler_id);
 CREATE INDEX IF NOT EXISTS idx_nesql_recipe_category_applicable_item_item
   ON recipe_category_applicable_item (dataset_id, item_variant_id, category_id);
 CREATE INDEX IF NOT EXISTS idx_nesql_recipe_category_applicable_item_order
@@ -1006,41 +972,17 @@ CREATE OR REPLACE VIEW v_recipe_category_base AS
 SELECT
   rc.dataset_id,
   rc.category_id,
-  rc.plugin,
-  rc.handler_id,
   rc.display_name,
-  rc.shapeless,
-  '' AS icon_display_name,
-  rendered_icon.path AS icon_asset_path,
-  rc.icon_info,
-  rc.item_input_width,
-  rc.item_input_height,
-  rc.fluid_input_width,
-  rc.fluid_input_height,
-  rc.item_output_width,
-  rc.item_output_height,
-  rc.fluid_output_width,
-  rc.fluid_output_height,
-  rc.supports_recipe_lookup,
-  rc.supports_usage_lookup,
-  rc.display_order,
   rc.mod_id,
-  rc.mod_name,
-  rc.handler_class,
-  rc.handler_canvas_width,
-  rc.handler_canvas_height,
-  rc.handler_y_shift,
-  rc.handler_multiple_widgets_allowed,
-  rc.icon_image_resource,
-  rc.icon_image_x,
-  rc.icon_image_y,
-  rc.icon_image_width,
-  rc.icon_image_height,
-  rc.icon_image_texture_width,
-  rc.icon_image_texture_height,
+  COALESCE(m.name, '') AS mod_name,
+  rendered_icon.path AS icon_asset_path,
+  rendered_background.path AS background_asset_path,
   rcl.canvas_width,
   rcl.canvas_height
 FROM recipe_category rc
+LEFT JOIN mod m
+  ON m.dataset_id = rc.dataset_id
+ AND m.mod_id = rc.mod_id
 LEFT JOIN recipe_category_layout rcl
   ON rcl.dataset_id = rc.dataset_id
  AND rcl.category_id = rc.category_id
@@ -1048,7 +990,12 @@ LEFT JOIN asset rendered_icon
   ON rendered_icon.dataset_id = rc.dataset_id
  AND rendered_icon.owner_type = 'recipe_category'
  AND rendered_icon.owner_id = rc.category_id
- AND rendered_icon.kind = 'recipe_category_icon';
+ AND rendered_icon.kind = 'recipe_category_icon'
+LEFT JOIN asset rendered_background
+  ON rendered_background.dataset_id = rc.dataset_id
+ AND rendered_background.owner_type = 'recipe_category'
+ AND rendered_background.owner_id = rc.category_id
+ AND rendered_background.kind = 'recipe_handler_background';
 
 CREATE OR REPLACE VIEW v_recipe_category_counts AS
 SELECT
@@ -1092,14 +1039,15 @@ SELECT
   r.source_ref,
   r.description,
   r.display_order,
-  rc.handler_id,
-  rc.plugin,
   rc.mod_id,
-  rc.mod_name
+  COALESCE(m.name, '') AS mod_name
 FROM recipe r
 JOIN recipe_category rc
   ON rc.dataset_id = r.dataset_id
- AND rc.category_id = r.category_id;
+ AND rc.category_id = r.category_id
+LEFT JOIN mod m
+  ON m.dataset_id = rc.dataset_id
+ AND m.mod_id = rc.mod_id;
 
 CREATE OR REPLACE VIEW v_recipe_item_slot AS
 SELECT
@@ -1362,18 +1310,14 @@ SELECT
   rli.lookup_kind,
   rli.recipe_id,
   r.category_id,
-  rc.handler_id,
   MIN(rli.display_order) AS display_order,
   r.display_order AS recipe_display_order
 FROM recipe_lookup_index rli
 JOIN recipe r
   ON r.dataset_id = rli.dataset_id
  AND r.recipe_id = rli.recipe_id
-JOIN recipe_category rc
-  ON rc.dataset_id = r.dataset_id
- AND rc.category_id = r.category_id
 GROUP BY rli.dataset_id, rli.target_domain, rli.target_id, rli.lookup_kind,
-         rli.recipe_id, r.category_id, rc.handler_id, r.display_order;
+         rli.recipe_id, r.category_id, r.display_order;
 
 CREATE OR REPLACE VIEW v_recipe_category_applicable_item_browser AS
 SELECT
@@ -1426,19 +1370,16 @@ SELECT
   l.dataset_id,
   l.target_id,
   l.lookup_kind,
-  l.handler_id,
   l.category_id,
   c.display_name,
   c.icon_asset_path,
-  c.icon_image_resource,
-  c.display_order,
   COUNT(DISTINCT l.recipe_id) AS recipe_count
 FROM v_recipe_lookup_recipe_browser l
 JOIN v_recipe_category_browser c
   ON c.dataset_id = l.dataset_id
  AND c.category_id = l.category_id
-GROUP BY l.dataset_id, l.target_id, l.lookup_kind, l.handler_id, l.category_id,
-         c.display_name, c.icon_asset_path, c.icon_image_resource, c.display_order;
+GROUP BY l.dataset_id, l.target_id, l.lookup_kind, l.category_id,
+         c.display_name, c.icon_asset_path;
 
 -- NEI Custom Diagram tables
 CREATE TABLE IF NOT EXISTS diagram_group (

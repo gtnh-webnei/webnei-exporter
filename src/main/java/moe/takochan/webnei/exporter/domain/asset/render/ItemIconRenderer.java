@@ -22,13 +22,13 @@ public final class ItemIconRenderer implements IAssetRenderer {
 
     @Override
     public boolean supports(AssetRenderJob job) {
-        return AssetContract.KIND_ITEM_ICON.equals(job.getKind()) && job.getItemStack() != null;
+        return isItemStackIcon(job) && job.getItemStack() != null;
     }
 
     @Override
     public AssetRenderResult render(final AssetRenderJob job, File outputDirectory) throws AssetRenderException {
         final ItemStack stack = job.getItemStack();
-        String relativePath = AssetPath.itemIcon(job.getOwnerId());
+        String relativePath = relativePath(job);
         File outputFile = new File(outputDirectory, relativePath);
 
         RenderedIcon icon = AssetRenderDispatcher.INSTANCE.call(() -> renderIcon(stack));
@@ -36,6 +36,18 @@ public final class ItemIconRenderer implements IAssetRenderer {
         String sha256 = PngAssetFile.write(icon.image, outputFile);
         return AssetRenderResult
             .png(relativePath, sha256, icon.image.getWidth(), icon.image.getHeight(), icon.metadataJson);
+    }
+
+    private static boolean isItemStackIcon(AssetRenderJob job) {
+        return AssetContract.KIND_ITEM_ICON.equals(job.getKind())
+            || AssetContract.KIND_RECIPE_CATEGORY_ICON.equals(job.getKind());
+    }
+
+    private static String relativePath(AssetRenderJob job) {
+        if (AssetContract.KIND_RECIPE_CATEGORY_ICON.equals(job.getKind())) {
+            return AssetPath.recipeCategoryIcon(job.getOwnerId());
+        }
+        return AssetPath.itemIcon(job.getOwnerId());
     }
 
     private RenderedIcon renderIcon(ItemStack stack) throws AssetRenderException {
