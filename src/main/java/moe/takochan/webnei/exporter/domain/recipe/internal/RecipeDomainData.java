@@ -11,6 +11,8 @@ import net.minecraft.item.ItemStack;
 import codechicken.nei.recipe.IRecipeHandler;
 import moe.takochan.webnei.exporter.domain.IExportModel;
 import moe.takochan.webnei.exporter.domain.recipe.RecipeExportModel;
+import moe.takochan.webnei.exporter.domain.recipe.hook.RecipeCategoryCandidate;
+import moe.takochan.webnei.exporter.domain.recipe.hook.RecipeCategoryHookRegistry;
 import moe.takochan.webnei.exporter.domain.recipe.model.RecipeCategoryRow;
 
 public final class RecipeDomainData {
@@ -18,6 +20,8 @@ public final class RecipeDomainData {
     private final String datasetId;
 
     private final RecipeCategoryIdentityResolver identityResolver = new RecipeCategoryIdentityResolver();
+
+    private final RecipeCategoryHookRegistry recipeCategoryHooks = new RecipeCategoryHookRegistry();
 
     /**
      * 按 handler key 去重保存分类身份，并保持 NEI 扫描顺序。
@@ -39,6 +43,13 @@ public final class RecipeDomainData {
      */
     public void register(IRecipeHandler handler) {
         RecipeCategoryIdentity identity = identityResolver.resolve(handler);
+        RecipeCategoryCandidate candidate = new RecipeCategoryCandidate(
+            identity.getBaseCategoryId(),
+            identity.getModId(),
+            identity.getDisplayName());
+        if (recipeCategoryHooks.shouldSkip(candidate)) {
+            return;
+        }
         identitiesByHandlerKey.putIfAbsent(identity.getHandlerKey(), identity);
     }
 
