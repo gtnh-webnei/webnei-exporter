@@ -6,6 +6,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
+import moe.takochan.webnei.exporter.bundle.AssetBundlePreparer;
 import moe.takochan.webnei.exporter.bundle.BundleContext;
 import moe.takochan.webnei.exporter.bundle.BundleException;
 import moe.takochan.webnei.exporter.bundle.BundleFormat;
@@ -25,13 +26,19 @@ public final class PgsqlBundleWriter implements IBundleWriter {
     private static final String OUTPUT_FILE_NAME = "pgsql_data.sql";
 
     private final BundleRecordSetMapperRegistry mapperRegistry;
+    private final AssetBundlePreparer assetBundlePreparer;
 
     public PgsqlBundleWriter() {
-        this(BundleRecordSetMapperRegistry.defaults());
+        this(BundleRecordSetMapperRegistry.defaults(), new AssetBundlePreparer());
     }
 
     public PgsqlBundleWriter(BundleRecordSetMapperRegistry mapperRegistry) {
+        this(mapperRegistry, new AssetBundlePreparer());
+    }
+
+    public PgsqlBundleWriter(BundleRecordSetMapperRegistry mapperRegistry, AssetBundlePreparer assetBundlePreparer) {
         this.mapperRegistry = mapperRegistry;
+        this.assetBundlePreparer = assetBundlePreparer;
     }
 
     @Override
@@ -47,9 +54,10 @@ public final class PgsqlBundleWriter implements IBundleWriter {
             throw new BundleException("Unable to create bundle directory: " + outputDirectory.getAbsolutePath());
         }
 
+        ExportModelSet preparedModels = assetBundlePreparer.prepare(models, outputDirectory);
         File file = new File(outputDirectory, OUTPUT_FILE_NAME);
         try {
-            new PgsqlScriptWriter().write(recordSets(models.getModels()), file);
+            new PgsqlScriptWriter().write(recordSets(preparedModels.getModels()), file);
         } catch (IOException e) {
             throw new BundleException("Unable to write PostgreSQL script: " + file.getAbsolutePath(), e);
         }

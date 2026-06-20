@@ -1,0 +1,56 @@
+package moe.takochan.webnei.exporter.domain.asset.render;
+
+import net.minecraft.item.ItemStack;
+import net.minecraftforge.fluids.FluidStack;
+
+import lombok.Getter;
+import moe.takochan.webnei.exporter.domain.asset.AssetContract;
+
+@Getter
+public final class AssetRenderJob {
+
+    private static final char KEY_SEPARATOR = '\u0000';
+
+    private final String datasetId;
+    private final String ownerType;
+    private final String ownerId;
+    private final String kind;
+    private final ItemStack itemStack;
+    private final FluidStack fluidStack;
+
+    private AssetRenderJob(String datasetId, String ownerType, String ownerId, String kind, ItemStack itemStack,
+        FluidStack fluidStack) {
+        this.datasetId = datasetId;
+        this.ownerType = ownerType;
+        this.ownerId = ownerId;
+        this.kind = kind;
+        this.itemStack = itemStack;
+        this.fluidStack = fluidStack;
+    }
+
+    public static AssetRenderJob itemIcon(String datasetId, String itemVariantId, ItemStack stack) {
+        ItemStack copy = stack.copy();
+        copy.stackSize = 1;
+        return new AssetRenderJob(
+            datasetId,
+            AssetContract.OWNER_TYPE_ITEM_VARIANT,
+            itemVariantId,
+            AssetContract.KIND_ITEM_ICON,
+            copy,
+            null);
+    }
+
+    public static AssetRenderJob fluidIcon(String datasetId, String fluidId, FluidStack stack) {
+        return new AssetRenderJob(
+            datasetId,
+            AssetContract.OWNER_TYPE_FLUID,
+            fluidId,
+            AssetContract.KIND_FLUID_ICON,
+            null,
+            stack.copy());
+    }
+
+    public String key() {
+        return ownerType + KEY_SEPARATOR + ownerId + KEY_SEPARATOR + kind;
+    }
+}

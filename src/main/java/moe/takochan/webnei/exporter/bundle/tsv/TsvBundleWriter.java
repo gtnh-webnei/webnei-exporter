@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
+import moe.takochan.webnei.exporter.bundle.AssetBundlePreparer;
 import moe.takochan.webnei.exporter.bundle.BundleContext;
 import moe.takochan.webnei.exporter.bundle.BundleException;
 import moe.takochan.webnei.exporter.bundle.BundleFormat;
@@ -22,13 +23,19 @@ import moe.takochan.webnei.exporter.domain.IExportModel;
 public final class TsvBundleWriter implements IBundleWriter {
 
     private final BundleRecordSetMapperRegistry mapperRegistry;
+    private final AssetBundlePreparer assetBundlePreparer;
 
     public TsvBundleWriter() {
-        this(BundleRecordSetMapperRegistry.defaults());
+        this(BundleRecordSetMapperRegistry.defaults(), new AssetBundlePreparer());
     }
 
     public TsvBundleWriter(BundleRecordSetMapperRegistry mapperRegistry) {
+        this(mapperRegistry, new AssetBundlePreparer());
+    }
+
+    public TsvBundleWriter(BundleRecordSetMapperRegistry mapperRegistry, AssetBundlePreparer assetBundlePreparer) {
         this.mapperRegistry = mapperRegistry;
+        this.assetBundlePreparer = assetBundlePreparer;
     }
 
     @Override
@@ -44,8 +51,9 @@ public final class TsvBundleWriter implements IBundleWriter {
             throw new BundleException("Unable to create bundle directory: " + outputDirectory.getAbsolutePath());
         }
 
+        ExportModelSet preparedModels = assetBundlePreparer.prepare(models, outputDirectory);
         List<String> files = new ArrayList<>();
-        for (BundleRecordSet recordSet : recordSets(models.getModels())) {
+        for (BundleRecordSet recordSet : recordSets(preparedModels.getModels())) {
             File file = new File(outputDirectory, recordSet.getName() + ".tsv");
             writeRecordSet(recordSet, file);
             files.add(file.getAbsolutePath());

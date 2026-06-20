@@ -33,9 +33,11 @@ CREATE TABLE IF NOT EXISTS asset (
   owner_id TEXT NOT NULL,
   kind TEXT NOT NULL,
   path TEXT NOT NULL,
+  media_type TEXT NOT NULL,
   sha256 TEXT NOT NULL,
   width INTEGER NOT NULL,
   height INTEGER NOT NULL,
+  metadata_json TEXT NOT NULL,
   PRIMARY KEY (dataset_id, owner_type, owner_id, kind)
 );
 

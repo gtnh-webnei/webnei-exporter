@@ -3,7 +3,7 @@ package moe.takochan.webnei.exporter.domain.asset.model;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
-/** asset 表行：资源文件与其 owning domain 对象的最小关联。 */
+/** asset 表行：资源文件与其 owning domain 对象的关联。 */
 @Getter
 @RequiredArgsConstructor
 public final class AssetRow {
@@ -23,7 +23,10 @@ public final class AssetRow {
     /** bundle 内资源相对路径。 */
     private final String path;
 
-    /** 资源文件 SHA-256；尚未渲染文件时为空。 */
+    /** MIME 类型。 */
+    private final String mediaType;
+
+    /** 资源文件 SHA-256。 */
     private final String sha256;
 
     /** 图片宽度。 */
@@ -31,4 +34,7 @@ public final class AssetRow {
 
     /** 图片高度。 */
     private final int height;
+
+    /** 扩展元信息 JSON；静态图标为 {}。 */
+    private final String metadataJson;
 }
