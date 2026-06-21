@@ -5,7 +5,7 @@ public final class AssetPath {
     private static final char NAMESPACE_SEPARATOR = ':';
     private static final String CATEGORY_ITEM = "item";
     private static final String CATEGORY_FLUID = "fluid";
-    private static final String CATEGORY_RECIPE = "recipe_category";
+    private static final String CATEGORY_RECIPE = "category";
     private static final String ITEM_DAMAGE_SEPARATOR = "@";
     private static final String ITEM_NBT_SEPARATOR = "#";
     private static final String PATH_DAMAGE_SEPARATOR = "_m_";

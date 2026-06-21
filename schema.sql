@@ -979,12 +979,12 @@ LEFT JOIN recipe_category_layout rcl
  AND rcl.category_id = rc.category_id
 LEFT JOIN asset rendered_icon
   ON rendered_icon.dataset_id = rc.dataset_id
- AND rendered_icon.owner_type = 'recipe_category'
+ AND rendered_icon.owner_type = 'category'
  AND rendered_icon.owner_id = rc.category_id
  AND rendered_icon.kind = 'recipe_category_icon'
 LEFT JOIN asset rendered_background
   ON rendered_background.dataset_id = rc.dataset_id
- AND rendered_background.owner_type = 'recipe_category'
+ AND rendered_background.owner_type = 'category'
  AND rendered_background.owner_id = rc.category_id
  AND rendered_background.kind = 'recipe_handler_background';
 
