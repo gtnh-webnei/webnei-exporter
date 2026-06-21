@@ -28,6 +28,7 @@ import moe.takochan.webnei.exporter.domain.asset.render.AssetRenderException;
 public final class DynamicTextureState {
 
     private static final int MAX_FRAME_COUNT = 512;
+    private static final String ANGELICA_INTERPOLATED_ICON_CLASS = "jss.notfine.render.InterpolatedIcon";
     private static final Field FRAME_COUNTER = ReflectionHelper
         .findField(TextureAtlasSprite.class, "frameCounter", "field_110973_g");
     private static final Field TICK_COUNTER = ReflectionHelper
@@ -178,8 +179,8 @@ public final class DynamicTextureState {
         }
         String className = sprite.getClass()
             .getName();
+        boolean angelicaInterpolatedIcon = ANGELICA_INTERPOLATED_ICON_CLASS.equals(className);
         if (className.contains("TextureSpecial") || className.contains("TextureFX")
-            || className.contains("InterpolatedIcon")
             || className.contains("Compass")
             || className.contains("Locator")) {
             return false;
@@ -187,7 +188,7 @@ public final class DynamicTextureState {
         try {
             Method updateAnimation = sprite.getClass()
                 .getMethod("updateAnimation");
-            if (updateAnimation.getDeclaringClass() != TextureAtlasSprite.class) {
+            if (updateAnimation.getDeclaringClass() != TextureAtlasSprite.class && !angelicaInterpolatedIcon) {
                 return false;
             }
             return animationMetadata(sprite) != null && sprite.getFrameCount() > 1;

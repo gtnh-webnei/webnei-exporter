@@ -38,9 +38,9 @@ public final class FluidIconRenderer implements IAssetRenderer {
             }
         });
 
-        String sha256 = PngAssetFile.write(image, outputFile);
+        PngAssetFile.write(image, outputFile);
         return AssetRenderResult
-            .png(relativePath, sha256, image.getWidth(), image.getHeight(), AssetRenderMetadata.staticImage());
+            .png(relativePath, image.getWidth(), image.getHeight(), AssetRenderMetadata.staticImage());
     }
 
     private BufferedImage renderFluid(final FluidStack stack) throws AssetRenderException {

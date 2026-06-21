@@ -20,7 +20,6 @@ public final class AssetRecordSetMapper implements IBundleRecordSetMapper<AssetE
         .field("kind", AssetRow::getKind)
         .field("path", AssetRow::getPath)
         .field("media_type", AssetRow::getMediaType)
-        .field("sha256", AssetRow::getSha256)
         .field("width", AssetRow::getWidth)
         .field("height", AssetRow::getHeight)
         .field("metadata_json", AssetRow::getMetadataJson);

@@ -10,11 +10,10 @@ final class PngAssetFile {
 
     private PngAssetFile() {}
 
-    static String write(BufferedImage image, File file) throws AssetRenderException {
+    static void write(BufferedImage image, File file) throws AssetRenderException {
         ensureParent(file);
         try {
             ImageIO.write(image, "png", file);
-            return ImageFileHasher.sha256(file);
         } catch (IOException e) {
             throw new AssetRenderException("Unable to write PNG: " + file.getAbsolutePath(), e);
         }

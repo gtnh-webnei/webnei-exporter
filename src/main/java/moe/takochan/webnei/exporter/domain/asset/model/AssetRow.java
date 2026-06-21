@@ -26,9 +26,6 @@ public final class AssetRow {
     /** MIME 类型。 */
     private final String mediaType;
 
-    /** 资源文件 SHA-256。 */
-    private final String sha256;
-
     /** 图片宽度。 */
     private final int width;
 

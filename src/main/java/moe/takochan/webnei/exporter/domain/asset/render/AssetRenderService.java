@@ -63,7 +63,6 @@ public final class AssetRenderService {
             job.getKind(),
             result.getPath(),
             result.getMediaType(),
-            result.getSha256(),
             result.getWidth(),
             result.getHeight(),
             result.getMetadataJson());

@@ -33,9 +33,8 @@ public final class ItemIconRenderer implements IAssetRenderer {
 
         RenderedIcon icon = AssetRenderDispatcher.INSTANCE.call(() -> renderIcon(stack));
 
-        String sha256 = PngAssetFile.write(icon.image, outputFile);
-        return AssetRenderResult
-            .png(relativePath, sha256, icon.image.getWidth(), icon.image.getHeight(), icon.metadataJson);
+        PngAssetFile.write(icon.image, outputFile);
+        return AssetRenderResult.png(relativePath, icon.image.getWidth(), icon.image.getHeight(), icon.metadataJson);
     }
 
     private static boolean isItemStackIcon(AssetRenderJob job) {

@@ -34,7 +34,6 @@ CREATE TABLE IF NOT EXISTS asset (
   kind TEXT NOT NULL,
   path TEXT NOT NULL,
   media_type TEXT NOT NULL,
-  sha256 TEXT NOT NULL,
   width INTEGER NOT NULL,
   height INTEGER NOT NULL,
   metadata_json TEXT NOT NULL,
@@ -596,8 +595,7 @@ SELECT
   COALESCE(m.name, i.mod_id) AS mod_name,
   iv.display_name,
   iv.tooltip_text,
-  a.path AS asset_path,
-  a.sha256 AS asset_sha256
+  a.path AS asset_path
 FROM item_variant iv
 JOIN item i
   ON i.dataset_id = iv.dataset_id
@@ -646,7 +644,6 @@ SELECT
   iv.damage,
   iv.display_name,
   a.path AS asset_path,
-  a.sha256 AS asset_sha256,
   p.list_index
 FROM item_list_entry pJOIN item_variant iv
   ON iv.dataset_id = p.dataset_id
@@ -817,8 +814,7 @@ SELECT
   a.primal,
   ai.amount,
   a.icon_item_variant_id,
-  iv.asset_path AS icon_asset_path,
-  iv.asset_sha256 AS icon_asset_sha256
+  iv.asset_path AS icon_asset_path
 FROM aspect_item ai
 JOIN aspect a
   ON a.dataset_id = ai.dataset_id
@@ -854,7 +850,6 @@ SELECT
   ql.order_index,
   ql.icon_item_variant_id,
   iv.asset_path AS icon_asset_path,
-  iv.asset_sha256 AS icon_asset_sha256,
   COUNT(e.quest_id) AS quest_count
 FROM quest_line ql
 LEFT JOIN quest_line_entry e
@@ -864,7 +859,7 @@ LEFT JOIN v_item_ref iv
   ON iv.dataset_id = ql.dataset_id
  AND iv.item_variant_id = ql.icon_item_variant_id
 GROUP BY ql.dataset_id, ql.quest_line_id, ql.name, ql.description, ql.visibility,
-         ql.order_index, ql.icon_item_variant_id, iv.asset_path, iv.asset_sha256;
+         ql.order_index, ql.icon_item_variant_id, iv.asset_path;
 
 CREATE OR REPLACE VIEW v_quest_browser AS
 SELECT
@@ -877,8 +872,7 @@ SELECT
   q.quest_logic,
   q.task_logic,
   q.icon_item_variant_id,
-  iv.asset_path AS icon_asset_path,
-  iv.asset_sha256 AS icon_asset_sha256
+  iv.asset_path AS icon_asset_path
 FROM quest q
 LEFT JOIN v_item_ref iv
   ON iv.dataset_id = q.dataset_id
@@ -895,7 +889,6 @@ SELECT
   q.repeat_time,
   q.icon_item_variant_id,
   q.icon_asset_path,
-  q.icon_asset_sha256,
   e.pos_x,
   e.pos_y,
   e.size_x,
@@ -931,8 +924,7 @@ SELECT
   COALESCE(ie.amount, 0) AS amount,
   COALESCE(iv.display_name, fv.display_name) AS display_name,
   COALESCE(iv.mod_id, fv.mod_id) AS mod_id,
-  COALESCE(iv.asset_path, fv.asset_path) AS asset_path,
-  iv.asset_sha256 AS asset_sha256
+  COALESCE(iv.asset_path, fv.asset_path) AS asset_path
 FROM quest_task_item qi
 LEFT JOIN ingredient_entry ie
   ON ie.dataset_id = qi.dataset_id
@@ -955,8 +947,7 @@ SELECT
   COALESCE(ie.amount, 0) AS amount,
   COALESCE(iv.display_name, fv.display_name) AS display_name,
   COALESCE(iv.mod_id, fv.mod_id) AS mod_id,
-  COALESCE(iv.asset_path, fv.asset_path) AS asset_path,
-  iv.asset_sha256 AS asset_sha256
+  COALESCE(iv.asset_path, fv.asset_path) AS asset_path
 FROM quest_reward_item qi
 LEFT JOIN ingredient_entry ie
   ON ie.dataset_id = qi.dataset_id

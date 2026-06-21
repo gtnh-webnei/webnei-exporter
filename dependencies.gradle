@@ -44,6 +44,9 @@ dependencies {
     compileOnly("org.projectlombok:lombok:$lombokVersion")
     annotationProcessor("org.projectlombok:lombok:$lombokVersion")
 
+    // Angelica
+    runtimeOnlyNonPublishable(gtnhDev("Angelica"))
+
     // NEI
     api(gtnhDev("NotEnoughItems"))
 
