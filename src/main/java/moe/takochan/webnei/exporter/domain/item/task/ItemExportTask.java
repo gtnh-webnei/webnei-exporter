@@ -1,6 +1,8 @@
 package moe.takochan.webnei.exporter.domain.item.task;
 
 import moe.takochan.webnei.exporter.domain.dataset.store.DatasetDomainStore;
+import moe.takochan.webnei.exporter.domain.item.internal.ItemDomainData;
+import moe.takochan.webnei.exporter.domain.item.internal.ItemRegistrar;
 import moe.takochan.webnei.exporter.domain.item.internal.NeiItemPanelSource;
 import moe.takochan.webnei.exporter.domain.item.store.ItemDomainStore;
 import moe.takochan.webnei.exporter.engine.task.ExportTaskContext;
@@ -32,8 +34,10 @@ public final class ItemExportTask implements IExportTask {
         String datasetId = context.store(DatasetDomainStore.class)
             .datasetId();
 
-        ItemDomainStore store = new ItemDomainStore(datasetId);
-        new NeiItemPanelSource().collect(store);
+        ItemDomainData data = new ItemDomainData(datasetId);
+        ItemDomainStore store = new ItemDomainStore(data);
+        ItemRegistrar registrar = new ItemRegistrar(data);
+        new NeiItemPanelSource(registrar).collect();
         context.register(ItemDomainStore.class, store);
     }
 }

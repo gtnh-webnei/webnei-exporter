@@ -1,6 +1,8 @@
 package moe.takochan.webnei.exporter.domain.fluid.task;
 
 import moe.takochan.webnei.exporter.domain.dataset.store.DatasetDomainStore;
+import moe.takochan.webnei.exporter.domain.fluid.internal.FluidDomainData;
+import moe.takochan.webnei.exporter.domain.fluid.internal.FluidRegistrar;
 import moe.takochan.webnei.exporter.domain.fluid.internal.ForgeFluidRegistrySource;
 import moe.takochan.webnei.exporter.domain.fluid.store.FluidDomainStore;
 import moe.takochan.webnei.exporter.domain.item.store.ItemDomainStore;
@@ -34,8 +36,10 @@ public final class FluidExportTask implements IExportTask {
             .datasetId();
         ItemDomainStore itemStore = context.store(ItemDomainStore.class);
 
-        FluidDomainStore store = new FluidDomainStore(datasetId, itemStore);
-        new ForgeFluidRegistrySource().collect(store);
+        FluidDomainData data = new FluidDomainData(datasetId, itemStore);
+        FluidDomainStore store = new FluidDomainStore(data);
+        FluidRegistrar registrar = new FluidRegistrar(data);
+        new ForgeFluidRegistrySource(registrar).collect();
         context.register(FluidDomainStore.class, store);
     }
 }

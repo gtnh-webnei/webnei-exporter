@@ -5,26 +5,37 @@ import java.util.Map;
 import net.minecraft.item.ItemStack;
 import net.minecraftforge.fluids.FluidStack;
 
-import moe.takochan.webnei.exporter.domain.asset.store.AssetDomainStore;
 import moe.takochan.webnei.exporter.domain.fluid.store.FluidDomainStore;
 import moe.takochan.webnei.exporter.domain.item.store.ItemDomainStore;
 import moe.takochan.webnei.exporter.domain.recipe.store.RecipeDomainStore;
 
 public final class AssetSource {
 
-    public void collect(AssetDomainStore assetStore, ItemDomainStore itemStore, FluidDomainStore fluidStore,
+    private final AssetRegistrar registrar;
+    private final ItemDomainStore itemStore;
+    private final FluidDomainStore fluidStore;
+    private final RecipeDomainStore recipeStore;
+
+    public AssetSource(AssetRegistrar registrar, ItemDomainStore itemStore, FluidDomainStore fluidStore,
         RecipeDomainStore recipeStore) {
-        for (Map.Entry<String, ItemStack> entry : itemStore.stacks()
+        this.registrar = registrar;
+        this.itemStore = itemStore;
+        this.fluidStore = fluidStore;
+        this.recipeStore = recipeStore;
+    }
+
+    public void collect() {
+        for (Map.Entry<String, ItemStack> entry : this.itemStore.stacks()
             .entrySet()) {
-            assetStore.registerItemIcon(entry.getKey(), entry.getValue());
+            this.registrar.registerItemIcon(entry.getKey(), entry.getValue());
         }
-        for (Map.Entry<String, FluidStack> entry : fluidStore.stacks()
+        for (Map.Entry<String, FluidStack> entry : this.fluidStore.stacks()
             .entrySet()) {
-            assetStore.registerFluidIcon(entry.getKey(), entry.getValue());
+            this.registrar.registerFluidIcon(entry.getKey(), entry.getValue());
         }
-        for (Map.Entry<String, ItemStack> entry : recipeStore.categoryIconStacks()
+        for (Map.Entry<String, ItemStack> entry : this.recipeStore.categoryIconStacks()
             .entrySet()) {
-            assetStore.registerRecipeCategoryIcon(entry.getKey(), entry.getValue());
+            this.registrar.registerRecipeCategoryIcon(entry.getKey(), entry.getValue());
         }
     }
 }

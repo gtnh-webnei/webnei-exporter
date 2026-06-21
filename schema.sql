@@ -137,6 +137,17 @@ CREATE TABLE IF NOT EXISTS recipe_category (
   PRIMARY KEY (dataset_id, category_id)
 );
 
+CREATE TABLE IF NOT EXISTS recipe_category_catalyst (
+  dataset_id TEXT NOT NULL REFERENCES dataset(dataset_id) ON DELETE CASCADE,
+  category_id TEXT NOT NULL,
+  item_variant_id TEXT NOT NULL,
+  display_order INTEGER NOT NULL,
+  PRIMARY KEY (dataset_id, category_id, item_variant_id),
+  FOREIGN KEY (dataset_id, category_id)
+    REFERENCES recipe_category(dataset_id, category_id)
+    ON DELETE CASCADE
+);
+
 CREATE TABLE IF NOT EXISTS recipe_category_applicable_item (
   dataset_id TEXT NOT NULL REFERENCES dataset(dataset_id) ON DELETE CASCADE,
   category_id TEXT NOT NULL,

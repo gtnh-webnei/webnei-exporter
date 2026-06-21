@@ -14,18 +14,18 @@ public final class OreDictionaryDomainStore implements IDomainStore {
 
     private final OreDictionaryDomainData data;
 
-    public OreDictionaryDomainStore(String datasetId) {
-        this.data = new OreDictionaryDomainData(datasetId);
+    public OreDictionaryDomainStore(OreDictionaryDomainData data) {
+        this.data = data;
     }
 
     /** 注册 dictionary name。 */
-    public void addDictionary(String dictionaryName) {
-        data.addDictionary(dictionaryName);
+    public void registerDictionary(String dictionaryName) {
+        data.registerDictionary(dictionaryName);
     }
 
     /** 注册 dictionary name 与 item variant 的关联；重复关联保留第一次出现的位置。 */
-    public void addEntry(String dictionaryName, String itemVariantId) {
-        data.addEntry(dictionaryName, itemVariantId);
+    public void registerEntry(String dictionaryName, String itemVariantId) {
+        data.registerEntry(dictionaryName, itemVariantId);
     }
 
     @Override

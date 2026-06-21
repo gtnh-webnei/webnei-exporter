@@ -9,18 +9,17 @@ import net.minecraftforge.oredict.OreDictionary;
 import codechicken.nei.ItemList;
 import moe.takochan.webnei.exporter.domain.item.model.ItemVariantRow;
 import moe.takochan.webnei.exporter.domain.item.store.ItemDomainStore;
-import moe.takochan.webnei.exporter.domain.oredictionary.store.OreDictionaryDomainStore;
 
 /**
  * 处理 Forge OreDictionary 数据并写入 ore_dictionary domain store。
  */
 public final class OreDictionaryRegistrar {
 
-    private final OreDictionaryDomainStore oreStore;
+    private final OreDictionaryDomainData data;
     private final ItemDomainStore itemStore;
 
-    public OreDictionaryRegistrar(OreDictionaryDomainStore oreStore, ItemDomainStore itemStore) {
-        this.oreStore = oreStore;
+    public OreDictionaryRegistrar(OreDictionaryDomainData data, ItemDomainStore itemStore) {
+        this.data = data;
         this.itemStore = itemStore;
     }
 
@@ -28,7 +27,7 @@ public final class OreDictionaryRegistrar {
      * 注册一个 dictionary name 及其 Forge 返回的 ItemStack 列表。
      */
     public void register(String dictionaryName, List<ItemStack> stacks) {
-        oreStore.addDictionary(dictionaryName);
+        data.registerDictionary(dictionaryName);
         for (ItemStack stack : stacks) {
             registerStack(dictionaryName, stack);
         }
@@ -64,6 +63,6 @@ public final class OreDictionaryRegistrar {
      */
     private void registerActualStack(String dictionaryName, ItemStack stack) {
         ItemVariantRow row = itemStore.getOrRegisterVariant(stack);
-        oreStore.addEntry(dictionaryName, row.getItemVariantId());
+        data.registerEntry(dictionaryName, row.getItemVariantId());
     }
 }

@@ -20,23 +20,22 @@ public final class ItemDomainStore implements IDomainStore {
 
     private final ItemDomainData data;
 
-    public ItemDomainStore(String datasetId) {
-        this.data = new ItemDomainData(datasetId);
+    public ItemDomainStore(ItemDomainData data) {
+        this.data = data;
     }
 
-    /** 获取 stack 对应 variant；不存在时补齐 item、variant 和 toolclass。 */
+    /**
+     * 获取 stack 对应 variant；不存在时补齐 item、variant 和 toolclass。
+     */
     public ItemVariantRow getOrRegisterVariant(ItemStack input) {
         return data.getOrRegisterVariant(input);
     }
 
-    /** 返回已注册 variant 对应的原始 ItemStack。 */
+    /**
+     * 返回已注册 variant 对应的原始 ItemStack。
+     */
     public Map<String, ItemStack> stacks() {
         return data.stacks();
-    }
-
-    /** 注册 NEI item panel 条目。 */
-    public void registerListEntry(ItemStack stack, int listIndex) {
-        data.registerListEntry(stack, listIndex);
     }
 
     @Override

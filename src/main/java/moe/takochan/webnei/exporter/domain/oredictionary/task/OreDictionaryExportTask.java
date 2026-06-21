@@ -3,6 +3,7 @@ package moe.takochan.webnei.exporter.domain.oredictionary.task;
 import moe.takochan.webnei.exporter.domain.dataset.store.DatasetDomainStore;
 import moe.takochan.webnei.exporter.domain.item.store.ItemDomainStore;
 import moe.takochan.webnei.exporter.domain.oredictionary.internal.ForgeOreDictionarySource;
+import moe.takochan.webnei.exporter.domain.oredictionary.internal.OreDictionaryDomainData;
 import moe.takochan.webnei.exporter.domain.oredictionary.internal.OreDictionaryRegistrar;
 import moe.takochan.webnei.exporter.domain.oredictionary.store.OreDictionaryDomainStore;
 import moe.takochan.webnei.exporter.engine.task.ExportTaskContext;
@@ -29,9 +30,10 @@ public final class OreDictionaryExportTask implements IExportTask {
             .datasetId();
         ItemDomainStore itemStore = context.store(ItemDomainStore.class);
 
-        OreDictionaryDomainStore oreStore = new OreDictionaryDomainStore(datasetId);
-        OreDictionaryRegistrar registrar = new OreDictionaryRegistrar(oreStore, itemStore);
-        new ForgeOreDictionarySource().collect(registrar);
+        OreDictionaryDomainData data = new OreDictionaryDomainData(datasetId);
+        OreDictionaryDomainStore oreStore = new OreDictionaryDomainStore(data);
+        OreDictionaryRegistrar registrar = new OreDictionaryRegistrar(data, itemStore);
+        new ForgeOreDictionarySource(registrar).collect();
         context.register(OreDictionaryDomainStore.class, oreStore);
     }
 }

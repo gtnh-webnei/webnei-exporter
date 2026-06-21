@@ -26,11 +26,11 @@ public final class OreDictionaryDomainData {
         this.datasetId = datasetId;
     }
 
-    public void addDictionary(String dictionaryName) {
+    public void registerDictionary(String dictionaryName) {
         dictionaries.putIfAbsent(dictionaryName, new OreDictionaryRow(datasetId, dictionaryName));
     }
 
-    public void addEntry(String dictionaryName, String itemVariantId) {
+    public void registerEntry(String dictionaryName, String itemVariantId) {
         String key = dictionaryName + '\u0000' + itemVariantId;
         if (entries.containsKey(key)) {
             return;

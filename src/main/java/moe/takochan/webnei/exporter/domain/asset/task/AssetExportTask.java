@@ -1,5 +1,7 @@
 package moe.takochan.webnei.exporter.domain.asset.task;
 
+import moe.takochan.webnei.exporter.domain.asset.internal.AssetDomainData;
+import moe.takochan.webnei.exporter.domain.asset.internal.AssetRegistrar;
 import moe.takochan.webnei.exporter.domain.asset.internal.AssetSource;
 import moe.takochan.webnei.exporter.domain.asset.store.AssetDomainStore;
 import moe.takochan.webnei.exporter.domain.dataset.store.DatasetDomainStore;
@@ -31,8 +33,10 @@ public final class AssetExportTask implements IExportTask {
         FluidDomainStore fluidStore = context.store(FluidDomainStore.class);
         RecipeDomainStore recipeStore = context.store(RecipeDomainStore.class);
 
-        AssetDomainStore store = new AssetDomainStore(datasetId);
-        new AssetSource().collect(store, itemStore, fluidStore, recipeStore);
+        AssetDomainData data = new AssetDomainData(datasetId);
+        AssetDomainStore store = new AssetDomainStore(data);
+        AssetRegistrar registrar = new AssetRegistrar(data);
+        new AssetSource(registrar, itemStore, fluidStore, recipeStore).collect();
         context.register(AssetDomainStore.class, store);
     }
 }

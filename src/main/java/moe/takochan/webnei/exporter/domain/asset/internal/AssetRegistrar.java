@@ -1,17 +1,13 @@
-package moe.takochan.webnei.exporter.domain.asset.store;
+package moe.takochan.webnei.exporter.domain.asset.internal;
 
 import net.minecraft.item.ItemStack;
 import net.minecraftforge.fluids.FluidStack;
 
-import moe.takochan.webnei.exporter.domain.IExportModel;
-import moe.takochan.webnei.exporter.domain.asset.internal.AssetDomainData;
-import moe.takochan.webnei.exporter.engine.store.IDomainStore;
-
-public final class AssetDomainStore implements IDomainStore {
+public final class AssetRegistrar {
 
     private final AssetDomainData data;
 
-    public AssetDomainStore(AssetDomainData data) {
+    public AssetRegistrar(AssetDomainData data) {
         this.data = data;
     }
 
@@ -25,10 +21,5 @@ public final class AssetDomainStore implements IDomainStore {
 
     public void registerRecipeCategoryIcon(String categoryId, ItemStack stack) {
         data.registerRecipeCategoryIcon(categoryId, stack);
-    }
-
-    @Override
-    public IExportModel toExportModel() {
-        return data.toExportModel();
     }
 }

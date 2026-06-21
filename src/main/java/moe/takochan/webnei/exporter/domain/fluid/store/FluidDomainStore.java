@@ -9,7 +9,6 @@ import net.minecraftforge.fluids.FluidStack;
 import moe.takochan.webnei.exporter.domain.IExportModel;
 import moe.takochan.webnei.exporter.domain.fluid.internal.FluidDomainData;
 import moe.takochan.webnei.exporter.domain.fluid.model.FluidRow;
-import moe.takochan.webnei.exporter.domain.item.store.ItemDomainStore;
 import moe.takochan.webnei.exporter.engine.store.IDomainStore;
 
 /**
@@ -23,8 +22,8 @@ public final class FluidDomainStore implements IDomainStore {
 
     private final FluidDomainData data;
 
-    public FluidDomainStore(String datasetId, ItemDomainStore itemStore) {
-        this.data = new FluidDomainData(datasetId, itemStore);
+    public FluidDomainStore(FluidDomainData data) {
+        this.data = data;
     }
 
     /** 获取 fluid 对应行；不存在时补齐 fluid 基础字段并挂接其方块、容器关系。 */

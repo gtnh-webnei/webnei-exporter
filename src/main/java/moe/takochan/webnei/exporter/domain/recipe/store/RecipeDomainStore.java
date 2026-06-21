@@ -13,8 +13,8 @@ public final class RecipeDomainStore implements IDomainStore {
 
     private final RecipeDomainData data;
 
-    public RecipeDomainStore(String datasetId) {
-        this.data = new RecipeDomainData(datasetId);
+    public RecipeDomainStore(RecipeDomainData data) {
+        this.data = data;
     }
 
     public void register(IRecipeHandler handler) {
