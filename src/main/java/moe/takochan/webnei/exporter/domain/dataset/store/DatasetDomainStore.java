@@ -12,10 +12,10 @@ import moe.takochan.webnei.exporter.engine.store.IDomainStore;
  */
 public final class DatasetDomainStore implements IDomainStore {
 
-    private final DatasetDomainData data = new DatasetDomainData();
+    private final DatasetDomainData data;
 
-    public void initialize(String packSlug, String packVersion, String variant, String language) {
-        data.initialize(packSlug, packVersion, variant, language);
+    public DatasetDomainStore(DatasetDomainData data) {
+        this.data = data;
     }
 
     /**

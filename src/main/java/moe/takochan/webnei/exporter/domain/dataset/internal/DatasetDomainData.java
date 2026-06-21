@@ -22,7 +22,7 @@ public final class DatasetDomainData {
 
     private DatasetRow row;
 
-    public void initialize(String packSlug, String packVersion, String variant, String language) {
+    public void register(String packSlug, String packVersion, String variant, String language) {
         row = new DatasetRow(
             buildDatasetId(packSlug, packVersion, variant, language),
             packSlug,
@@ -37,18 +37,14 @@ public final class DatasetDomainData {
     }
 
     public String datasetId() {
-        return requireRow().getDatasetId();
+        if (row == null) {
+            return null;
+        }
+        return row.getDatasetId();
     }
 
     public IExportModel toExportModel() {
         return row == null ? null : new DatasetExportModel(row);
-    }
-
-    private DatasetRow requireRow() {
-        if (row == null) {
-            throw new IllegalStateException("Dataset domain store is not initialized");
-        }
-        return row;
     }
 
     private static String buildDatasetId(String packSlug, String packVersion, String variant, String language) {

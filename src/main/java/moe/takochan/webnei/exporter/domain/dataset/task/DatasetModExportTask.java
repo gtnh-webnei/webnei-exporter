@@ -1,8 +1,9 @@
 package moe.takochan.webnei.exporter.domain.dataset.task;
 
-import cpw.mods.fml.common.FMLCommonHandler;
+import moe.takochan.webnei.exporter.domain.dataset.internal.DatasetDomainData;
+import moe.takochan.webnei.exporter.domain.dataset.internal.DatasetRegistrar;
+import moe.takochan.webnei.exporter.domain.dataset.internal.DatasetRequestSource;
 import moe.takochan.webnei.exporter.domain.dataset.store.DatasetDomainStore;
-import moe.takochan.webnei.exporter.engine.ExportRequestOptions;
 import moe.takochan.webnei.exporter.engine.task.ExportTaskContext;
 import moe.takochan.webnei.exporter.engine.task.IExportTask;
 
@@ -28,31 +29,10 @@ public final class DatasetModExportTask implements IExportTask {
 
     @Override
     public void execute(ExportTaskContext context) {
-        String packSlug = context.executionContext()
-            .request()
-            .option(ExportRequestOptions.PACK_SLUG);
-        String packVersion = context.executionContext()
-            .request()
-            .option(ExportRequestOptions.PACK_VERSION);
-        String variant = context.executionContext()
-            .request()
-            .option(ExportRequestOptions.VARIANT);
-        String language = currentLanguage();
-
-        DatasetDomainStore store = new DatasetDomainStore();
-        store.initialize(packSlug, packVersion, variant, language);
+        DatasetDomainData data = new DatasetDomainData();
+        DatasetDomainStore store = new DatasetDomainStore(data);
+        DatasetRegistrar registrar = new DatasetRegistrar(data);
+        new DatasetRequestSource(registrar, context).collect();
         context.register(DatasetDomainStore.class, store);
-    }
-
-    private static String currentLanguage() {
-        try {
-            String language = FMLCommonHandler.instance()
-                .getCurrentLanguage();
-            if (language != null && !language.trim()
-                .isEmpty()) {
-                return language.trim();
-            }
-        } catch (Throwable ignored) {}
-        return "en_US";
     }
 }
