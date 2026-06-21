@@ -5,10 +5,12 @@ public final class ExportPhaseView {
 
     private final String labelKey;
     private final ExportPhaseState state;
+    private final long elapsedMillis;
 
-    public ExportPhaseView(String labelKey, ExportPhaseState state) {
+    public ExportPhaseView(String labelKey, ExportPhaseState state, long elapsedMillis) {
         this.labelKey = labelKey;
         this.state = state;
+        this.elapsedMillis = elapsedMillis;
     }
 
     public String getLabelKey() {
@@ -17,5 +19,10 @@ public final class ExportPhaseView {
 
     public ExportPhaseState getState() {
         return state;
+    }
+
+    /** 该阶段耗时（毫秒）；尚未开始为 -1，运行中为实时累计值。 */
+    public long getElapsedMillis() {
+        return elapsedMillis;
     }
 }

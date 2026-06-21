@@ -106,7 +106,7 @@ public final class GuiExportProgress extends GuiScreen implements IExportJobList
         int left = centerX - PANEL_WIDTH / 2;
 
         drawCenteredString(fontRendererObj, label("webnei.gui.export.title"), centerX, HEADER_TOP, COLOR_TITLE);
-        drawCenteredString(fontRendererObj, stateText(snapshot), centerX, HEADER_TOP + 14, COLOR_SUBTEXT);
+        drawCenteredString(fontRendererObj, headerStatus(snapshot), centerX, HEADER_TOP + 14, COLOR_SUBTEXT);
 
         if (snapshot != null) {
             // footer 固定贴在关闭按钮上方，phase 列表占据 header 与 footer 之间的剩余空间。
@@ -157,6 +157,11 @@ public final class GuiExportProgress extends GuiScreen implements IExportJobList
     private void drawPhaseRow(ExportPhaseView phase, int left, int y) {
         ExportPhaseState phaseState = phase.getState();
         fontRendererObj.drawString(mark(phaseState) + label(phase.getLabelKey()), left, y, phaseColor(phaseState));
+        if (phaseState != ExportPhaseState.PENDING && phase.getElapsedMillis() >= 0L) {
+            String time = formatDuration(phase.getElapsedMillis());
+            int timeX = left + PANEL_WIDTH - fontRendererObj.getStringWidth(time);
+            fontRendererObj.drawString(time, timeX, y, COLOR_SUBTEXT);
+        }
     }
 
     /** 计算首个可见阶段索引：尽量让当前 RUNNING 阶段保持在可视区内。 */
@@ -273,6 +278,15 @@ public final class GuiExportProgress extends GuiScreen implements IExportJobList
         }
     }
 
+    /** 头部副标题：状态文案 + 总耗时。 */
+    private static String headerStatus(ExportJobSnapshot snapshot) {
+        String state = stateText(snapshot);
+        if (snapshot == null || snapshot.getTotalElapsedMillis() < 0L) {
+            return state;
+        }
+        return state + "  " + formatDuration(snapshot.getTotalElapsedMillis());
+    }
+
     private static String stateText(ExportJobSnapshot snapshot) {
         if (snapshot == null) {
             return label("webnei.gui.export.state.pending");
@@ -287,6 +301,20 @@ public final class GuiExportProgress extends GuiScreen implements IExportJobList
             default:
                 return label("webnei.gui.export.state.pending");
         }
+    }
+
+    /** 把毫秒格式化为 {@code 1m23.4s} / {@code 12.3s} / {@code 850ms}。 */
+    private static String formatDuration(long millis) {
+        if (millis < 1000L) {
+            return millis + "ms";
+        }
+        long totalSeconds = millis / 1000L;
+        long minutes = totalSeconds / 60L;
+        double seconds = (millis - minutes * 60_000L) / 1000.0;
+        if (minutes > 0L) {
+            return minutes + "m" + String.format("%.1f", seconds) + "s";
+        }
+        return String.format("%.1f", seconds) + "s";
     }
 
     private static String label(String key) {

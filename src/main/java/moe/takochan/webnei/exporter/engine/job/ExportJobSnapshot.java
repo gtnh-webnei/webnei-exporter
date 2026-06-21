@@ -33,8 +33,11 @@ public final class ExportJobSnapshot {
     /** 当前阶段细粒度单元总数（如待渲染图标总数）；为 0 表示当前阶段无细粒度进度。 */
     private final int renderTotal;
 
+    /** 从开始到现在（或结束）的总耗时（毫秒）；未开始为 -1。 */
+    private final long totalElapsedMillis;
+
     public ExportJobSnapshot(long jobId, ExportJobState state, List<ExportPhaseView> phases, int currentPhase,
-        List<String> outputFiles, String errorMessage, int renderDone, int renderTotal) {
+        List<String> outputFiles, String errorMessage, int renderDone, int renderTotal, long totalElapsedMillis) {
         this.jobId = jobId;
         this.state = state;
         this.phases = Collections.unmodifiableList(phases);
@@ -43,5 +46,6 @@ public final class ExportJobSnapshot {
         this.errorMessage = errorMessage;
         this.renderDone = renderDone;
         this.renderTotal = renderTotal;
+        this.totalElapsedMillis = totalElapsedMillis;
     }
 }
