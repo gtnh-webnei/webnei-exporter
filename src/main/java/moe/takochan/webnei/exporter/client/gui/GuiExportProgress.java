@@ -29,8 +29,11 @@ public final class GuiExportProgress extends GuiScreen implements IExportJobList
     private static final int LINE_HEIGHT = 12;
     private static final int HEADER_TOP = 24;
     private static final int LIST_TOP = 56;
-    private static final int FOOTER_HEIGHT = 28;
-    private static final int BUTTON_MARGIN = 32;
+    private static final int FOOTER_HEIGHT = 44;
+    private static final int FOOTER_GAP = 8;
+    private static final int BUTTON_WIDTH = 100;
+    private static final int BUTTON_HEIGHT = 20;
+    private static final int BUTTON_BOTTOM_MARGIN = 8;
     private static final int CLOSE_BUTTON_ID = 0;
     private static final int ESC_KEY_CODE = 1;
 
@@ -59,10 +62,16 @@ public final class GuiExportProgress extends GuiScreen implements IExportJobList
 
     @Override
     public void initGui() {
-        int x = (width - 100) / 2;
-        int y = height - 40;
+        int x = (width - BUTTON_WIDTH) / 2;
+        int y = height - BUTTON_HEIGHT - BUTTON_BOTTOM_MARGIN;
         buttonList.clear();
-        closeButton = new GuiButton(CLOSE_BUTTON_ID, x, y, 100, 20, label("webnei.gui.export.close"));
+        closeButton = new GuiButton(
+            CLOSE_BUTTON_ID,
+            x,
+            y,
+            BUTTON_WIDTH,
+            BUTTON_HEIGHT,
+            label("webnei.gui.export.close"));
         closeButton.visible = false;
         buttonList.add(closeButton);
     }
@@ -100,9 +109,11 @@ public final class GuiExportProgress extends GuiScreen implements IExportJobList
         drawCenteredString(fontRendererObj, stateText(snapshot), centerX, HEADER_TOP + 14, COLOR_SUBTEXT);
 
         if (snapshot != null) {
-            int footerTop = height - FOOTER_HEIGHT - BUTTON_MARGIN;
+            // footer 固定贴在关闭按钮上方，phase 列表占据 header 与 footer 之间的剩余空间。
+            int buttonTop = height - BUTTON_HEIGHT - BUTTON_BOTTOM_MARGIN;
+            int footerTop = buttonTop - FOOTER_GAP - FOOTER_HEIGHT;
             drawPhaseList(snapshot, left, LIST_TOP, footerTop - 4);
-            drawFooter(snapshot, left, footerTop);
+            drawFooter(snapshot, left, footerTop, buttonTop - FOOTER_GAP);
         }
         if (closeButton != null) {
             closeButton.visible = isFinished(snapshot);
@@ -171,7 +182,7 @@ public final class GuiExportProgress extends GuiScreen implements IExportJobList
         return start;
     }
 
-    private void drawFooter(ExportJobSnapshot snapshot, int left, int top) {
+    private void drawFooter(ExportJobSnapshot snapshot, int left, int top, int bottom) {
         if (snapshot.getState() == ExportJobState.ERROR) {
             fontRendererObj.drawSplitString(
                 StatCollector
@@ -190,6 +201,10 @@ public final class GuiExportProgress extends GuiScreen implements IExportJobList
             fontRendererObj.drawString(label("webnei.gui.export.outputDir"), left, top, COLOR_TITLE);
             int y = top + LINE_HEIGHT;
             for (Object line : fontRendererObj.listFormattedStringToWidth(dir, PANEL_WIDTH)) {
+                if (y + LINE_HEIGHT > bottom) {
+                    fontRendererObj.drawString("...", left, y, COLOR_SUBTEXT);
+                    break;
+                }
                 fontRendererObj.drawString(line.toString(), left, y, COLOR_SUBTEXT);
                 y += LINE_HEIGHT - 1;
             }
