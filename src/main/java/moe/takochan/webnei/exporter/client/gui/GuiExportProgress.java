@@ -27,6 +27,7 @@ public final class GuiExportProgress extends GuiScreen implements IExportJobList
     private static final int BAR_HEIGHT = 10;
     private static final int LINE_HEIGHT = 12;
     private static final int CLOSE_BUTTON_ID = 0;
+    private static final int ESC_KEY_CODE = 1;
 
     private static final int COLOR_TITLE = 0xFFFFFF;
     private static final int COLOR_DONE = 0x66BB6A;
@@ -44,6 +45,7 @@ public final class GuiExportProgress extends GuiScreen implements IExportJobList
 
     private volatile ExportJobSession session;
     private volatile ExportJobSnapshot latest;
+    private GuiButton closeButton;
 
     /** 绑定实时状态源，提交导出后由命令侧调用。 */
     public void bind(ExportJobSession session) {
@@ -55,7 +57,9 @@ public final class GuiExportProgress extends GuiScreen implements IExportJobList
         int x = (width - 100) / 2;
         int y = height - 40;
         buttonList.clear();
-        buttonList.add(new GuiButton(CLOSE_BUTTON_ID, x, y, 100, 20, label("webnei.gui.export.close")));
+        closeButton = new GuiButton(CLOSE_BUTTON_ID, x, y, 100, 20, label("webnei.gui.export.close"));
+        closeButton.visible = false;
+        buttonList.add(closeButton);
     }
 
     @Override
@@ -63,6 +67,15 @@ public final class GuiExportProgress extends GuiScreen implements IExportJobList
         if (button.id == CLOSE_BUTTON_ID) {
             mc.displayGuiScreen(null);
         }
+    }
+
+    @Override
+    protected void keyTyped(char typedChar, int keyCode) {
+        // 仅在导出结束后才允许 ESC 关闭，运行中屏蔽以免误关。
+        if (keyCode == ESC_KEY_CODE && !isFinished(currentSnapshot())) {
+            return;
+        }
+        super.keyTyped(typedChar, keyCode);
     }
 
     @Override
@@ -88,7 +101,15 @@ public final class GuiExportProgress extends GuiScreen implements IExportJobList
             y = drawPhases(snapshot, left, y);
             drawFooter(snapshot, left, y + 4);
         }
+        if (closeButton != null) {
+            closeButton.visible = isFinished(snapshot);
+        }
         super.drawScreen(mouseX, mouseY, partialTicks);
+    }
+
+    private static boolean isFinished(ExportJobSnapshot snapshot) {
+        return snapshot != null
+            && (snapshot.getState() == ExportJobState.DONE || snapshot.getState() == ExportJobState.ERROR);
     }
 
     private int drawPhases(ExportJobSnapshot snapshot, int left, int top) {
