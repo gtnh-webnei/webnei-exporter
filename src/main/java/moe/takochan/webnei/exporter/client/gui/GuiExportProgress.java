@@ -1,6 +1,7 @@
 package moe.takochan.webnei.exporter.client.gui;
 
 import java.io.File;
+import java.util.List;
 
 import net.minecraft.client.gui.GuiButton;
 import net.minecraft.client.gui.GuiScreen;
@@ -26,6 +27,10 @@ public final class GuiExportProgress extends GuiScreen implements IExportJobList
     private static final int PANEL_WIDTH = 280;
     private static final int BAR_HEIGHT = 10;
     private static final int LINE_HEIGHT = 12;
+    private static final int HEADER_TOP = 24;
+    private static final int LIST_TOP = 56;
+    private static final int FOOTER_HEIGHT = 28;
+    private static final int BUTTON_MARGIN = 32;
     private static final int CLOSE_BUTTON_ID = 0;
     private static final int ESC_KEY_CODE = 1;
 
@@ -90,16 +95,14 @@ public final class GuiExportProgress extends GuiScreen implements IExportJobList
 
         int centerX = width / 2;
         int left = centerX - PANEL_WIDTH / 2;
-        int y = 40;
 
-        drawCenteredString(fontRendererObj, label("webnei.gui.export.title"), centerX, y, COLOR_TITLE);
-        y += 14;
-        drawCenteredString(fontRendererObj, stateText(snapshot), centerX, y, COLOR_SUBTEXT);
-        y += 20;
+        drawCenteredString(fontRendererObj, label("webnei.gui.export.title"), centerX, HEADER_TOP, COLOR_TITLE);
+        drawCenteredString(fontRendererObj, stateText(snapshot), centerX, HEADER_TOP + 14, COLOR_SUBTEXT);
 
         if (snapshot != null) {
-            y = drawPhases(snapshot, left, y);
-            drawFooter(snapshot, left, y + 4);
+            int footerTop = height - FOOTER_HEIGHT - BUTTON_MARGIN;
+            drawPhaseList(snapshot, left, LIST_TOP, footerTop - 4);
+            drawFooter(snapshot, left, footerTop);
         }
         if (closeButton != null) {
             closeButton.visible = isFinished(snapshot);
@@ -112,33 +115,60 @@ public final class GuiExportProgress extends GuiScreen implements IExportJobList
             && (snapshot.getState() == ExportJobState.DONE || snapshot.getState() == ExportJobState.ERROR);
     }
 
-    private int drawPhases(ExportJobSnapshot snapshot, int left, int top) {
-        int y = top;
-        for (ExportPhaseView phase : snapshot.getPhases()) {
-            ExportPhaseState phaseState = phase.getState();
-            fontRendererObj.drawString(mark(phaseState) + label(phase.getLabelKey()), left, y, phaseColor(phaseState));
-            y += LINE_HEIGHT;
-            if (phaseState == ExportPhaseState.RUNNING && snapshot.getRenderTotal() > 0) {
-                y = drawRenderProgress(snapshot, left + 16, y);
-            }
+    /**
+     * 在 [top, bottom) 的有界区域内绘制阶段清单，超出时按当前阶段自动滚动，并在上下方提示被折叠的阶段数。
+     */
+    private void drawPhaseList(ExportJobSnapshot snapshot, int left, int top, int bottom) {
+        List<ExportPhaseView> phases = snapshot.getPhases();
+        int total = phases.size();
+        if (total == 0) {
+            return;
         }
-        return y;
+        int rows = Math.max(1, (bottom - top) / LINE_HEIGHT);
+        int start = scrollStart(phases, total, rows);
+        int end = Math.min(total, start + rows);
+
+        int y = top;
+        if (start > 0) {
+            fontRendererObj.drawString(moreAbove(start), left, y, COLOR_PENDING);
+            y += LINE_HEIGHT;
+        }
+        int bodyEnd = (end < total) ? end - 1 : end;
+        for (int i = start; i < bodyEnd; i++) {
+            drawPhaseRow(phases.get(i), left, y);
+            y += LINE_HEIGHT;
+        }
+        if (end < total) {
+            fontRendererObj.drawString(moreBelow(total - bodyEnd), left, y, COLOR_PENDING);
+        }
     }
 
-    private int drawRenderProgress(ExportJobSnapshot snapshot, int left, int top) {
-        int total = snapshot.getRenderTotal();
-        int done = Math.min(snapshot.getRenderDone(), total);
-        fontRendererObj.drawString(
-            StatCollector.translateToLocalFormatted(
-                "webnei.gui.export.rendering",
-                Integer.toString(done),
-                Integer.toString(total)),
-            left,
-            top,
-            COLOR_SUBTEXT);
-        int y = top + LINE_HEIGHT;
-        drawBar(left, y, PANEL_WIDTH - 16, done / (float) total);
-        return y + BAR_HEIGHT + 4;
+    private void drawPhaseRow(ExportPhaseView phase, int left, int y) {
+        ExportPhaseState phaseState = phase.getState();
+        fontRendererObj.drawString(mark(phaseState) + label(phase.getLabelKey()), left, y, phaseColor(phaseState));
+    }
+
+    /** 计算首个可见阶段索引：尽量让当前 RUNNING 阶段保持在可视区内。 */
+    private static int scrollStart(List<ExportPhaseView> phases, int total, int rows) {
+        if (total <= rows) {
+            return 0;
+        }
+        int running = 0;
+        for (int i = 0; i < total; i++) {
+            if (phases.get(i)
+                .getState() == ExportPhaseState.RUNNING) {
+                running = i;
+                break;
+            }
+        }
+        int start = running - rows / 2;
+        if (start < 0) {
+            start = 0;
+        }
+        if (start > total - rows) {
+            start = total - rows;
+        }
+        return start;
     }
 
     private void drawFooter(ExportJobSnapshot snapshot, int left, int top) {
@@ -163,6 +193,20 @@ public final class GuiExportProgress extends GuiScreen implements IExportJobList
                 fontRendererObj.drawString(line.toString(), left, y, COLOR_SUBTEXT);
                 y += LINE_HEIGHT - 1;
             }
+            return;
+        }
+        if (snapshot.getRenderTotal() > 0) {
+            int total = snapshot.getRenderTotal();
+            int done = Math.min(snapshot.getRenderDone(), total);
+            fontRendererObj.drawString(
+                StatCollector.translateToLocalFormatted(
+                    "webnei.gui.export.rendering",
+                    Integer.toString(done),
+                    Integer.toString(total)),
+                left,
+                top,
+                COLOR_SUBTEXT);
+            drawBar(left, top + LINE_HEIGHT, PANEL_WIDTH, done / (float) total);
         }
     }
 
@@ -232,6 +276,14 @@ public final class GuiExportProgress extends GuiScreen implements IExportJobList
 
     private static String label(String key) {
         return StatCollector.translateToLocal(key);
+    }
+
+    private static String moreAbove(int count) {
+        return StatCollector.translateToLocalFormatted("webnei.gui.export.moreAbove", Integer.toString(count));
+    }
+
+    private static String moreBelow(int count) {
+        return StatCollector.translateToLocalFormatted("webnei.gui.export.moreBelow", Integer.toString(count));
     }
 
     private static String safe(String value) {
