@@ -32,9 +32,7 @@ public final class FboIconRenderer {
         GL11.glMatrixMode(GL11.GL_MODELVIEW);
         GL11.glPushMatrix();
         try {
-            BufferedImage white = renderPass(size, 1.0F, 1.0F, 1.0F, action);
-            BufferedImage black = renderPass(size, 0.0F, 0.0F, 0.0F, action);
-            return extractAlpha(white, black);
+            return renderDualBackground(size, action);
         } finally {
             GL11.glMatrixMode(GL11.GL_MODELVIEW);
             GL11.glPopMatrix();
@@ -44,24 +42,40 @@ public final class FboIconRenderer {
         }
     }
 
-    private BufferedImage renderPass(int size, float red, float green, float blue, IconRenderAction action)
-        throws AssetRenderException {
+    /**
+     * 单 FBO 双区渲染：左半白底、右半黑底，各渲一次同一图标，再一次性读回整块像素。
+     *
+     * <p>
+     * 与逐 pass 各读一次相比，{@code glReadPixels} 同步停顿从 2 次降为 1 次，alpha 仍由白/黑两个
+     * 已知底色反推（见 {@link #extractPixel}），结果与逐 pass 等价。
+     */
+    private BufferedImage renderDualBackground(int size, IconRenderAction action) throws AssetRenderException {
         try {
             framebuffer.bindFramebuffer(true);
-            applyGuiRenderState(size);
-            GL11.glClearColor(red, green, blue, 1.0F);
             GL11.glClearDepth(1.0D);
+            GL11.glEnable(GL11.GL_SCISSOR_TEST);
+            GL11.glScissor(0, 0, size, size);
+            GL11.glClearColor(1.0F, 1.0F, 1.0F, 1.0F);
             GL11.glClear(GL11.GL_COLOR_BUFFER_BIT | GL11.GL_DEPTH_BUFFER_BIT);
+            GL11.glScissor(size, 0, size, size);
+            GL11.glClearColor(0.0F, 0.0F, 0.0F, 1.0F);
+            GL11.glClear(GL11.GL_COLOR_BUFFER_BIT | GL11.GL_DEPTH_BUFFER_BIT);
+            GL11.glDisable(GL11.GL_SCISSOR_TEST);
+
+            applyGuiRenderState(size, 0);
             action.render();
+            applyGuiRenderState(size, size);
+            action.render();
+
             GL11.glFlush();
-            return readPixels(size);
+            return readAndExtract(size);
         } catch (RuntimeException e) {
             throw new AssetRenderException("Unable to render icon framebuffer", e);
         }
     }
 
-    private static void applyGuiRenderState(int size) {
-        GL11.glViewport(0, 0, size, size);
+    private static void applyGuiRenderState(int size, int viewportX) {
+        GL11.glViewport(viewportX, 0, size, size);
         GL11.glColorMask(true, true, true, true);
         GL11.glDepthMask(true);
         GL11.glDisable(GL11.GL_SCISSOR_TEST);
@@ -88,42 +102,42 @@ public final class FboIconRenderer {
             if (framebuffer != null) {
                 framebuffer.deleteFramebuffer();
             }
-            framebuffer = new Framebuffer(size, size, true);
+            // 宽度为 2*size：左半白底、右半黑底，单次渲染两套底色。
+            framebuffer = new Framebuffer(size * 2, size, true);
             framebuffer.setFramebufferColor(0.0F, 0.0F, 0.0F, 1.0F);
             framebufferSize = size;
         }
     }
 
-    private static BufferedImage readPixels(int size) {
-        ByteBuffer buffer = BufferUtils.createByteBuffer(size * size * 4);
-        GL11.glReadPixels(0, 0, size, size, GL12.GL_BGRA, GL11.GL_UNSIGNED_BYTE, buffer);
-        int[] pixels = new int[size * size];
+    /**
+     * 一次性读回 2*size×size 整块像素，并在 int[] 上直接反推 alpha 输出图标。
+     *
+     * <p>
+     * 左半为白底渲染结果、右半为黑底渲染结果。同时完成垂直翻转（glReadPixels 原点在左下）与
+     * 白/黑反推，避免逐像素 {@code getRGB}/{@code setRGB}。BGRA 字节按小端读成 int 即为 ARGB 布局，
+     * 与 {@link #extractPixel} 的位运算一致。
+     */
+    private static BufferedImage readAndExtract(int size) {
+        int width = size * 2;
+        ByteBuffer buffer = BufferUtils.createByteBuffer(width * size * 4);
+        GL11.glReadPixels(0, 0, width, size, GL12.GL_BGRA, GL11.GL_UNSIGNED_BYTE, buffer);
+        int[] raw = new int[width * size];
         buffer.asIntBuffer()
-            .get(pixels);
+            .get(raw);
 
-        int[] flipped = new int[pixels.length];
+        int[] out = new int[size * size];
         for (int y = 0; y < size; y++) {
+            int sourceRow = (size - y - 1) * width;
+            int targetRow = y * size;
             for (int x = 0; x < size; x++) {
-                flipped[x + y * size] = pixels[x + (size - y - 1) * size];
+                int whiteRgb = raw[sourceRow + x];
+                int blackRgb = raw[sourceRow + size + x];
+                out[targetRow + x] = extractPixel(whiteRgb, blackRgb);
             }
         }
 
         BufferedImage image = new BufferedImage(size, size, BufferedImage.TYPE_INT_ARGB);
-        image.setRGB(0, 0, size, size, flipped, 0, size);
-        return image;
-    }
-
-    private static BufferedImage extractAlpha(BufferedImage white, BufferedImage black) {
-        int width = white.getWidth();
-        int height = white.getHeight();
-        BufferedImage image = new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB);
-        for (int y = 0; y < height; y++) {
-            for (int x = 0; x < width; x++) {
-                int whiteRgb = white.getRGB(x, y);
-                int blackRgb = black.getRGB(x, y);
-                image.setRGB(x, y, extractPixel(whiteRgb, blackRgb));
-            }
-        }
+        image.setRGB(0, 0, size, size, out, 0, size);
         return image;
     }
 
@@ -166,6 +180,7 @@ public final class FboIconRenderer {
     private static final class RenderState {
 
         private final IntBuffer viewport;
+        private final IntBuffer scissorBox;
         private final int framebuffer;
         private final int texture;
         private final int matrixMode;
@@ -178,10 +193,11 @@ public final class FboIconRenderer {
         private final boolean scissor;
         private final boolean depthMask;
 
-        private RenderState(IntBuffer viewport, int framebuffer, int texture, int matrixMode, boolean texture2d,
-            boolean lighting, boolean depth, boolean blend, boolean alpha, boolean rescaleNormal, boolean scissor,
-            boolean depthMask) {
+        private RenderState(IntBuffer viewport, IntBuffer scissorBox, int framebuffer, int texture, int matrixMode,
+            boolean texture2d, boolean lighting, boolean depth, boolean blend, boolean alpha, boolean rescaleNormal,
+            boolean scissor, boolean depthMask) {
             this.viewport = viewport;
+            this.scissorBox = scissorBox;
             this.framebuffer = framebuffer;
             this.texture = texture;
             this.matrixMode = matrixMode;
@@ -198,8 +214,11 @@ public final class FboIconRenderer {
         private static RenderState capture() {
             IntBuffer viewport = BufferUtils.createIntBuffer(16);
             GL11.glGetInteger(GL11.GL_VIEWPORT, viewport);
+            IntBuffer scissorBox = BufferUtils.createIntBuffer(16);
+            GL11.glGetInteger(GL11.GL_SCISSOR_BOX, scissorBox);
             return new RenderState(
                 viewport,
+                scissorBox,
                 GL11.glGetInteger(EXTFramebufferObject.GL_FRAMEBUFFER_BINDING_EXT),
                 GL11.glGetInteger(GL11.GL_TEXTURE_BINDING_2D),
                 GL11.glGetInteger(GL11.GL_MATRIX_MODE),
@@ -221,6 +240,7 @@ public final class FboIconRenderer {
             setEnabled(GL11.GL_ALPHA_TEST, alpha);
             setEnabled(GL12.GL_RESCALE_NORMAL, rescaleNormal);
             setEnabled(GL11.GL_SCISSOR_TEST, scissor);
+            GL11.glScissor(scissorBox.get(0), scissorBox.get(1), scissorBox.get(2), scissorBox.get(3));
             GL11.glDepthMask(depthMask);
             GL11.glColorMask(true, true, true, true);
             GL11.glColor4f(1.0F, 1.0F, 1.0F, 1.0F);
