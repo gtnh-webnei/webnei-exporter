@@ -24,6 +24,31 @@ public final class FluidIconRenderer implements IAssetRenderer {
     }
 
     @Override
+    public IconTile prepareTile(final AssetRenderJob job) throws AssetRenderException {
+        final FluidStack stack = job.getFluidStack();
+        final IIcon icon = stack.getFluid()
+            .getIcon(stack);
+        if (icon == null) {
+            throw new AssetRenderException(
+                "Fluid has no icon: " + stack.getFluid()
+                    .getName());
+        }
+        FboIconRenderer.IconRenderAction action = new FboIconRenderer.IconRenderAction() {
+
+            @Override
+            public void render() {
+                renderFluidIcon(stack, icon);
+            }
+        };
+        return new IconTile(
+            job,
+            AssetPath.fluidIcon(job.getOwnerId()),
+            FboIconRenderer.DEFAULT_WEB_ICON_SIZE,
+            action,
+            AssetRenderMetadata.staticImage());
+    }
+
+    @Override
     public RenderedAsset renderImage(final AssetRenderJob job) throws AssetRenderException {
         BufferedImage image = renderFluid(job.getFluidStack());
         return RenderedAsset.png(job, AssetPath.fluidIcon(job.getOwnerId()), image, AssetRenderMetadata.staticImage());

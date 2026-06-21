@@ -24,6 +24,23 @@ public final class ItemIconRenderer implements IAssetRenderer {
     }
 
     @Override
+    public IconTile prepareTile(final AssetRenderJob job) throws AssetRenderException {
+        final ItemStack stack = job.getItemStack();
+        if (DynamicTextureState.from(stack)
+            .isStandardAtlasAnimation()) {
+            return null;
+        }
+        FboIconRenderer.IconRenderAction action = new FboIconRenderer.IconRenderAction() {
+
+            @Override
+            public void render() {
+                GuiContainerManager.drawItem(0, 0, stack);
+            }
+        };
+        return new IconTile(job, relativePath(job), iconCanvasSize(stack), action, AssetRenderMetadata.staticImage());
+    }
+
+    @Override
     public RenderedAsset renderImage(AssetRenderJob job) throws AssetRenderException {
         RenderedIcon icon = renderIcon(job.getItemStack());
         return RenderedAsset.png(job, relativePath(job), icon.image, icon.metadataJson);

@@ -3,6 +3,9 @@ package moe.takochan.webnei.exporter.domain.asset.render.client;
 import java.awt.image.BufferedImage;
 import java.nio.ByteBuffer;
 import java.nio.IntBuffer;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 
 import net.minecraft.client.renderer.OpenGlHelper;
 import net.minecraft.client.renderer.RenderHelper;
@@ -21,18 +24,52 @@ public final class FboIconRenderer {
     public static final int GUI_ICON_SIZE = 16;
     public static final int MAX_COLOR = 255;
 
-    private Framebuffer framebuffer;
-    private int framebufferSize;
+    /** atlas 单边最大像素，限制单次 readback 的显存/内存与 GPU 纹理尺寸上限。 */
+    private static final int ATLAS_MAX_DIM = 2048;
 
+    private Framebuffer framebuffer;
+    private int framebufferWidth;
+    private int framebufferHeight;
+
+    /** 渲染单个图标，等价于一个元素的批次。 */
     public BufferedImage render(int size, IconRenderAction action) throws AssetRenderException {
-        ensureFramebuffer(size);
+        return renderBatch(size, Collections.singletonList(action)).get(0);
+    }
+
+    /** 给定图标尺寸，单张 atlas 能容纳的图标数（即一次 readback 的最大批量）。 */
+    public int batchCapacity(int size) {
+        int columns = Math.max(1, ATLAS_MAX_DIM / (size * 2));
+        int rowsCap = Math.max(1, ATLAS_MAX_DIM / size);
+        return columns * rowsCap;
+    }
+
+    /**
+     * 批量渲染同一尺寸的一组图标。
+     *
+     * <p>
+     * 将每个图标的白底/黑底两区铺进一张网格 atlas（单元为 2*size×size），整批渲染后对整张 atlas 做
+     * 一次 {@code glReadPixels}，再逐单元在 int[] 上反推 alpha。相比逐图标各读一次，GPU→CPU 同步停顿
+     * 从 N 次降到约 N/批 次。超过单张 atlas 容量时按 {@code capacity} 自动分块，每块一次读回。
+     */
+    public List<BufferedImage> renderBatch(int size, List<IconRenderAction> actions) throws AssetRenderException {
+        List<BufferedImage> out = new ArrayList<>(actions.size());
+        if (actions.isEmpty()) {
+            return out;
+        }
+        int columns = Math.max(1, ATLAS_MAX_DIM / (size * 2));
+        int rowsCap = Math.max(1, ATLAS_MAX_DIM / size);
+        int capacity = columns * rowsCap;
+
         RenderState state = RenderState.capture();
         GL11.glMatrixMode(GL11.GL_PROJECTION);
         GL11.glPushMatrix();
         GL11.glMatrixMode(GL11.GL_MODELVIEW);
         GL11.glPushMatrix();
         try {
-            return renderDualBackground(size, action);
+            for (int start = 0; start < actions.size(); start += capacity) {
+                int end = Math.min(actions.size(), start + capacity);
+                renderChunk(size, columns, actions.subList(start, end), out);
+            }
         } finally {
             GL11.glMatrixMode(GL11.GL_MODELVIEW);
             GL11.glPopMatrix();
@@ -40,42 +77,65 @@ public final class FboIconRenderer {
             GL11.glPopMatrix();
             state.restore();
         }
+        return out;
     }
 
-    /**
-     * 单 FBO 双区渲染：左半白底、右半黑底，各渲一次同一图标，再一次性读回整块像素。
-     *
-     * <p>
-     * 与逐 pass 各读一次相比，{@code glReadPixels} 同步停顿从 2 次降为 1 次，alpha 仍由白/黑两个
-     * 已知底色反推（见 {@link #extractPixel}），结果与逐 pass 等价。
-     */
-    private BufferedImage renderDualBackground(int size, IconRenderAction action) throws AssetRenderException {
+    /** 渲染一块（不超过 atlas 容量）的图标，整块一次读回。 */
+    private void renderChunk(int size, int columns, List<IconRenderAction> actions, List<BufferedImage> out)
+        throws AssetRenderException {
         try {
+            int count = actions.size();
+            int rows = (count + columns - 1) / columns;
+            int usedColumns = Math.min(count, columns);
+            int atlasWidth = usedColumns * size * 2;
+            int atlasHeight = rows * size;
+            ensureFramebuffer(atlasWidth, atlasHeight);
             framebuffer.bindFramebuffer(true);
+
+            GL11.glDisable(GL11.GL_SCISSOR_TEST);
             GL11.glClearDepth(1.0D);
-            GL11.glEnable(GL11.GL_SCISSOR_TEST);
-            GL11.glScissor(0, 0, size, size);
             GL11.glClearColor(1.0F, 1.0F, 1.0F, 1.0F);
             GL11.glClear(GL11.GL_COLOR_BUFFER_BIT | GL11.GL_DEPTH_BUFFER_BIT);
-            GL11.glScissor(size, 0, size, size);
-            GL11.glClearColor(0.0F, 0.0F, 0.0F, 1.0F);
-            GL11.glClear(GL11.GL_COLOR_BUFFER_BIT | GL11.GL_DEPTH_BUFFER_BIT);
+
+            GL11.glEnable(GL11.GL_SCISSOR_TEST);
+            for (int i = 0; i < count; i++) {
+                int col = i % columns;
+                int row = i / columns;
+                GL11.glScissor(col * size * 2 + size, row * size, size, size);
+                GL11.glClearColor(0.0F, 0.0F, 0.0F, 1.0F);
+                GL11.glClear(GL11.GL_COLOR_BUFFER_BIT);
+            }
             GL11.glDisable(GL11.GL_SCISSOR_TEST);
 
-            applyGuiRenderState(size, 0);
-            action.render();
-            applyGuiRenderState(size, size);
-            action.render();
-
+            for (int i = 0; i < count; i++) {
+                int baseX = (i % columns) * size * 2;
+                int baseY = (i / columns) * size;
+                IconRenderAction action = actions.get(i);
+                applyGuiRenderState(size, baseX, baseY);
+                action.render();
+                applyGuiRenderState(size, baseX + size, baseY);
+                action.render();
+            }
             GL11.glFlush();
-            return readAndExtract(size);
+
+            ByteBuffer buffer = BufferUtils.createByteBuffer(atlasWidth * atlasHeight * 4);
+            GL11.glReadPixels(0, 0, atlasWidth, atlasHeight, GL12.GL_BGRA, GL11.GL_UNSIGNED_BYTE, buffer);
+            int[] raw = new int[atlasWidth * atlasHeight];
+            buffer.asIntBuffer()
+                .get(raw);
+
+            for (int i = 0; i < count; i++) {
+                int baseX = (i % columns) * size * 2;
+                int baseY = (i / columns) * size;
+                out.add(extractTile(raw, atlasWidth, baseX, baseY, size));
+            }
         } catch (RuntimeException e) {
-            throw new AssetRenderException("Unable to render icon framebuffer", e);
+            throw new AssetRenderException("Unable to render icon batch", e);
         }
     }
 
-    private static void applyGuiRenderState(int size, int viewportX) {
-        GL11.glViewport(viewportX, 0, size, size);
+    private static void applyGuiRenderState(int size, int viewportX, int viewportY) {
+        GL11.glViewport(viewportX, viewportY, size, size);
         GL11.glColorMask(true, true, true, true);
         GL11.glDepthMask(true);
         GL11.glDisable(GL11.GL_SCISSOR_TEST);
@@ -97,37 +157,29 @@ public final class FboIconRenderer {
         GL11.glEnable(GL12.GL_RESCALE_NORMAL);
     }
 
-    private void ensureFramebuffer(int size) {
-        if (framebuffer == null || framebufferSize != size) {
+    private void ensureFramebuffer(int width, int height) {
+        if (framebuffer == null || framebufferWidth != width || framebufferHeight != height) {
             if (framebuffer != null) {
                 framebuffer.deleteFramebuffer();
             }
-            // 宽度为 2*size：左半白底、右半黑底，单次渲染两套底色。
-            framebuffer = new Framebuffer(size * 2, size, true);
+            framebuffer = new Framebuffer(width, height, true);
             framebuffer.setFramebufferColor(0.0F, 0.0F, 0.0F, 1.0F);
-            framebufferSize = size;
+            framebufferWidth = width;
+            framebufferHeight = height;
         }
     }
 
     /**
-     * 一次性读回 2*size×size 整块像素，并在 int[] 上直接反推 alpha 输出图标。
+     * 从整块 atlas 的 int[] 中切出一个图标单元并反推 alpha。
      *
      * <p>
-     * 左半为白底渲染结果、右半为黑底渲染结果。同时完成垂直翻转（glReadPixels 原点在左下）与
-     * 白/黑反推，避免逐像素 {@code getRGB}/{@code setRGB}。BGRA 字节按小端读成 int 即为 ARGB 布局，
-     * 与 {@link #extractPixel} 的位运算一致。
+     * 单元左下角在 atlas 内为 ({@code baseX}, {@code baseY})，左半白底、右半黑底。完成垂直翻转
+     * （glReadPixels 原点在左下）与白/黑反推（见 {@link #extractPixel}），避免逐像素 getRGB/setRGB。
      */
-    private static BufferedImage readAndExtract(int size) {
-        int width = size * 2;
-        ByteBuffer buffer = BufferUtils.createByteBuffer(width * size * 4);
-        GL11.glReadPixels(0, 0, width, size, GL12.GL_BGRA, GL11.GL_UNSIGNED_BYTE, buffer);
-        int[] raw = new int[width * size];
-        buffer.asIntBuffer()
-            .get(raw);
-
+    private static BufferedImage extractTile(int[] raw, int atlasWidth, int baseX, int baseY, int size) {
         int[] out = new int[size * size];
         for (int y = 0; y < size; y++) {
-            int sourceRow = (size - y - 1) * width;
+            int sourceRow = (baseY + size - y - 1) * atlasWidth + baseX;
             int targetRow = y * size;
             for (int x = 0; x < size; x++) {
                 int whiteRgb = raw[sourceRow + x];
@@ -135,7 +187,6 @@ public final class FboIconRenderer {
                 out[targetRow + x] = extractPixel(whiteRgb, blackRgb);
             }
         }
-
         BufferedImage image = new BufferedImage(size, size, BufferedImage.TYPE_INT_ARGB);
         image.setRGB(0, 0, size, size, out, 0, size);
         return image;
