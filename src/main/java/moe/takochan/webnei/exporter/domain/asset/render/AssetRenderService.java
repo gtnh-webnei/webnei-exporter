@@ -2,6 +2,7 @@ package moe.takochan.webnei.exporter.domain.asset.render;
 
 import java.awt.image.BufferedImage;
 import java.io.File;
+import java.io.IOException;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -39,6 +40,8 @@ public final class AssetRenderService {
 
     private static final long FRAME_BUDGET_NANOS = TimeUnit.MILLISECONDS.toNanos(8L);
     private static final int QUEUE_CAPACITY = 256;
+    /** 资产 zip 文件名，落在 bundle 输出目录下，由部署侧解压。 */
+    private static final String ASSET_ZIP_NAME = "assets.zip";
     /** 单次 atlas flush 的图标数上限，限制单帧 GL 工作量。 */
     private static final int MAX_BATCH = 64;
     private static final long STALL_TIMEOUT_NANOS = TimeUnit.SECONDS.toNanos(60L);
@@ -75,6 +78,15 @@ public final class AssetRenderService {
             return Collections.emptyList();
         }
 
+        File zipFile = new File(outputDirectory, ASSET_ZIP_NAME);
+        ZipAssetWriter zipWriter;
+        try {
+            zipWriter = ZipAssetWriter.create(zipFile);
+        } catch (IOException e) {
+            WebneiExporterMod.LOG.error("Unable to create asset zip: {}", zipFile.getAbsolutePath(), e);
+            return Collections.emptyList();
+        }
+
         BlockingQueue<RenderedAsset> queue = new ArrayBlockingQueue<>(QUEUE_CAPACITY);
         List<AssetRow> rows = Collections.synchronizedList(new ArrayList<AssetRow>(jobs.size()));
         CountDownLatch producerDone = new CountDownLatch(1);
@@ -82,16 +94,9 @@ public final class AssetRenderService {
         AtomicLong tickProgress = new AtomicLong(System.nanoTime());
 
         ExecutorService encoders = Executors.newFixedThreadPool(encoderThreads, encoderThreadFactory());
-        List<CountDownLatch> encoderDone = startEncoders(encoders, queue, rows, outputDirectory);
+        List<CountDownLatch> encoderDone = startEncoders(encoders, queue, rows, zipWriter);
 
-        Producer producer = new Producer(
-            jobs,
-            outputDirectory,
-            queue,
-            producerDone,
-            producerError,
-            tickProgress,
-            progress);
+        Producer producer = new Producer(jobs, queue, producerDone, producerError, tickProgress, progress);
         AssetRenderDispatcher.INSTANCE.setFrameTask(producer);
 
         try {
@@ -100,6 +105,7 @@ public final class AssetRenderService {
             awaitEncoders(encoderDone);
         } finally {
             encoders.shutdownNow();
+            closeQuietly(zipWriter, zipFile);
         }
 
         RuntimeException error = producerError.get();
@@ -107,6 +113,14 @@ public final class AssetRenderService {
             WebneiExporterMod.LOG.error("Asset render producer failed", error);
         }
         return new ArrayList<>(rows);
+    }
+
+    private static void closeQuietly(ZipAssetWriter zipWriter, File zipFile) {
+        try {
+            zipWriter.close();
+        } catch (IOException e) {
+            WebneiExporterMod.LOG.error("Unable to finalize asset zip: {}", zipFile.getAbsolutePath(), e);
+        }
     }
 
     private IAssetRenderer rendererFor(AssetRenderJob job) {
@@ -157,12 +171,12 @@ public final class AssetRenderService {
     }
 
     private List<CountDownLatch> startEncoders(ExecutorService encoders, BlockingQueue<RenderedAsset> queue,
-        List<AssetRow> rows, File outputDirectory) {
+        List<AssetRow> rows, ZipAssetWriter zipWriter) {
         List<CountDownLatch> latches = new ArrayList<>(encoderThreads);
         for (int i = 0; i < encoderThreads; i++) {
             CountDownLatch done = new CountDownLatch(1);
             latches.add(done);
-            encoders.execute(new Encoder(queue, rows, outputDirectory, done));
+            encoders.execute(new Encoder(queue, rows, zipWriter, done));
         }
         return latches;
     }
@@ -222,7 +236,6 @@ public final class AssetRenderService {
     private final class Producer implements AssetRenderDispatcher.FrameTask {
 
         private final List<AssetRenderJob> jobs;
-        private final File outputDirectory;
         private final BlockingQueue<RenderedAsset> queue;
         private final CountDownLatch done;
         private final AtomicReference<RuntimeException> error;
@@ -234,11 +247,9 @@ public final class AssetRenderService {
         private int index;
         private int finished;
 
-        private Producer(List<AssetRenderJob> jobs, File outputDirectory, BlockingQueue<RenderedAsset> queue,
-            CountDownLatch done, AtomicReference<RuntimeException> error, AtomicLong tickProgress,
-            AssetRenderProgress progress) {
+        private Producer(List<AssetRenderJob> jobs, BlockingQueue<RenderedAsset> queue, CountDownLatch done,
+            AtomicReference<RuntimeException> error, AtomicLong tickProgress, AssetRenderProgress progress) {
             this.jobs = jobs;
-            this.outputDirectory = outputDirectory;
             this.queue = queue;
             this.done = done;
             this.error = error;
@@ -375,7 +386,6 @@ public final class AssetRenderService {
         }
 
         private void emit(RenderedAsset asset) {
-            asset.setOutputFile(new File(outputDirectory, asset.getRelativePath()));
             if (!queue.offer(asset)) {
                 overflow.addLast(asset);
             }
@@ -402,19 +412,19 @@ public final class AssetRenderService {
         }
     }
 
-    /** 后台 encoder：从队列取 {@link RenderedAsset}，编码 PNG 落盘并产出 {@link AssetRow}。 */
+    /** 后台 encoder：从队列取 {@link RenderedAsset}，并行编码 PNG 字节并追加进 zip，产出 {@link AssetRow}。 */
     private static final class Encoder implements Runnable {
 
         private final BlockingQueue<RenderedAsset> queue;
         private final List<AssetRow> rows;
-        private final File outputDirectory;
+        private final ZipAssetWriter zipWriter;
         private final CountDownLatch done;
 
-        private Encoder(BlockingQueue<RenderedAsset> queue, List<AssetRow> rows, File outputDirectory,
+        private Encoder(BlockingQueue<RenderedAsset> queue, List<AssetRow> rows, ZipAssetWriter zipWriter,
             CountDownLatch done) {
             this.queue = queue;
             this.rows = rows;
-            this.outputDirectory = outputDirectory;
+            this.zipWriter = zipWriter;
             this.done = done;
         }
 
@@ -437,14 +447,12 @@ public final class AssetRenderService {
         }
 
         private void encode(RenderedAsset asset) {
-            File outputFile = asset.getOutputFile();
-            if (outputFile == null) {
-                outputFile = new File(outputDirectory, asset.getRelativePath());
-            }
             try {
-                PngAssetFile.write(asset.getImage(), outputFile);
+                // 并行：编码 PNG 字节并算好 STORED entry；串行：仅追加进 zip（临界区极短）。
+                byte[] data = PngAssetFile.encode(asset.getImage());
+                zipWriter.writeEntry(ZipAssetWriter.storedEntry(asset.getRelativePath(), data), data);
                 rows.add(toRow(asset));
-            } catch (AssetRenderException | RuntimeException e) {
+            } catch (AssetRenderException | IOException | RuntimeException e) {
                 AssetRenderJob job = asset.getJob();
                 WebneiExporterMod.LOG.warn(
                     "Failed to encode asset: ownerType={}, ownerId={}, kind={}",

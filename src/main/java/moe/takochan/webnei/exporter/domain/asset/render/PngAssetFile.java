@@ -1,7 +1,7 @@
 package moe.takochan.webnei.exporter.domain.asset.render;
 
 import java.awt.image.BufferedImage;
-import java.io.File;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 
 import javax.imageio.ImageIO;
@@ -10,23 +10,14 @@ final class PngAssetFile {
 
     private PngAssetFile() {}
 
-    static void write(BufferedImage image, File file) throws AssetRenderException {
-        ensureParent(file);
+    /** 将图标编码为 PNG 字节，不落盘；落盘由 zip writer 统一完成。 */
+    static byte[] encode(BufferedImage image) throws AssetRenderException {
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
         try {
-            ImageIO.write(image, "png", file);
+            ImageIO.write(image, "png", out);
         } catch (IOException e) {
-            throw new AssetRenderException("Unable to write PNG: " + file.getAbsolutePath(), e);
+            throw new AssetRenderException("Unable to encode PNG", e);
         }
-    }
-
-    private static void ensureParent(File file) throws AssetRenderException {
-        File parent = file.getParentFile();
-        if (parent == null || parent.isDirectory()) {
-            return;
-        }
-        // 多个 encoder 线程并发写盘，mkdirs 可能因竞争返回 false；再确认一次目录是否已存在。
-        if (!parent.mkdirs() && !parent.isDirectory()) {
-            throw new AssetRenderException("Unable to create asset directory: " + parent.getAbsolutePath());
-        }
+        return out.toByteArray();
     }
 }

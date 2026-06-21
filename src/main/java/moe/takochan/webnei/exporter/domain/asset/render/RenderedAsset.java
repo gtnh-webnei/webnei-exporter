@@ -1,14 +1,13 @@
 package moe.takochan.webnei.exporter.domain.asset.render;
 
 import java.awt.image.BufferedImage;
-import java.io.File;
 
 /**
  * 一个图标的内存渲染产物。
  *
  * <p>
- * GL 渲染阶段（客户端线程）只产出该对象，不做 PNG 编码或落盘。编码与写盘由后台 encoder
- * 线程池消费该对象时完成。{@link #outputFile} 由生产者在客户端线程设置，供 encoder 线程写出。
+ * GL 渲染阶段（客户端线程）只产出该对象，不做 PNG 编码或落盘。编码（PNG 字节）与写出（追加进 zip）
+ * 由后台 encoder 线程池消费该对象时完成；{@link #relativePath} 即 bundle 内（zip 内）相对路径。
  */
 public final class RenderedAsset {
 
@@ -19,7 +18,6 @@ public final class RenderedAsset {
     private final BufferedImage image;
     private final String mediaType;
     private final String metadataJson;
-    private File outputFile;
 
     private RenderedAsset(AssetRenderJob job, String relativePath, BufferedImage image, String mediaType,
         String metadataJson) {
@@ -52,13 +50,5 @@ public final class RenderedAsset {
 
     public String getMetadataJson() {
         return metadataJson;
-    }
-
-    public File getOutputFile() {
-        return outputFile;
-    }
-
-    public void setOutputFile(File outputFile) {
-        this.outputFile = outputFile;
     }
 }
