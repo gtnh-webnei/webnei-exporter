@@ -25,7 +25,7 @@ public final class AssetPath {
     }
 
     public static String recipeCategoryIcon(String categoryId) {
-        return path(CATEGORY_RECIPE, categoryId, false, ICON_SUFFIX);
+        return recipeCategoryPath(categoryId);
     }
 
     private static String path(String category, String ownerId, boolean itemVariant, String suffix) {
@@ -37,6 +37,10 @@ public final class AssetPath {
                 .replace(ITEM_NBT_SEPARATOR, PATH_NBT_SEPARATOR);
         }
         return category + '/' + safeSegment(modId) + '/' + safeSegment(localName + suffix) + PNG_EXTENSION;
+    }
+
+    private static String recipeCategoryPath(String categoryId) {
+        return CATEGORY_RECIPE + '/' + safeSegment(categoryId + ICON_SUFFIX) + PNG_EXTENSION;
     }
 
     private static String safeSegment(String segment) {

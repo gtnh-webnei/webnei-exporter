@@ -38,6 +38,13 @@ elytraModpackVersion {
     setGtnhVersion("2.8.4")
 }
 
+configurations.configureEach {
+    resolutionStrategy {
+        force gtnh("GTNHLib")
+        force gtnh("Applied-Energistics-2-Unofficial")
+    }
+}
+
 dependencies {
     // lombok
     def lombokVersion = "1.18.46"
