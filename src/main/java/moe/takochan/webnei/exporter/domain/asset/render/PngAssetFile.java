@@ -21,7 +21,11 @@ final class PngAssetFile {
 
     private static void ensureParent(File file) throws AssetRenderException {
         File parent = file.getParentFile();
-        if (parent != null && !parent.isDirectory() && !parent.mkdirs()) {
+        if (parent == null || parent.isDirectory()) {
+            return;
+        }
+        // 多个 encoder 线程并发写盘，mkdirs 可能因竞争返回 false；再确认一次目录是否已存在。
+        if (!parent.mkdirs() && !parent.isDirectory()) {
             throw new AssetRenderException("Unable to create asset directory: " + parent.getAbsolutePath());
         }
     }

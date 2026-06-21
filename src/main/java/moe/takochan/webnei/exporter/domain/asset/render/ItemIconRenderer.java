@@ -3,7 +3,6 @@ package moe.takochan.webnei.exporter.domain.asset.render;
 import java.awt.AlphaComposite;
 import java.awt.Graphics2D;
 import java.awt.image.BufferedImage;
-import java.io.File;
 import java.util.Arrays;
 
 import net.minecraft.item.ItemStack;
@@ -12,7 +11,6 @@ import net.minecraft.util.IIcon;
 import codechicken.nei.guihook.GuiContainerManager;
 import moe.takochan.webnei.exporter.domain.asset.AssetContract;
 import moe.takochan.webnei.exporter.domain.asset.internal.AssetPath;
-import moe.takochan.webnei.exporter.domain.asset.render.client.AssetRenderDispatcher;
 import moe.takochan.webnei.exporter.domain.asset.render.client.DynamicTextureState;
 import moe.takochan.webnei.exporter.domain.asset.render.client.FboIconRenderer;
 
@@ -26,15 +24,9 @@ public final class ItemIconRenderer implements IAssetRenderer {
     }
 
     @Override
-    public AssetRenderResult render(final AssetRenderJob job, File outputDirectory) throws AssetRenderException {
-        final ItemStack stack = job.getItemStack();
-        String relativePath = relativePath(job);
-        File outputFile = new File(outputDirectory, relativePath);
-
-        RenderedIcon icon = AssetRenderDispatcher.INSTANCE.call(() -> renderIcon(stack));
-
-        PngAssetFile.write(icon.image, outputFile);
-        return AssetRenderResult.png(relativePath, icon.image.getWidth(), icon.image.getHeight(), icon.metadataJson);
+    public RenderedAsset renderImage(AssetRenderJob job) throws AssetRenderException {
+        RenderedIcon icon = renderIcon(job.getItemStack());
+        return RenderedAsset.png(job, relativePath(job), icon.image, icon.metadataJson);
     }
 
     private static boolean isItemStackIcon(AssetRenderJob job) {

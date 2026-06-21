@@ -1,7 +1,6 @@
 package moe.takochan.webnei.exporter.domain.asset.render;
 
 import java.awt.image.BufferedImage;
-import java.io.File;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.Tessellator;
@@ -13,7 +12,6 @@ import org.lwjgl.opengl.GL11;
 
 import moe.takochan.webnei.exporter.domain.asset.AssetContract;
 import moe.takochan.webnei.exporter.domain.asset.internal.AssetPath;
-import moe.takochan.webnei.exporter.domain.asset.render.client.AssetRenderDispatcher;
 import moe.takochan.webnei.exporter.domain.asset.render.client.FboIconRenderer;
 
 public final class FluidIconRenderer implements IAssetRenderer {
@@ -26,21 +24,9 @@ public final class FluidIconRenderer implements IAssetRenderer {
     }
 
     @Override
-    public AssetRenderResult render(final AssetRenderJob job, File outputDirectory) throws AssetRenderException {
-        String relativePath = AssetPath.fluidIcon(job.getOwnerId());
-        File outputFile = new File(outputDirectory, relativePath);
-
-        BufferedImage image = AssetRenderDispatcher.INSTANCE.call(new java.util.concurrent.Callable<BufferedImage>() {
-
-            @Override
-            public BufferedImage call() throws Exception {
-                return renderFluid(job.getFluidStack());
-            }
-        });
-
-        PngAssetFile.write(image, outputFile);
-        return AssetRenderResult
-            .png(relativePath, image.getWidth(), image.getHeight(), AssetRenderMetadata.staticImage());
+    public RenderedAsset renderImage(final AssetRenderJob job) throws AssetRenderException {
+        BufferedImage image = renderFluid(job.getFluidStack());
+        return RenderedAsset.png(job, AssetPath.fluidIcon(job.getOwnerId()), image, AssetRenderMetadata.staticImage());
     }
 
     private BufferedImage renderFluid(final FluidStack stack) throws AssetRenderException {
