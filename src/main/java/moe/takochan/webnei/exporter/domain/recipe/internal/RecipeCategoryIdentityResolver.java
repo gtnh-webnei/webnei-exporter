@@ -23,12 +23,11 @@ public final class RecipeCategoryIdentityResolver {
         String handlerId = safeString(handler::getHandlerId);
         String overlayId = safeString(handler::getOverlayIdentifier);
         String modId = modId(info);
-        String baseCategoryId = resolveCategoryId(modId, handlerId, overlayId, handlerClass);
+        String categoryId = resolveCategoryId(handlerClass, handlerId, overlayId);
         return new RecipeCategoryIdentity(
             handlerKey(handlerClass, handlerId, overlayId),
-            baseCategoryId,
-            simpleClassName(handlerClass),
-            displayName(handler, baseCategoryId),
+            categoryId,
+            displayName(handler, categoryId),
             modId,
             info == null ? null : info.getItemStack());
     }
@@ -57,17 +56,30 @@ public final class RecipeCategoryIdentityResolver {
         return UNKNOWN_MOD_ID.equals(modId) ? "" : modId;
     }
 
-    private static String resolveCategoryId(String modId, String handlerId, String overlayId, String handlerClass) {
-        String namespace = hasText(modId) ? modId : handlerClass;
-        String local;
-        if (!overlayId.isEmpty() && !isGenericOverlayId(overlayId)) {
-            local = overlayId;
-        } else if (!handlerId.isEmpty() && !isGenericOverlayId(handlerId)) {
-            local = handlerId;
-        } else {
-            local = handlerClass;
+    /**
+     * 由 handler 身份确定性地派生分类 ID。
+     *
+     * <p>
+     * 始终以 handlerClass 为基础段，保证不同 mod / 不同实现互不撞名；再按需追加 handlerId、overlayId 中能提供额外区分度的部分（与 class
+     * 不同且非通用值），用来区分同一个 handlerClass 注册的多个分类（例如 NEI Custom Diagram 的多张图、IC2 Metal Former 的多种模式）。
+     *
+     * <p>
+     * 该 ID 不读取运行时 modId，也不依赖本次扫描里是否存在撞名 handler，因此对同一个 handler 恒定。
+     */
+    private static String resolveCategoryId(String handlerClass, String handlerId, String overlayId) {
+        StringBuilder local = new StringBuilder(sanitize(handlerClass));
+        appendDistinguishingSegment(local, sanitize(handlerId), local.toString());
+        appendDistinguishingSegment(local, sanitize(overlayId), local.toString());
+        return local.toString();
+    }
+
+    /** 当片段非空、非通用值，且未被已有 ID 段包含时，追加它以区分同类的多个分类。 */
+    private static void appendDistinguishingSegment(StringBuilder builder, String segment, String current) {
+        if (segment.isEmpty() || isGenericOverlayId(segment) || current.contains(segment)) {
+            return;
         }
-        return sanitize(namespace) + ":" + sanitize(local);
+        builder.append('.')
+            .append(segment);
     }
 
     private static boolean isGenericOverlayId(String id) {
@@ -88,11 +100,6 @@ public final class RecipeCategoryIdentityResolver {
         } catch (Throwable ignored) {
             return "";
         }
-    }
-
-    private static String simpleClassName(String className) {
-        int index = className.lastIndexOf('.');
-        return sanitize(index < 0 ? className : className.substring(index + 1));
     }
 
     /**

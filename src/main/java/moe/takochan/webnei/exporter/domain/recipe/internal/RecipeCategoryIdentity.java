@@ -10,14 +10,17 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public final class RecipeCategoryIdentity {
 
-    /** handler class + handlerId + overlayId 组成的稳定去重 key。 */
+    /** handler class + handlerId + overlayId 组成的稳定去重与匹配 key。 */
     private final String handlerKey;
 
-    /** 解析出的基础分类 ID，可能与其它 handler 撞名，由 data 做最终消歧。 */
-    private final String baseCategoryId;
-
-    /** 基础分类 ID 撞名时追加的消歧片段。 */
-    private final String disambiguationSegment;
+    /**
+     * 确定性的分类 ID。
+     *
+     * <p>
+     * 直接由 handler 身份（class + handlerId + overlayId）派生，不依赖运行时 modId，也不依赖本次扫描里其它 handler 是否撞名， 因此同一个 handler
+     * 在任何环境、任何扫描组合下都得到恒定的 ID。
+     */
+    private final String categoryId;
 
     /** 分类显示名。 */
     private final String displayName;
