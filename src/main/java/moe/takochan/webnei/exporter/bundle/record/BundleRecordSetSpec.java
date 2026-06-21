@@ -9,15 +9,22 @@ import java.util.function.Function;
 public final class BundleRecordSetSpec<T> {
 
     private final String name;
+    private final int order;
     private final List<Field<T>> fields = new ArrayList<>();
 
-    private BundleRecordSetSpec(String name) {
+    private BundleRecordSetSpec(String name, int order) {
         this.name = name;
+        this.order = order;
     }
 
-    /** 创建 record set 映射规则。 */
-    public static <T> BundleRecordSetSpec<T> recordSet(String name) {
-        return new BundleRecordSetSpec<>(name);
+    /**
+     * 创建 record set 映射规则。
+     *
+     * @param name  record set / 目标表名
+     * @param order 写出顺序键，取 FK 依赖层级（父表小、子表大）；writer 按此升序写出，新增表必须显式给出
+     */
+    public static <T> BundleRecordSetSpec<T> recordSet(String name, int order) {
+        return new BundleRecordSetSpec<>(name, order);
     }
 
     /** 添加一个字段。 */
@@ -46,7 +53,7 @@ public final class BundleRecordSetSpec<T> {
             }
             records.add(values);
         }
-        return new BundleRecordSet(name, fieldNames, records);
+        return new BundleRecordSet(name, order, fieldNames, records);
     }
 
     /** 单字段映射规则。 */

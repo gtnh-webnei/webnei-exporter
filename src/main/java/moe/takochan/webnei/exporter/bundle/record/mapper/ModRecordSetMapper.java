@@ -12,7 +12,7 @@ import moe.takochan.webnei.exporter.domain.mod.model.ModRow;
 /** mod export model 的记录集映射。 */
 public final class ModRecordSetMapper implements IBundleRecordSetMapper<ModExportModel> {
 
-    private static final BundleRecordSetSpec<ModRow> MOD = BundleRecordSetSpec.<ModRow>recordSet("mod")
+    private static final BundleRecordSetSpec<ModRow> MOD = BundleRecordSetSpec.<ModRow>recordSet("mod", 20)
         .field("dataset_id", ModRow::getDatasetId)
         .field("mod_id", ModRow::getModId)
         .field("name", ModRow::getName)

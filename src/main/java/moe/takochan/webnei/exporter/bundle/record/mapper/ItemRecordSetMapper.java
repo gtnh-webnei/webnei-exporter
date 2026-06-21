@@ -15,7 +15,7 @@ import moe.takochan.webnei.exporter.domain.item.model.ItemVariantRow;
 /** item export model 的记录集映射。 */
 public final class ItemRecordSetMapper implements IBundleRecordSetMapper<ItemExportModel> {
 
-    private static final BundleRecordSetSpec<ItemRow> ITEM = BundleRecordSetSpec.<ItemRow>recordSet("item")
+    private static final BundleRecordSetSpec<ItemRow> ITEM = BundleRecordSetSpec.<ItemRow>recordSet("item", 30)
         .field("dataset_id", ItemRow::getDatasetId)
         .field("item_id", ItemRow::getItemId)
         .field("mod_id", ItemRow::getModId)
@@ -26,7 +26,7 @@ public final class ItemRecordSetMapper implements IBundleRecordSetMapper<ItemExp
         .field("runtime_item_id", ItemRow::getRuntimeItemId);
 
     private static final BundleRecordSetSpec<ItemVariantRow> ITEM_VARIANT = BundleRecordSetSpec
-        .<ItemVariantRow>recordSet("item_variant")
+        .<ItemVariantRow>recordSet("item_variant", 40)
         .field("dataset_id", ItemVariantRow::getDatasetId)
         .field("item_variant_id", ItemVariantRow::getItemVariantId)
         .field("item_id", ItemVariantRow::getItemId)
@@ -38,14 +38,14 @@ public final class ItemRecordSetMapper implements IBundleRecordSetMapper<ItemExp
         .field("chemical_expression", ItemVariantRow::getChemicalExpression);
 
     private static final BundleRecordSetSpec<ItemToolClassRow> ITEM_TOOL_CLASS = BundleRecordSetSpec
-        .<ItemToolClassRow>recordSet("item_tool_class")
+        .<ItemToolClassRow>recordSet("item_tool_class", 50)
         .field("dataset_id", ItemToolClassRow::getDatasetId)
         .field("item_variant_id", ItemToolClassRow::getItemVariantId)
         .field("tool_class", ItemToolClassRow::getToolClass)
         .field("harvest_level", ItemToolClassRow::getHarvestLevel);
 
     private static final BundleRecordSetSpec<ItemListEntryRow> ITEM_LIST_ENTRY = BundleRecordSetSpec
-        .<ItemListEntryRow>recordSet("item_list_entry")
+        .<ItemListEntryRow>recordSet("item_list_entry", 60)
         .field("dataset_id", ItemListEntryRow::getDatasetId)
         .field("item_variant_id", ItemListEntryRow::getItemVariantId)
         .field("list_index", ItemListEntryRow::getListIndex);

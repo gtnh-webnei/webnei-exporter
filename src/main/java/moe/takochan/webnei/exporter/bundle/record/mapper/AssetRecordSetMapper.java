@@ -13,7 +13,7 @@ import moe.takochan.webnei.exporter.domain.asset.model.AssetRow;
 public final class AssetRecordSetMapper implements IBundleRecordSetMapper<AssetExportModel> {
 
     private static final BundleRecordSetSpec<AssetRow> ASSET = BundleRecordSetSpec
-        .<AssetRow>recordSet(AssetExportModel.TYPE)
+        .<AssetRow>recordSet(AssetExportModel.TYPE, 130)
         .field("dataset_id", AssetRow::getDatasetId)
         .field("owner_type", AssetRow::getOwnerType)
         .field("owner_id", AssetRow::getOwnerId)

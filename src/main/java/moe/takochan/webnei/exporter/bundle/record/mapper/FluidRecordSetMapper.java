@@ -14,7 +14,7 @@ import moe.takochan.webnei.exporter.domain.fluid.model.FluidRow;
 /** fluid export model 的记录集映射。 */
 public final class FluidRecordSetMapper implements IBundleRecordSetMapper<FluidExportModel> {
 
-    private static final BundleRecordSetSpec<FluidRow> FLUID = BundleRecordSetSpec.<FluidRow>recordSet("fluid")
+    private static final BundleRecordSetSpec<FluidRow> FLUID = BundleRecordSetSpec.<FluidRow>recordSet("fluid", 70)
         .field("dataset_id", FluidRow::getDatasetId)
         .field("fluid_id", FluidRow::getFluidId)
         .field("mod_id", FluidRow::getModId)
@@ -29,14 +29,14 @@ public final class FluidRecordSetMapper implements IBundleRecordSetMapper<FluidE
         .field("gaseous", FluidRow::isGaseous);
 
     private static final BundleRecordSetSpec<FluidContainerRow> FLUID_CONTAINER = BundleRecordSetSpec
-        .<FluidContainerRow>recordSet("fluid_container")
+        .<FluidContainerRow>recordSet("fluid_container", 80)
         .field("dataset_id", FluidContainerRow::getDatasetId)
         .field("fluid_id", FluidContainerRow::getFluidId)
         .field("amount", FluidContainerRow::getAmount)
         .field("item_variant_id", FluidContainerRow::getItemVariantId);
 
     private static final BundleRecordSetSpec<FluidBlockRow> FLUID_BLOCK = BundleRecordSetSpec
-        .<FluidBlockRow>recordSet("fluid_block")
+        .<FluidBlockRow>recordSet("fluid_block", 90)
         .field("dataset_id", FluidBlockRow::getDatasetId)
         .field("fluid_id", FluidBlockRow::getFluidId)
         .field("item_variant_id", FluidBlockRow::getItemVariantId);

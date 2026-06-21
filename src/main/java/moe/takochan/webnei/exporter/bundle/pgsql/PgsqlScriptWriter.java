@@ -6,10 +6,9 @@ import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.io.Writer;
 import java.nio.charset.StandardCharsets;
-import java.util.Arrays;
-import java.util.LinkedHashMap;
+import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
-import java.util.Map;
 import java.util.regex.Pattern;
 
 import moe.takochan.webnei.exporter.bundle.BundleException;
@@ -18,27 +17,14 @@ import moe.takochan.webnei.exporter.bundle.record.BundleRecordSet;
 /** 写出 psql 可执行的数据导入脚本。 */
 final class PgsqlScriptWriter {
 
-    private static final List<String> RECORD_SET_ORDER = Arrays.asList(
-        "dataset",
-        "mod",
-        "item",
-        "item_variant",
-        "item_tool_class",
-        "item_list_entry",
-        "fluid",
-        "fluid_container",
-        "fluid_block",
-        "ore_dictionary",
-        "ore_dictionary_entry",
-        "asset");
     private static final String DATASET_RECORD_SET = "dataset";
     private static final String DATASET_ID_FIELD = "dataset_id";
     private static final String COPY_NULL = "\\N";
     private static final Pattern IDENTIFIER = Pattern.compile("[A-Za-z_][A-Za-z0-9_]*");
 
     void write(List<BundleRecordSet> recordSets, File file) throws BundleException, IOException {
-        Map<String, BundleRecordSet> byName = recordSetsByName(recordSets);
-        String datasetId = datasetId(byName.get(DATASET_RECORD_SET));
+        List<BundleRecordSet> ordered = orderedByDependency(recordSets);
+        String datasetId = datasetId(findByName(ordered, DATASET_RECORD_SET));
 
         try (Writer writer = new OutputStreamWriter(new FileOutputStream(file), StandardCharsets.UTF_8)) {
             writer.write("\\set ON_ERROR_STOP on\n");
@@ -48,34 +34,50 @@ final class PgsqlScriptWriter {
             writer.write(sqlStringLiteral(datasetId));
             writer.write(";\n\n");
 
-            for (String name : RECORD_SET_ORDER) {
-                BundleRecordSet recordSet = byName.remove(name);
-                if (recordSet != null) {
-                    writeCopy(writer, recordSet);
-                }
-            }
-            if (!byName.isEmpty()) {
-                throw new BundleException(
-                    "No PostgreSQL COPY order for record set: " + byName.keySet()
-                        .iterator()
-                        .next());
+            for (BundleRecordSet recordSet : ordered) {
+                writeCopy(writer, recordSet);
             }
 
             writer.write("COMMIT;\n");
         }
     }
 
-    private static Map<String, BundleRecordSet> recordSetsByName(List<BundleRecordSet> recordSets)
-        throws BundleException {
-        Map<String, BundleRecordSet> byName = new LinkedHashMap<>();
-        for (BundleRecordSet recordSet : recordSets) {
-            String name = recordSet.getName();
-            validateIdentifier(name);
-            if (byName.put(name, recordSet) != null) {
-                throw new BundleException("Duplicate bundle record set: " + name);
+    /**
+     * 按 record set 自带的 {@code order}（FK 依赖层级）升序排序，同序按名字保证稳定。
+     *
+     * <p>
+     * 顺序信息随各 record set 定义而来，writer 不再维护中央表名顺序列表，新增表只需在其 spec 上声明 order。
+     */
+    private static List<BundleRecordSet> orderedByDependency(List<BundleRecordSet> recordSets) throws BundleException {
+        List<BundleRecordSet> ordered = new ArrayList<>(recordSets);
+        for (BundleRecordSet recordSet : ordered) {
+            validateIdentifier(recordSet.getName());
+        }
+        ordered.sort(
+            Comparator.comparingInt(BundleRecordSet::getOrder)
+                .thenComparing(BundleRecordSet::getName));
+        for (int i = 1; i < ordered.size(); i++) {
+            if (ordered.get(i)
+                .getName()
+                .equals(
+                    ordered.get(i - 1)
+                        .getName())) {
+                throw new BundleException(
+                    "Duplicate bundle record set: " + ordered.get(i)
+                        .getName());
             }
         }
-        return byName;
+        return ordered;
+    }
+
+    private static BundleRecordSet findByName(List<BundleRecordSet> recordSets, String name) {
+        for (BundleRecordSet recordSet : recordSets) {
+            if (recordSet.getName()
+                .equals(name)) {
+                return recordSet;
+            }
+        }
+        return null;
     }
 
     private static String datasetId(BundleRecordSet dataset) throws BundleException {

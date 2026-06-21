@@ -12,7 +12,8 @@ import moe.takochan.webnei.exporter.domain.dataset.model.DatasetRow;
 /** dataset export model 的记录集映射。 */
 public final class DatasetRecordSetMapper implements IBundleRecordSetMapper<DatasetExportModel> {
 
-    private static final BundleRecordSetSpec<DatasetRow> DATASET = BundleRecordSetSpec.<DatasetRow>recordSet("dataset")
+    private static final BundleRecordSetSpec<DatasetRow> DATASET = BundleRecordSetSpec
+        .<DatasetRow>recordSet("dataset", 10)
         .field("dataset_id", DatasetRow::getDatasetId)
         .field("pack_slug", DatasetRow::getPackSlug)
         .field("pack_version", DatasetRow::getPackVersion)

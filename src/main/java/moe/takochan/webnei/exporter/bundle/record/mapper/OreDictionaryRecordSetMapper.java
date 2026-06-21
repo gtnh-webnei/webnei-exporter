@@ -14,12 +14,12 @@ import moe.takochan.webnei.exporter.domain.oredictionary.model.OreDictionaryRow;
 public final class OreDictionaryRecordSetMapper implements IBundleRecordSetMapper<OreDictionaryExportModel> {
 
     private static final BundleRecordSetSpec<OreDictionaryRow> ORE_DICTIONARY = BundleRecordSetSpec
-        .<OreDictionaryRow>recordSet("ore_dictionary")
+        .<OreDictionaryRow>recordSet("ore_dictionary", 100)
         .field("dataset_id", OreDictionaryRow::getDatasetId)
         .field("dictionary_name", OreDictionaryRow::getDictionaryName);
 
     private static final BundleRecordSetSpec<OreDictionaryEntryRow> ORE_DICTIONARY_ENTRY = BundleRecordSetSpec
-        .<OreDictionaryEntryRow>recordSet("ore_dictionary_entry")
+        .<OreDictionaryEntryRow>recordSet("ore_dictionary_entry", 110)
         .field("dataset_id", OreDictionaryEntryRow::getDatasetId)
         .field("dictionary_name", OreDictionaryEntryRow::getDictionaryName)
         .field("item_variant_id", OreDictionaryEntryRow::getItemVariantId)

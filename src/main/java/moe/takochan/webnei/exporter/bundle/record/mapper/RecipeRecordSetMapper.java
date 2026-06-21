@@ -12,7 +12,7 @@ import moe.takochan.webnei.exporter.domain.recipe.model.RecipeCategoryRow;
 public final class RecipeRecordSetMapper implements IBundleRecordSetMapper<RecipeExportModel> {
 
     private static final BundleRecordSetSpec<RecipeCategoryRow> RECIPE_CATEGORY = BundleRecordSetSpec
-        .<RecipeCategoryRow>recordSet("recipe_category")
+        .<RecipeCategoryRow>recordSet("recipe_category", 120)
         .field("dataset_id", RecipeCategoryRow::getDatasetId)
         .field("category_id", RecipeCategoryRow::getCategoryId)
         .field("display_name", RecipeCategoryRow::getDisplayName)
