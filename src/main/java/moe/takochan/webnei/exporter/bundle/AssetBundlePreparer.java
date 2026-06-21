@@ -8,6 +8,7 @@ import moe.takochan.webnei.exporter.domain.ExportModelSet;
 import moe.takochan.webnei.exporter.domain.IExportModel;
 import moe.takochan.webnei.exporter.domain.asset.AssetExportModel;
 import moe.takochan.webnei.exporter.domain.asset.model.AssetRow;
+import moe.takochan.webnei.exporter.domain.asset.render.AssetRenderProgress;
 import moe.takochan.webnei.exporter.domain.asset.render.AssetRenderService;
 
 public final class AssetBundlePreparer {
@@ -23,6 +24,10 @@ public final class AssetBundlePreparer {
     }
 
     public ExportModelSet prepare(ExportModelSet models, File outputDirectory) {
+        return prepare(models, outputDirectory, AssetRenderProgress.NONE);
+    }
+
+    public ExportModelSet prepare(ExportModelSet models, File outputDirectory, AssetRenderProgress progress) {
         List<IExportModel> prepared = new ArrayList<>();
         for (IExportModel model : models.getModels()) {
             if (model instanceof AssetExportModel) {
@@ -33,7 +38,8 @@ public final class AssetBundlePreparer {
                     prepared.add(model);
                     continue;
                 }
-                List<AssetRow> rows = assetRenderService.renderAll(assetModel.getRenderJobs(), outputDirectory);
+                List<AssetRow> rows = assetRenderService
+                    .renderAll(assetModel.getRenderJobs(), outputDirectory, progress);
                 prepared.add(assetModel.rendered(rows));
             } else {
                 prepared.add(model);

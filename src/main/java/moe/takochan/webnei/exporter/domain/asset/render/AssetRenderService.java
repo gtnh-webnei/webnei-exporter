@@ -67,6 +67,10 @@ public final class AssetRenderService {
     }
 
     public List<AssetRow> renderAll(List<AssetRenderJob> jobs, File outputDirectory) {
+        return renderAll(jobs, outputDirectory, AssetRenderProgress.NONE);
+    }
+
+    public List<AssetRow> renderAll(List<AssetRenderJob> jobs, File outputDirectory, AssetRenderProgress progress) {
         if (jobs.isEmpty()) {
             return Collections.emptyList();
         }
@@ -75,16 +79,23 @@ public final class AssetRenderService {
         List<AssetRow> rows = Collections.synchronizedList(new ArrayList<AssetRow>(jobs.size()));
         CountDownLatch producerDone = new CountDownLatch(1);
         AtomicReference<RuntimeException> producerError = new AtomicReference<>();
-        AtomicLong progress = new AtomicLong(System.nanoTime());
+        AtomicLong tickProgress = new AtomicLong(System.nanoTime());
 
         ExecutorService encoders = Executors.newFixedThreadPool(encoderThreads, encoderThreadFactory());
         List<CountDownLatch> encoderDone = startEncoders(encoders, queue, rows, outputDirectory);
 
-        Producer producer = new Producer(jobs, outputDirectory, queue, producerDone, producerError, progress);
+        Producer producer = new Producer(
+            jobs,
+            outputDirectory,
+            queue,
+            producerDone,
+            producerError,
+            tickProgress,
+            progress);
         AssetRenderDispatcher.INSTANCE.setFrameTask(producer);
 
         try {
-            awaitProducer(producerDone, progress);
+            awaitProducer(producerDone, tickProgress);
             enqueuePoison(queue);
             awaitEncoders(encoderDone);
         } finally {
@@ -215,26 +226,30 @@ public final class AssetRenderService {
         private final BlockingQueue<RenderedAsset> queue;
         private final CountDownLatch done;
         private final AtomicReference<RuntimeException> error;
-        private final AtomicLong progress;
+        private final AtomicLong tickProgress;
+        private final AssetRenderProgress progress;
         private final FboIconRenderer atlas = new FboIconRenderer();
         private final Map<Integer, List<IconTile>> buckets = new LinkedHashMap<>();
         private final Deque<RenderedAsset> overflow = new ArrayDeque<>();
         private int index;
+        private int finished;
 
         private Producer(List<AssetRenderJob> jobs, File outputDirectory, BlockingQueue<RenderedAsset> queue,
-            CountDownLatch done, AtomicReference<RuntimeException> error, AtomicLong progress) {
+            CountDownLatch done, AtomicReference<RuntimeException> error, AtomicLong tickProgress,
+            AssetRenderProgress progress) {
             this.jobs = jobs;
             this.outputDirectory = outputDirectory;
             this.queue = queue;
             this.done = done;
             this.error = error;
+            this.tickProgress = tickProgress;
             this.progress = progress;
         }
 
         @Override
         public boolean runSlice() {
             long deadline = System.nanoTime() + FRAME_BUDGET_NANOS;
-            progress.set(System.nanoTime());
+            tickProgress.set(System.nanoTime());
 
             if (!drainOverflow()) {
                 return true;
@@ -242,21 +257,29 @@ public final class AssetRenderService {
 
             while (index < jobs.size()) {
                 if (System.nanoTime() >= deadline) {
+                    report();
                     return true;
                 }
                 processJob(jobs.get(index));
                 index++;
                 if (!drainOverflow()) {
+                    report();
                     return true;
                 }
             }
 
             flushAllBuckets();
             if (!drainOverflow()) {
+                report();
                 return true;
             }
+            report();
             done.countDown();
             return false;
+        }
+
+        private void report() {
+            progress.onProgress(finished, jobs.size());
         }
 
         @Override
@@ -273,6 +296,7 @@ public final class AssetRenderService {
                     job.getOwnerType(),
                     job.getOwnerId(),
                     job.getKind());
+                finished++;
                 return;
             }
             IconTile tile;
@@ -280,10 +304,12 @@ public final class AssetRenderService {
                 tile = renderer.prepareTile(job);
             } catch (AssetRenderException | RuntimeException e) {
                 warnFailed(job, e);
+                finished++;
                 return;
             }
             if (tile == null) {
                 renderDirect(renderer, job);
+                finished++;
                 return;
             }
             bucket(tile);
@@ -320,11 +346,13 @@ public final class AssetRenderService {
                     emit(
                         RenderedAsset
                             .png(tile.getJob(), tile.getRelativePath(), images.get(i), tile.getMetadataJson()));
+                    finished++;
                 }
             } catch (AssetRenderException | RuntimeException e) {
                 // 批次失败可能源于其中某个图标；逐个重渲以隔离坏图标，避免整批丢失。
                 for (IconTile tile : tiles) {
                     renderTileIndividually(tile);
+                    finished++;
                 }
             }
         }

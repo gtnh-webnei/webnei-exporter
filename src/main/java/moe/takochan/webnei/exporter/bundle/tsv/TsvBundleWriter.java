@@ -51,7 +51,8 @@ public final class TsvBundleWriter implements IBundleWriter {
             throw new BundleException("Unable to create bundle directory: " + outputDirectory.getAbsolutePath());
         }
 
-        ExportModelSet preparedModels = assetBundlePreparer.prepare(models, outputDirectory);
+        ExportModelSet preparedModels = assetBundlePreparer
+            .prepare(models, outputDirectory, context.getRenderProgress());
         List<String> files = new ArrayList<>();
         for (BundleRecordSet recordSet : recordSets(preparedModels.getModels())) {
             File file = new File(outputDirectory, recordSet.getName() + ".tsv");

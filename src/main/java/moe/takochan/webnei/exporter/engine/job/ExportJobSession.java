@@ -3,15 +3,17 @@ package moe.takochan.webnei.exporter.engine.job;
 import java.util.ArrayList;
 import java.util.List;
 
+import moe.takochan.webnei.exporter.domain.asset.render.AssetRenderProgress;
 import moe.takochan.webnei.exporter.engine.task.IExportTask;
 
 /**
  * 导出 job 的统一状态源。
  *
  * <p>
- * chat listener 和未来 GUI 都应读取同一个 session/snapshot。
+ * chat listener 和未来 GUI 都应读取同一个 session/snapshot。实现 {@link AssetRenderProgress}，
+ * 让渲染阶段把"已渲染/总数"细粒度进度回灌到同一状态源，供 GUI 实时展示。
  */
-public final class ExportJobSession {
+public final class ExportJobSession implements AssetRenderProgress {
 
     private final long jobId;
     private final int totalTasks;
@@ -21,6 +23,8 @@ public final class ExportJobSession {
     private String currentTaskLabelKey = "";
     private final List<String> outputFiles = new ArrayList<>();
     private String errorMessage = "";
+    private int renderDone;
+    private int renderTotal;
 
     public ExportJobSession(long jobId, int totalTasks) {
         this.jobId = jobId;
@@ -36,6 +40,15 @@ public final class ExportJobSession {
     public synchronized void startTask(IExportTask task) {
         currentTaskId = task.id();
         currentTaskLabelKey = task.labelKey();
+        renderDone = 0;
+        renderTotal = 0;
+    }
+
+    /** 渲染阶段细粒度进度回调。 */
+    @Override
+    public synchronized void onProgress(int done, int total) {
+        renderDone = done;
+        renderTotal = total;
     }
 
     /** 标记一个 task 完成。 */
@@ -70,6 +83,8 @@ public final class ExportJobSession {
             currentTaskId,
             currentTaskLabelKey,
             new ArrayList<>(outputFiles),
-            errorMessage);
+            errorMessage,
+            renderDone,
+            renderTotal);
     }
 }

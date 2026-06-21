@@ -50,7 +50,7 @@ public final class ExportPlanExecutor {
             return bundleWriter.write(
                 new ExportModelSet(plan.id(), storeRegistry.collectModels()),
                 defaultTarget(),
-                BundleContext.defaults());
+                BundleContext.withRenderProgress(session));
         } catch (BundleException e) {
             WebneiExporterMod.LOG.error("Failed to write WebNEI export bundle", e);
             return BundleResult.failure(bundleWriter.format(), e.getMessage());

@@ -73,6 +73,11 @@ public enum AssetRenderDispatcher {
         frameTask.set(task);
     }
 
+    /** 非阻塞地把一个 Runnable 排入客户端线程，在下一个 render tick 执行。 */
+    public void runLater(Runnable runnable) {
+        tasks.add(new FutureTask<>(runnable, null));
+    }
+
     void drain() {
         FutureTask<?> task;
         while ((task = tasks.poll()) != null) {
