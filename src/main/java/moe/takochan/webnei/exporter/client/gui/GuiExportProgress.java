@@ -1,5 +1,7 @@
 package moe.takochan.webnei.exporter.client.gui;
 
+import java.io.File;
+
 import net.minecraft.client.gui.GuiButton;
 import net.minecraft.client.gui.GuiScreen;
 import net.minecraft.util.StatCollector;
@@ -7,27 +9,38 @@ import net.minecraft.util.StatCollector;
 import moe.takochan.webnei.exporter.engine.job.ExportJobSession;
 import moe.takochan.webnei.exporter.engine.job.ExportJobSnapshot;
 import moe.takochan.webnei.exporter.engine.job.ExportJobState;
+import moe.takochan.webnei.exporter.engine.job.ExportPhaseState;
+import moe.takochan.webnei.exporter.engine.job.ExportPhaseView;
 import moe.takochan.webnei.exporter.engine.job.IExportJobListener;
 
 /**
  * 导出进度 GUI。
  *
  * <p>
- * 每帧轮询 {@link ExportJobSession} 的快照实时展示阶段与渲染进度。同时实现 {@link IExportJobListener}，
- * 在尚未绑定 session 时以最近一次事件快照兜底。导出在后台线程进行，关闭本界面不影响导出。
+ * 每帧轮询 {@link ExportJobSession} 的快照，按阶段清单实时展示各阶段状态和当前阶段的细粒度进度
+ * （如资产渲染 X/N）。同时实现 {@link IExportJobListener}，在尚未绑定 session 时以最近一次事件快照兜底。
+ * 导出在后台线程进行，关闭本界面不影响导出。
  */
 public final class GuiExportProgress extends GuiScreen implements IExportJobListener {
 
     private static final int PANEL_WIDTH = 280;
-    private static final int BAR_HEIGHT = 12;
+    private static final int BAR_HEIGHT = 10;
+    private static final int LINE_HEIGHT = 12;
     private static final int CLOSE_BUTTON_ID = 0;
 
-    private static final int COLOR_TEXT = 0xFFFFFF;
+    private static final int COLOR_TITLE = 0xFFFFFF;
+    private static final int COLOR_DONE = 0x66BB6A;
+    private static final int COLOR_RUNNING = 0xFFD54F;
+    private static final int COLOR_PENDING = 0x808080;
     private static final int COLOR_SUBTEXT = 0xA0A0A0;
     private static final int COLOR_ERROR = 0xFF5555;
     private static final int COLOR_BAR_BG = 0xFF202020;
     private static final int COLOR_BAR_FILL = 0xFF4CAF50;
     private static final int COLOR_BAR_BORDER = 0xFF000000;
+
+    private static final String MARK_DONE = "[x] ";
+    private static final String MARK_RUNNING = "[>] ";
+    private static final String MARK_PENDING = "[ ] ";
 
     private volatile ExportJobSession session;
     private volatile ExportJobSnapshot latest;
@@ -40,7 +53,7 @@ public final class GuiExportProgress extends GuiScreen implements IExportJobList
     @Override
     public void initGui() {
         int x = (width - 100) / 2;
-        int y = height / 2 + 60;
+        int y = height - 40;
         buttonList.clear();
         buttonList.add(new GuiButton(CLOSE_BUTTON_ID, x, y, 100, 20, label("webnei.gui.export.close")));
     }
@@ -63,78 +76,71 @@ public final class GuiExportProgress extends GuiScreen implements IExportJobList
         ExportJobSnapshot snapshot = currentSnapshot();
 
         int centerX = width / 2;
-        int top = height / 2 - 60;
+        int left = centerX - PANEL_WIDTH / 2;
+        int y = 40;
 
-        drawCenteredString(fontRendererObj, label("webnei.gui.export.title"), centerX, top, COLOR_TEXT);
-        drawCenteredString(fontRendererObj, stateText(snapshot), centerX, top + 16, COLOR_SUBTEXT);
+        drawCenteredString(fontRendererObj, label("webnei.gui.export.title"), centerX, y, COLOR_TITLE);
+        y += 14;
+        drawCenteredString(fontRendererObj, stateText(snapshot), centerX, y, COLOR_SUBTEXT);
+        y += 20;
 
         if (snapshot != null) {
-            drawBody(snapshot, centerX, top);
+            y = drawPhases(snapshot, left, y);
+            drawFooter(snapshot, left, y + 4);
         }
         super.drawScreen(mouseX, mouseY, partialTicks);
     }
 
-    // BODY_MARKER
-    private void drawBody(ExportJobSnapshot snapshot, int centerX, int top) {
-        int left = centerX - PANEL_WIDTH / 2;
-        int y = top + 38;
+    private int drawPhases(ExportJobSnapshot snapshot, int left, int top) {
+        int y = top;
+        for (ExportPhaseView phase : snapshot.getPhases()) {
+            ExportPhaseState phaseState = phase.getState();
+            fontRendererObj.drawString(mark(phaseState) + label(phase.getLabelKey()), left, y, phaseColor(phaseState));
+            y += LINE_HEIGHT;
+            if (phaseState == ExportPhaseState.RUNNING && snapshot.getRenderTotal() > 0) {
+                y = drawRenderProgress(snapshot, left + 16, y);
+            }
+        }
+        return y;
+    }
 
-        String tasks = StatCollector.translateToLocalFormatted(
-            "webnei.gui.export.tasks",
-            Integer.toString(snapshot.getCompletedTasks()),
-            Integer.toString(snapshot.getTotalTasks()));
-        fontRendererObj.drawString(tasks, left, y, COLOR_TEXT);
-        y += 14;
+    private int drawRenderProgress(ExportJobSnapshot snapshot, int left, int top) {
+        int total = snapshot.getRenderTotal();
+        int done = Math.min(snapshot.getRenderDone(), total);
+        fontRendererObj.drawString(
+            StatCollector.translateToLocalFormatted(
+                "webnei.gui.export.rendering",
+                Integer.toString(done),
+                Integer.toString(total)),
+            left,
+            top,
+            COLOR_SUBTEXT);
+        int y = top + LINE_HEIGHT;
+        drawBar(left, y, PANEL_WIDTH - 16, done / (float) total);
+        return y + BAR_HEIGHT + 4;
+    }
 
+    private void drawFooter(ExportJobSnapshot snapshot, int left, int top) {
         if (snapshot.getState() == ExportJobState.ERROR) {
             fontRendererObj.drawSplitString(
                 StatCollector
                     .translateToLocalFormatted("webnei.command.export.failed", safe(snapshot.getErrorMessage())),
                 left,
-                y,
+                top,
                 PANEL_WIDTH,
                 COLOR_ERROR);
             return;
         }
-
         if (snapshot.getState() == ExportJobState.DONE) {
-            drawOutputs(snapshot, left, y);
-            return;
-        }
-
-        String phase = phaseText(snapshot);
-        if (!phase.isEmpty()) {
-            fontRendererObj.drawString(
-                StatCollector.translateToLocalFormatted("webnei.gui.export.phase", phase),
-                left,
-                y,
-                COLOR_SUBTEXT);
-            y += 14;
-        }
-
-        int total = snapshot.getRenderTotal();
-        if (total > 0) {
-            int done = Math.min(snapshot.getRenderDone(), total);
-            fontRendererObj.drawString(
-                StatCollector.translateToLocalFormatted(
-                    "webnei.gui.export.rendering",
-                    Integer.toString(done),
-                    Integer.toString(total)),
-                left,
-                y,
-                COLOR_TEXT);
-            y += 14;
-            drawBar(left, y, PANEL_WIDTH, done / (float) total);
-        }
-    }
-
-    private void drawOutputs(ExportJobSnapshot snapshot, int left, int y) {
-        fontRendererObj.drawString(label("webnei.gui.export.outputs"), left, y, COLOR_TEXT);
-        y += 14;
-        for (String file : snapshot.getOutputFiles()) {
-            for (Object line : fontRendererObj.listFormattedStringToWidth(file, PANEL_WIDTH)) {
+            String dir = outputDirectory(snapshot);
+            if (dir.isEmpty()) {
+                return;
+            }
+            fontRendererObj.drawString(label("webnei.gui.export.outputDir"), left, top, COLOR_TITLE);
+            int y = top + LINE_HEIGHT;
+            for (Object line : fontRendererObj.listFormattedStringToWidth(dir, PANEL_WIDTH)) {
                 fontRendererObj.drawString(line.toString(), left, y, COLOR_SUBTEXT);
-                y += 11;
+                y += LINE_HEIGHT - 1;
             }
         }
     }
@@ -154,12 +160,37 @@ public final class GuiExportProgress extends GuiScreen implements IExportJobList
         return latest;
     }
 
-    private static String phaseText(ExportJobSnapshot snapshot) {
-        String key = snapshot.getCurrentTaskLabelKey();
-        if (key == null || key.isEmpty()) {
-            return snapshot.getCurrentTaskId() == null ? "" : snapshot.getCurrentTaskId();
+    private static String outputDirectory(ExportJobSnapshot snapshot) {
+        if (snapshot.getOutputFiles()
+            .isEmpty()) {
+            return "";
         }
-        return StatCollector.translateToLocal(key);
+        File parent = new File(
+            snapshot.getOutputFiles()
+                .get(0)).getParentFile();
+        return parent == null ? "" : parent.getAbsolutePath();
+    }
+
+    private static String mark(ExportPhaseState state) {
+        switch (state) {
+            case DONE:
+                return MARK_DONE;
+            case RUNNING:
+                return MARK_RUNNING;
+            default:
+                return MARK_PENDING;
+        }
+    }
+
+    private static int phaseColor(ExportPhaseState state) {
+        switch (state) {
+            case DONE:
+                return COLOR_DONE;
+            case RUNNING:
+                return COLOR_RUNNING;
+            default:
+                return COLOR_PENDING;
+        }
     }
 
     private static String stateText(ExportJobSnapshot snapshot) {

@@ -1,6 +1,7 @@
 package moe.takochan.webnei.exporter.engine.plan;
 
 import java.io.File;
+import java.util.List;
 
 import net.minecraft.client.Minecraft;
 
@@ -33,8 +34,10 @@ public final class ExportPlanExecutor {
     public BundleResult execute(IExportPlan plan, IBundleWriter bundleWriter, ExportExecutionContext executionContext,
         DomainStoreRegistry storeRegistry, ExportJobSession session, IExportJobListener listener) {
         ExportTaskContext taskContext = new ExportTaskContext(executionContext, storeRegistry);
-        for (IExportTask task : plan.tasks()) {
-            session.startTask(task);
+        List<IExportTask> tasks = plan.tasks();
+        for (int i = 0; i < tasks.size(); i++) {
+            IExportTask task = tasks.get(i);
+            session.startPhase(i);
             listener.onTaskStarted(session.snapshot());
             try {
                 task.execute(taskContext);
@@ -42,10 +45,11 @@ public final class ExportPlanExecutor {
                 WebneiExporterMod.LOG.error("Failed to run WebNEI export task", e);
                 return BundleResult.failure(bundleWriter.format(), e.getMessage());
             }
-            session.finishTask();
             listener.onTaskFinished(session.snapshot());
         }
 
+        session.startPhase(tasks.size());
+        listener.onTaskStarted(session.snapshot());
         try {
             return bundleWriter.write(
                 new ExportModelSet(plan.id(), storeRegistry.collectModels()),

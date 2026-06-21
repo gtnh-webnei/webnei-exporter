@@ -1,34 +1,33 @@
 package moe.takochan.webnei.exporter.engine.job;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 import moe.takochan.webnei.exporter.domain.asset.render.AssetRenderProgress;
-import moe.takochan.webnei.exporter.engine.task.IExportTask;
 
 /**
  * 导出 job 的统一状态源。
  *
  * <p>
- * chat listener 和未来 GUI 都应读取同一个 session/snapshot。实现 {@link AssetRenderProgress}，
- * 让渲染阶段把"已渲染/总数"细粒度进度回灌到同一状态源，供 GUI 实时展示。
+ * GUI 读取同一个 session/snapshot。session 持有完整阶段清单（各 task + bundle 写出阶段），按执行顺序
+ * 推进当前阶段索引；并实现 {@link AssetRenderProgress}，让渲染阶段把"已渲染/总数"细粒度进度回灌到
+ * 同一状态源，供 GUI 实时展示。
  */
 public final class ExportJobSession implements AssetRenderProgress {
 
     private final long jobId;
-    private final int totalTasks;
+    private final List<String> phaseLabels;
     private ExportJobState state = ExportJobState.PENDING;
-    private int completedTasks;
-    private String currentTaskId = "";
-    private String currentTaskLabelKey = "";
+    private int currentPhase = -1;
     private final List<String> outputFiles = new ArrayList<>();
     private String errorMessage = "";
     private int renderDone;
     private int renderTotal;
 
-    public ExportJobSession(long jobId, int totalTasks) {
+    public ExportJobSession(long jobId, List<String> phaseLabels) {
         this.jobId = jobId;
-        this.totalTasks = totalTasks;
+        this.phaseLabels = Collections.unmodifiableList(new ArrayList<>(phaseLabels));
     }
 
     /** 标记 job 开始执行。 */
@@ -36,10 +35,9 @@ public final class ExportJobSession implements AssetRenderProgress {
         state = ExportJobState.RUNNING;
     }
 
-    /** 记录当前正在执行的 task，用于主动进度提示。 */
-    public synchronized void startTask(IExportTask task) {
-        currentTaskId = task.id();
-        currentTaskLabelKey = task.labelKey();
+    /** 进入下一个阶段（task 或 bundle 写出），并清空上一个阶段的细粒度进度。 */
+    public synchronized void startPhase(int index) {
+        currentPhase = index;
         renderDone = 0;
         renderTotal = 0;
     }
@@ -51,21 +49,15 @@ public final class ExportJobSession implements AssetRenderProgress {
         renderTotal = total;
     }
 
-    /** 标记一个 task 完成。 */
-    public synchronized void finishTask() {
-        completedTasks++;
-    }
-
     /** 记录最终 bundle writer 产生的输出文件。 */
     public synchronized void finishBundle(List<String> outputs) {
         outputFiles.addAll(outputs);
     }
 
-    /** 标记 job 成功结束。 */
+    /** 标记 job 成功结束，所有阶段视为完成。 */
     public synchronized void finish() {
         state = ExportJobState.DONE;
-        currentTaskId = "";
-        currentTaskLabelKey = "";
+        currentPhase = phaseLabels.size();
     }
 
     /** 标记 job 失败并记录原因。 */
@@ -75,16 +67,28 @@ public final class ExportJobSession implements AssetRenderProgress {
     }
 
     public synchronized ExportJobSnapshot snapshot() {
+        List<ExportPhaseView> phases = new ArrayList<>(phaseLabels.size());
+        for (int i = 0; i < phaseLabels.size(); i++) {
+            phases.add(new ExportPhaseView(phaseLabels.get(i), phaseStateAt(i)));
+        }
         return new ExportJobSnapshot(
             jobId,
             state,
-            totalTasks,
-            completedTasks,
-            currentTaskId,
-            currentTaskLabelKey,
+            phases,
+            currentPhase,
             new ArrayList<>(outputFiles),
             errorMessage,
             renderDone,
             renderTotal);
+    }
+
+    private ExportPhaseState phaseStateAt(int index) {
+        if (index < currentPhase) {
+            return ExportPhaseState.DONE;
+        }
+        if (index == currentPhase) {
+            return ExportPhaseState.RUNNING;
+        }
+        return ExportPhaseState.PENDING;
     }
 }

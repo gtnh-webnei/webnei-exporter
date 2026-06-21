@@ -5,7 +5,7 @@ import java.util.List;
 
 import lombok.Getter;
 
-/** 导出 job 的只读状态快照，供 chat listener 和未来 GUI 展示进度。 */
+/** 导出 job 的只读状态快照，供 GUI 展示进度。 */
 @Getter
 public final class ExportJobSnapshot {
 
@@ -15,17 +15,11 @@ public final class ExportJobSnapshot {
     /** 当前 job 状态。 */
     private final ExportJobState state;
 
-    /** 当前计划包含的 task 总数。 */
-    private final int totalTasks;
+    /** 完整阶段清单（各 task + bundle 写出阶段），按执行顺序。 */
+    private final List<ExportPhaseView> phases;
 
-    /** 已完成 task 数量。 */
-    private final int completedTasks;
-
-    /** 当前正在执行的 task ID。 */
-    private final String currentTaskId;
-
-    /** 当前正在执行的 task 本地化文案 key。 */
-    private final String currentTaskLabelKey;
+    /** 当前正在执行的阶段索引；-1 表示尚未开始，等于 phases.size() 表示全部完成。 */
+    private final int currentPhase;
 
     /** bundle writer 最终产生的输出文件路径。 */
     private final List<String> outputFiles;
@@ -39,14 +33,12 @@ public final class ExportJobSnapshot {
     /** 当前阶段细粒度单元总数（如待渲染图标总数）；为 0 表示当前阶段无细粒度进度。 */
     private final int renderTotal;
 
-    public ExportJobSnapshot(long jobId, ExportJobState state, int totalTasks, int completedTasks, String currentTaskId,
-        String currentTaskLabelKey, List<String> outputFiles, String errorMessage, int renderDone, int renderTotal) {
+    public ExportJobSnapshot(long jobId, ExportJobState state, List<ExportPhaseView> phases, int currentPhase,
+        List<String> outputFiles, String errorMessage, int renderDone, int renderTotal) {
         this.jobId = jobId;
         this.state = state;
-        this.totalTasks = totalTasks;
-        this.completedTasks = completedTasks;
-        this.currentTaskId = currentTaskId;
-        this.currentTaskLabelKey = currentTaskLabelKey;
+        this.phases = Collections.unmodifiableList(phases);
+        this.currentPhase = currentPhase;
         this.outputFiles = Collections.unmodifiableList(outputFiles);
         this.errorMessage = errorMessage;
         this.renderDone = renderDone;

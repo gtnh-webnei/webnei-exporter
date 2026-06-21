@@ -1,5 +1,7 @@
 package moe.takochan.webnei.exporter.engine.job;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 
 import moe.takochan.webnei.exporter.WebneiExporterMod;
@@ -12,6 +14,7 @@ import moe.takochan.webnei.exporter.engine.ExportRequest;
 import moe.takochan.webnei.exporter.engine.plan.ExportPlanExecutor;
 import moe.takochan.webnei.exporter.engine.plan.IExportPlan;
 import moe.takochan.webnei.exporter.engine.store.DomainStoreRegistry;
+import moe.takochan.webnei.exporter.engine.task.IExportTask;
 import moe.takochan.webnei.exporter.export.ExportPlanRegistry;
 
 /**
@@ -45,14 +48,13 @@ public final class ExportJobRunner {
             new ExportPlanExecutor());
     }
 
+    /** bundle 写出阶段的展示文案 key；该阶段包含资产渲染等耗时工作。 */
+    public static final String BUNDLE_PHASE_LABEL_KEY = "webnei.task.bundle";
+
     /** 创建 session 并在后台线程执行导出。 */
     public ExportJobSession submit(final ExportRequest request, final IExportJobListener listener) {
         final IExportPlan plan = planRegistry.get(request.planId());
-        final ExportJobSession session = new ExportJobSession(
-            NEXT_JOB_ID.getAndIncrement(),
-            plan == null ? 0
-                : plan.tasks()
-                    .size());
+        final ExportJobSession session = new ExportJobSession(NEXT_JOB_ID.getAndIncrement(), phaseLabels(plan));
         session.start();
         listener.onStarted(session.snapshot());
 
@@ -66,6 +68,17 @@ public final class ExportJobRunner {
         thread.setDaemon(true);
         thread.start();
         return session;
+    }
+
+    private static List<String> phaseLabels(IExportPlan plan) {
+        List<String> labels = new ArrayList<>();
+        if (plan != null) {
+            for (IExportTask task : plan.tasks()) {
+                labels.add(task.labelKey());
+            }
+        }
+        labels.add(BUNDLE_PHASE_LABEL_KEY);
+        return labels;
     }
 
     private void runJob(ExportRequest request, IExportPlan plan, ExportJobSession session,
