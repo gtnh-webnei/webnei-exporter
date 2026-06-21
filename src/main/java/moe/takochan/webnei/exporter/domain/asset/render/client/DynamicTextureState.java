@@ -52,6 +52,19 @@ public final class DynamicTextureState {
     public static DynamicTextureState from(ItemStack stack) {
         List<TextureInfo> textures = new ArrayList<>();
         collectTextures(stack, textures);
+        return build(textures);
+    }
+
+    /** 从单个流体 sprite 构造动画状态；非 atlas sprite 或非标准动画时退化为静态。 */
+    public static DynamicTextureState fromIcon(IIcon icon, ResourceLocation atlas) {
+        List<TextureInfo> textures = new ArrayList<>();
+        if (icon instanceof TextureAtlasSprite) {
+            textures.add(new TextureInfo((TextureAtlasSprite) icon, atlas));
+        }
+        return build(textures);
+    }
+
+    private static DynamicTextureState build(List<TextureInfo> textures) {
         if (textures.isEmpty()) {
             return new DynamicTextureState(textures, 1, false);
         }

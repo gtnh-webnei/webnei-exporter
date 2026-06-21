@@ -1,7 +1,5 @@
 package moe.takochan.webnei.exporter.domain.asset.render;
 
-import java.awt.image.BufferedImage;
-
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.Tessellator;
 import net.minecraft.client.renderer.texture.TextureMap;
@@ -12,11 +10,13 @@ import org.lwjgl.opengl.GL11;
 
 import moe.takochan.webnei.exporter.domain.asset.AssetContract;
 import moe.takochan.webnei.exporter.domain.asset.internal.AssetPath;
+import moe.takochan.webnei.exporter.domain.asset.render.client.DynamicTextureState;
 import moe.takochan.webnei.exporter.domain.asset.render.client.FboIconRenderer;
 
 public final class FluidIconRenderer implements IAssetRenderer {
 
     private final FboIconRenderer fboRenderer = new FboIconRenderer();
+    private final IconAnimator animator = new IconAnimator(fboRenderer);
 
     @Override
     public boolean supports(AssetRenderJob job) {
@@ -26,49 +26,50 @@ public final class FluidIconRenderer implements IAssetRenderer {
     @Override
     public IconTile prepareTile(final AssetRenderJob job) throws AssetRenderException {
         final FluidStack stack = job.getFluidStack();
-        final IIcon icon = stack.getFluid()
+        final IIcon icon = icon(stack);
+        // 动画流体不可批量（需逐帧推进 atlas），退回 renderImage。
+        if (DynamicTextureState.fromIcon(icon, TextureMap.locationBlocksTexture)
+            .isStandardAtlasAnimation()) {
+            return null;
+        }
+        return new IconTile(
+            job,
+            AssetPath.fluidIcon(job.getOwnerId()),
+            FboIconRenderer.DEFAULT_WEB_ICON_SIZE,
+            drawAction(stack, icon),
+            AssetRenderMetadata.staticImage());
+    }
+
+    @Override
+    public RenderedAsset renderImage(final AssetRenderJob job) throws AssetRenderException {
+        FluidStack stack = job.getFluidStack();
+        IIcon icon = icon(stack);
+        DynamicTextureState dynamic = DynamicTextureState.fromIcon(icon, TextureMap.locationBlocksTexture);
+        IconAnimator.RenderedIcon rendered = animator
+            .render(dynamic, FboIconRenderer.DEFAULT_WEB_ICON_SIZE, drawAction(stack, icon));
+        return RenderedAsset
+            .png(job, AssetPath.fluidIcon(job.getOwnerId()), rendered.getImage(), rendered.getMetadataJson());
+    }
+
+    private static IIcon icon(FluidStack stack) throws AssetRenderException {
+        IIcon icon = stack.getFluid()
             .getIcon(stack);
         if (icon == null) {
             throw new AssetRenderException(
                 "Fluid has no icon: " + stack.getFluid()
                     .getName());
         }
-        FboIconRenderer.IconRenderAction action = new FboIconRenderer.IconRenderAction() {
+        return icon;
+    }
+
+    private static FboIconRenderer.IconRenderAction drawAction(final FluidStack stack, final IIcon icon) {
+        return new FboIconRenderer.IconRenderAction() {
 
             @Override
             public void render() {
                 renderFluidIcon(stack, icon);
             }
         };
-        return new IconTile(
-            job,
-            AssetPath.fluidIcon(job.getOwnerId()),
-            FboIconRenderer.DEFAULT_WEB_ICON_SIZE,
-            action,
-            AssetRenderMetadata.staticImage());
-    }
-
-    @Override
-    public RenderedAsset renderImage(final AssetRenderJob job) throws AssetRenderException {
-        BufferedImage image = renderFluid(job.getFluidStack());
-        return RenderedAsset.png(job, AssetPath.fluidIcon(job.getOwnerId()), image, AssetRenderMetadata.staticImage());
-    }
-
-    private BufferedImage renderFluid(final FluidStack stack) throws AssetRenderException {
-        final IIcon icon = stack.getFluid()
-            .getIcon(stack);
-        if (icon == null) {
-            throw new AssetRenderException(
-                "Fluid has no icon: " + stack.getFluid()
-                    .getName());
-        }
-        return fboRenderer.render(FboIconRenderer.DEFAULT_WEB_ICON_SIZE, new FboIconRenderer.IconRenderAction() {
-
-            @Override
-            public void render() {
-                renderFluidIcon(stack, icon);
-            }
-        });
     }
 
     private static void renderFluidIcon(FluidStack stack, IIcon icon) {
@@ -102,5 +103,4 @@ public final class FluidIconRenderer implements IAssetRenderer {
 
         GL11.glColor4f(1.0F, 1.0F, 1.0F, 1.0F);
     }
-
 }
