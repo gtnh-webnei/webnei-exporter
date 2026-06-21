@@ -1,7 +1,5 @@
 package moe.takochan.webnei.exporter.domain.mod.store;
 
-import java.util.List;
-
 import moe.takochan.webnei.exporter.domain.IExportModel;
 import moe.takochan.webnei.exporter.domain.mod.internal.ModDomainData;
 import moe.takochan.webnei.exporter.domain.mod.model.ModRow;
@@ -15,18 +13,14 @@ import moe.takochan.webnei.exporter.engine.store.IDomainStore;
  */
 public final class ModDomainStore implements IDomainStore {
 
-    private final ModDomainData data = new ModDomainData();
+    private final ModDomainData data;
 
-    public void add(ModRow row) {
-        data.add(row);
+    public ModDomainStore(ModDomainData data) {
+        this.data = data;
     }
 
     public ModRow findByModId(String modId) {
         return data.findByModId(modId);
-    }
-
-    public List<ModRow> mods() {
-        return data.mods();
     }
 
     @Override

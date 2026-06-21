@@ -10,10 +10,9 @@ import java.security.NoSuchAlgorithmException;
 import cpw.mods.fml.common.ModContainer;
 import moe.takochan.webnei.exporter.WebneiExporterMod;
 import moe.takochan.webnei.exporter.domain.mod.model.ModRow;
-import moe.takochan.webnei.exporter.domain.mod.store.ModDomainStore;
 
 /**
- * mod 注册处理器 — 负责从 ModContainer 采集字段并写入 store。
+ * mod 注册处理器 — 负责从 ModContainer 采集字段并写入 data。
  */
 public final class ModRegistrar {
 
@@ -21,11 +20,11 @@ public final class ModRegistrar {
     private static final String SOURCE_TYPE_UNKNOWN = "unknown";
     private static final int HASH_BUFFER_SIZE = 64 * 1024;
 
-    private final ModDomainStore store;
+    private final ModDomainData data;
     private final String datasetId;
 
-    public ModRegistrar(ModDomainStore store, String datasetId) {
-        this.store = store;
+    public ModRegistrar(ModDomainData data, String datasetId) {
+        this.data = data;
         this.datasetId = datasetId;
     }
 
@@ -39,7 +38,11 @@ public final class ModRegistrar {
             sourceName(mod.getSource()),
             sourceSha256(mod, mod.getSource()),
             true);
-        store.add(row);
+        data.register(row);
+    }
+
+    private static String value(String value) {
+        return value == null ? UNKNOWN : value;
     }
 
     private static String sourceType(File source) {
@@ -89,9 +92,5 @@ public final class ModRegistrar {
             builder.append(String.format("%02x", b & 0xff));
         }
         return builder.toString();
-    }
-
-    private static String value(String value) {
-        return value == null ? UNKNOWN : value;
     }
 }
