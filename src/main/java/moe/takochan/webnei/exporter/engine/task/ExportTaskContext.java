@@ -27,12 +27,12 @@ public final class ExportTaskContext {
     }
 
     /** 获取前置 domain 已注册的 store。 */
-    public <T extends IDomainStore> T store(Class<T> type) {
+    public <T extends IDomainStore<?, ?>> T store(Class<T> type) {
         return storeRegistry.get(type);
     }
 
     /** task 执行完成后注册自己的 domain store，供后续 task 使用。 */
-    public void register(Class<? extends IDomainStore> type, IDomainStore store) {
+    public void register(Class<? extends IDomainStore<?, ?>> type, IDomainStore<?, ?> store) {
         storeRegistry.register(type, store);
     }
 }
