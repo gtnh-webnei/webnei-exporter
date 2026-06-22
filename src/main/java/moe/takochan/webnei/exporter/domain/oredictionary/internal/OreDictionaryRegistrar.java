@@ -27,7 +27,7 @@ public final class OreDictionaryRegistrar implements IDomainRegistrar {
     /**
      * 注册一个 dictionary name 及其 Forge 返回的 ItemStack 列表。
      */
-    public void register(String dictionaryName, List<ItemStack> stacks) {
+    void register(String dictionaryName, List<ItemStack> stacks) {
         data.putDictionary(dictionaryName);
         for (ItemStack stack : stacks) {
             registerStack(dictionaryName, stack);
