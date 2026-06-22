@@ -4,7 +4,6 @@ import java.util.LinkedHashSet;
 import java.util.Set;
 
 import moe.takochan.webnei.exporter.domain.recipe.hook.IRecipeCategorySkipHook;
-import moe.takochan.webnei.exporter.domain.recipe.hook.RecipeCategoryCandidate;
 
 public final class ReviewedRecipeCategorySkipHook implements IRecipeCategorySkipHook {
 
@@ -16,8 +15,8 @@ public final class ReviewedRecipeCategorySkipHook implements IRecipeCategorySkip
     }
 
     @Override
-    public boolean shouldSkip(RecipeCategoryCandidate category) {
-        return SKIPPED_CATEGORY_IDS.contains(category.getCategoryId());
+    public boolean shouldSkip(String categoryId) {
+        return SKIPPED_CATEGORY_IDS.contains(categoryId);
     }
 
     private static Set<String> skippedCategoryIds() {

@@ -27,13 +27,15 @@ public final class RecipeExportTask implements IExportTask {
     @Override
     public void execute(ExportTaskContext context) {
         String datasetId = context.store(DatasetDomainStore.class)
+            .data()
             .datasetId();
         ItemDomainStore itemStore = context.store(ItemDomainStore.class);
 
-        RecipeDomainData data = new RecipeDomainData(datasetId, itemStore);
-        RecipeDomainStore store = new RecipeDomainStore(data);
-        RecipeRegistrar registrar = new RecipeRegistrar(data);
+        RecipeDomainData data = new RecipeDomainData(datasetId);
+        RecipeRegistrar registrar = new RecipeRegistrar(data, datasetId, itemStore);
         new NeiRecipeSource(registrar).collect();
+
+        RecipeDomainStore store = new RecipeDomainStore(data, registrar);
         context.register(RecipeDomainStore.class, store);
     }
 }

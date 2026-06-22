@@ -2,6 +2,9 @@ package moe.takochan.webnei.exporter.domain.recipe.internal;
 
 import java.util.function.Supplier;
 
+import net.minecraft.item.ItemStack;
+
+import codechicken.nei.drawable.DrawableResource;
 import codechicken.nei.recipe.GuiRecipeTab;
 import codechicken.nei.recipe.HandlerInfo;
 import codechicken.nei.recipe.IRecipeHandler;
@@ -14,6 +17,7 @@ import codechicken.nei.recipe.IRecipeHandler;
  */
 public final class RecipeCategoryIdentityResolver {
 
+    /** NEI 对未知归属返回的占位 mod id；遇到时归一化为空字符串，与 mod domain 的空值规则保持一致。 */
     private static final String UNKNOWN_MOD_ID = "Unknown";
 
     public RecipeCategoryIdentity resolve(IRecipeHandler handler) {
@@ -22,14 +26,22 @@ public final class RecipeCategoryIdentityResolver {
             .getName();
         String handlerId = safeString(handler::getHandlerId);
         String overlayId = safeString(handler::getOverlayIdentifier);
-        String modId = modId(info);
         String categoryId = resolveCategoryId(handlerClass, handlerId, overlayId);
         return new RecipeCategoryIdentity(
             handlerKey(handlerClass, handlerId, overlayId),
             categoryId,
             displayName(handler, categoryId),
-            modId,
-            info == null ? null : info.getItemStack());
+            modId(info),
+            iconStack(info),
+            iconImage(info));
+    }
+
+    private static ItemStack iconStack(HandlerInfo info) {
+        return info == null ? null : info.getItemStack();
+    }
+
+    private static DrawableResource iconImage(HandlerInfo info) {
+        return info == null ? null : info.getImage();
     }
 
     private static String handlerKey(String handlerClass, String handlerId, String overlayId) {
@@ -67,18 +79,21 @@ public final class RecipeCategoryIdentityResolver {
      * 该 ID 不读取运行时 modId，也不依赖本次扫描里是否存在撞名 handler，因此对同一个 handler 恒定。
      */
     private static String resolveCategoryId(String handlerClass, String handlerId, String overlayId) {
-        StringBuilder local = new StringBuilder(sanitize(handlerClass));
-        appendDistinguishingSegment(local, sanitize(handlerId), local.toString());
-        appendDistinguishingSegment(local, sanitize(overlayId), local.toString());
-        return local.toString();
+        StringBuilder categoryId = new StringBuilder(sanitize(handlerClass));
+        appendIfDistinct(categoryId, sanitize(handlerId));
+        appendIfDistinct(categoryId, sanitize(overlayId));
+        return categoryId.toString();
     }
 
-    /** 当片段非空、非通用值，且未被已有 ID 段包含时，追加它以区分同类的多个分类。 */
-    private static void appendDistinguishingSegment(StringBuilder builder, String segment, String current) {
-        if (segment.isEmpty() || isGenericOverlayId(segment) || current.contains(segment)) {
+    /** 当片段非空、非通用值，且未出现在已有 ID 中时，追加它以区分同类的多个分类。 */
+    private static void appendIfDistinct(StringBuilder categoryId, String segment) {
+        if (segment.isEmpty() || isGenericOverlayId(segment)) {
             return;
         }
-        builder.append('.')
+        if (categoryId.indexOf(segment) >= 0) {
+            return;
+        }
+        categoryId.append('.')
             .append(segment);
     }
 

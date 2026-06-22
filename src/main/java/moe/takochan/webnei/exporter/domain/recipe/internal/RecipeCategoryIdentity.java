@@ -2,6 +2,7 @@ package moe.takochan.webnei.exporter.domain.recipe.internal;
 
 import net.minecraft.item.ItemStack;
 
+import codechicken.nei.drawable.DrawableResource;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
@@ -30,4 +31,12 @@ public final class RecipeCategoryIdentity {
 
     /** 分类图标的原始 ItemStack，仅供 asset domain 渲染，可能为空。 */
     private final ItemStack iconStack;
+
+    /**
+     * 分类图标的 NEI 自绘贴图，仅供 asset domain 渲染，可能为空。
+     *
+     * <p>
+     * 来自 {@link codechicken.nei.recipe.HandlerInfo#getImage()}。与 iconStack 互斥：handler 要么用展示物品、要么用贴图。
+     */
+    private final DrawableResource iconImage;
 }

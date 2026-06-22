@@ -1,32 +1,27 @@
 package moe.takochan.webnei.exporter.domain.recipe.store;
 
-import java.util.Map;
-
-import net.minecraft.item.ItemStack;
-
-import codechicken.nei.recipe.IRecipeHandler;
-import moe.takochan.webnei.exporter.domain.IExportModel;
 import moe.takochan.webnei.exporter.domain.recipe.internal.RecipeDomainData;
+import moe.takochan.webnei.exporter.domain.recipe.internal.RecipeRegistrar;
 import moe.takochan.webnei.exporter.engine.store.IDomainStore;
 
-public final class RecipeDomainStore implements IDomainStore {
+/** recipe domain 在 exporter store 中的入口：对外暴露结果集 {@link RecipeDomainData} 与注册器 {@link RecipeRegistrar}。 */
+public final class RecipeDomainStore implements IDomainStore<RecipeDomainData, RecipeRegistrar> {
 
     private final RecipeDomainData data;
+    private final RecipeRegistrar registrar;
 
-    public RecipeDomainStore(RecipeDomainData data) {
+    public RecipeDomainStore(RecipeDomainData data, RecipeRegistrar registrar) {
         this.data = data;
-    }
-
-    public void register(IRecipeHandler handler) {
-        data.register(handler);
-    }
-
-    public Map<String, ItemStack> categoryIconStacks() {
-        return data.categoryIconStacks();
+        this.registrar = registrar;
     }
 
     @Override
-    public IExportModel toExportModel() {
-        return data.toExportModel();
+    public RecipeDomainData data() {
+        return data;
+    }
+
+    @Override
+    public RecipeRegistrar registrar() {
+        return registrar;
     }
 }

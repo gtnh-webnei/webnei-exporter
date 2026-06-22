@@ -8,6 +8,7 @@ import moe.takochan.webnei.exporter.domain.IExportModel;
 import moe.takochan.webnei.exporter.domain.recipe.model.RecipeCategoryCatalystRow;
 import moe.takochan.webnei.exporter.domain.recipe.model.RecipeCategoryRow;
 
+/** recipe 数据域的导出模型：承载 recipe_category 与 recipe_category_catalyst 两类行，构造后不可变。 */
 @Getter
 public final class RecipeExportModel implements IExportModel {
 

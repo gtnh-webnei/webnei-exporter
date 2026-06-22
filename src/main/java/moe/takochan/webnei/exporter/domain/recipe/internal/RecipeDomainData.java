@@ -7,28 +7,22 @@ import java.util.Map;
 
 import net.minecraft.item.ItemStack;
 
-import codechicken.nei.recipe.IRecipeHandler;
+import codechicken.nei.drawable.DrawableResource;
 import moe.takochan.webnei.exporter.domain.IExportModel;
-import moe.takochan.webnei.exporter.domain.item.store.ItemDomainStore;
 import moe.takochan.webnei.exporter.domain.recipe.RecipeExportModel;
-import moe.takochan.webnei.exporter.domain.recipe.hook.RecipeCategoryCandidate;
-import moe.takochan.webnei.exporter.domain.recipe.hook.RecipeCategoryHookRegistry;
 import moe.takochan.webnei.exporter.domain.recipe.model.RecipeCategoryCatalystRow;
 import moe.takochan.webnei.exporter.domain.recipe.model.RecipeCategoryRow;
+import moe.takochan.webnei.exporter.engine.store.IDomainData;
 
 /**
- * recipe domain store 的内部数据和注册逻辑。
+ * recipe domain store 的内部结果集。
  *
  * <p>
- * 该类维护分类身份去重，并挂载 catalyst collector；catalyst 行的 item variant 由 collector 通过 item store 解析。
- * 跨 domain API 由 RecipeDomainStore 包装后暴露。
+ * 该类只持有分类与 catalyst 结果集；注册编排职责由 RecipeRegistrar 负责。
  */
-public final class RecipeDomainData {
+public final class RecipeDomainData implements IDomainData {
 
     private final String datasetId;
-    private final RecipeCategoryIdentityResolver identityResolver = new RecipeCategoryIdentityResolver();
-    private final RecipeCategoryHookRegistry recipeCategoryHooks = new RecipeCategoryHookRegistry();
-    private final RecipeCatalystCollector catalystCollector;
 
     /**
      * 按 handler key 去重保存分类身份，并保持 NEI 扫描顺序。
@@ -41,35 +35,8 @@ public final class RecipeDomainData {
     /** catalyst 行按 category_id + item_variant_id 去重。 */
     private final Map<String, RecipeCategoryCatalystRow> catalysts = new LinkedHashMap<>();
 
-    public RecipeDomainData(String datasetId, ItemDomainStore itemStore) {
+    public RecipeDomainData(String datasetId) {
         this.datasetId = datasetId;
-        this.catalystCollector = new RecipeCatalystCollector(itemStore);
-    }
-
-    /**
-     * 把一个 NEI recipe handler 纳入 recipe domain；解析为分类并挂接其 catalyst。
-     *
-     * <p>
-     * 按 handler key 去重。category id 由 handler 身份确定性派生，不存在撞名，无需后置消歧。命中 skip hook 的 handler 直接跳过。
-     */
-    public void register(IRecipeHandler handler) {
-        RecipeCategoryIdentity identity = identityResolver.resolve(handler);
-        RecipeCategoryCandidate candidate = new RecipeCategoryCandidate(
-            identity.getCategoryId(),
-            identity.getModId(),
-            identity.getDisplayName());
-        if (recipeCategoryHooks.shouldSkip(candidate)) {
-            return;
-        }
-        if (identitiesByHandlerKey.putIfAbsent(identity.getHandlerKey(), identity) == null) {
-            addCatalysts(identity.getCategoryId(), handler);
-        }
-    }
-
-    private void addCatalysts(String categoryId, IRecipeHandler handler) {
-        for (RecipeCategoryCatalystRow row : catalystCollector.collect(datasetId, categoryId, handler)) {
-            catalysts.putIfAbsent(row.getCategoryId() + '\u0000' + row.getItemVariantId(), row);
-        }
     }
 
     /**
@@ -81,14 +48,64 @@ public final class RecipeDomainData {
     public Map<String, ItemStack> categoryIconStacks() {
         Map<String, ItemStack> out = new LinkedHashMap<>();
         for (RecipeCategoryIdentity identity : identitiesByHandlerKey.values()) {
-            ItemStack iconStack = identity.getIconStack();
-            if (iconStack != null && iconStack.getItem() != null) {
-                ItemStack copy = iconStack.copy();
+            if (hasIconStack(identity)) {
+                ItemStack copy = identity.getIconStack()
+                    .copy();
                 copy.stackSize = 1;
                 out.put(identity.getCategoryId(), copy);
             }
         }
         return out;
+    }
+
+    /**
+     * 返回无可用 ItemStack、但带 NEI 自绘贴图的分类的 category id 到 {@link DrawableResource} 映射。
+     *
+     * <p>
+     * 图标来源优先级为 ItemStack &gt; 贴图 &gt; 文字，因此这里跳过已有 ItemStack 的分类。
+     */
+    public Map<String, DrawableResource> categoryIconImages() {
+        Map<String, DrawableResource> out = new LinkedHashMap<>();
+        for (RecipeCategoryIdentity identity : identitiesByHandlerKey.values()) {
+            if (!hasIconStack(identity) && identity.getIconImage() != null) {
+                out.put(identity.getCategoryId(), identity.getIconImage());
+            }
+        }
+        return out;
+    }
+
+    /**
+     * 返回既无 ItemStack 也无贴图的分类的 category id 到文字兜底映射。
+     *
+     * <p>
+     * 兜底取 display_name 的前两个字符，模仿 NEI tab 在无图标时的显示，确保每个分类都有可渲染的图标。
+     */
+    public Map<String, String> categoryIconTexts() {
+        Map<String, String> out = new LinkedHashMap<>();
+        for (RecipeCategoryIdentity identity : identitiesByHandlerKey.values()) {
+            if (!hasIconStack(identity) && identity.getIconImage() == null) {
+                out.put(identity.getCategoryId(), fallbackText(identity.getDisplayName()));
+            }
+        }
+        return out;
+    }
+
+    boolean putIdentity(RecipeCategoryIdentity identity) {
+        return identitiesByHandlerKey.putIfAbsent(identity.getHandlerKey(), identity) == null;
+    }
+
+    void putCatalyst(RecipeCategoryCatalystRow row) {
+        catalysts.putIfAbsent(row.getCategoryId() + '\u0000' + row.getItemVariantId(), row);
+    }
+
+    private static boolean hasIconStack(RecipeCategoryIdentity identity) {
+        return identity.getIconStack() != null && identity.getIconStack()
+            .getItem() != null;
+    }
+
+    private static String fallbackText(String displayName) {
+        String text = displayName == null || displayName.isEmpty() ? "??" : displayName;
+        return text.length() > 2 ? text.substring(0, 2) : text;
     }
 
     /**
@@ -98,6 +115,7 @@ public final class RecipeDomainData {
      * 输出 recipe_category 行（dataset_id、category_id、display_name、mod_id）以及 recipe_category_catalyst 行
      * （能打开该分类的物品 + 展示顺序）。
      */
+    @Override
     public IExportModel toExportModel() {
         List<RecipeCategoryRow> categories = new ArrayList<>();
         for (RecipeCategoryIdentity identity : identitiesByHandlerKey.values()) {
