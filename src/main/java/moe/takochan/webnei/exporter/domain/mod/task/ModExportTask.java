@@ -37,9 +37,9 @@ public final class ModExportTask implements IExportTask {
 
         ModDomainData data = new ModDomainData();
         ModRegistrar registrar = new ModRegistrar(data, datasetId);
-        ModDomainStore store = new ModDomainStore(data, registrar);
-
         new ForgeModSource(registrar).collect();
+
+        ModDomainStore store = new ModDomainStore(data, registrar);
         context.register(ModDomainStore.class, store);
     }
 }

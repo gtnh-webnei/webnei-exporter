@@ -29,11 +29,12 @@ public final class DatasetModExportTask implements IExportTask {
 
     @Override
     public void execute(ExportTaskContext context) {
+
         DatasetDomainData data = new DatasetDomainData();
         DatasetRegistrar registrar = new DatasetRegistrar(data);
-        DatasetDomainStore store = new DatasetDomainStore(data, registrar);
-
         new DatasetRequestSource(registrar, context).collect();
+
+        DatasetDomainStore store = new DatasetDomainStore(data, registrar);
         context.register(DatasetDomainStore.class, store);
     }
 }
