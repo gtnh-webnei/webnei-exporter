@@ -20,7 +20,7 @@ public final class ForgeFluidRegistrySource {
     public void collect() {
         for (Fluid fluid : FluidRegistry.getRegisteredFluids()
             .values()) {
-            this.registrar.register(fluid);
+            this.registrar.getOrRegisterFluid(fluid);
         }
     }
 }

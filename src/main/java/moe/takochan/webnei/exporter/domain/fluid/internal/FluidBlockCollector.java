@@ -32,7 +32,8 @@ public final class FluidBlockCollector {
         if (item == null) {
             return null;
         }
-        String itemVariantId = itemStore.getOrRegisterVariant(new ItemStack(item, 1, 0))
+        String itemVariantId = itemStore.registrar()
+            .getOrRegisterVariant(new ItemStack(item, 1, 0))
             .getItemVariantId();
         return new FluidBlockRow(datasetId, fluidId, itemVariantId);
     }

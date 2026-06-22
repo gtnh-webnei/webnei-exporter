@@ -35,7 +35,8 @@ public final class FluidContainerCollector {
             if (fluidStack == null) {
                 continue;
             }
-            String itemVariantId = itemStore.getOrRegisterVariant(stack)
+            String itemVariantId = itemStore.registrar()
+                .getOrRegisterVariant(stack)
                 .getItemVariantId();
             amountsByFluid.computeIfAbsent(fluidStack.getFluid(), key -> new LinkedHashMap<>())
                 .putIfAbsent(itemVariantId, fluidStack.amount);
@@ -67,7 +68,8 @@ public final class FluidContainerCollector {
         if (fluidStack == null) {
             return null;
         }
-        String itemVariantId = itemStore.getOrRegisterVariant(stack)
+        String itemVariantId = itemStore.registrar()
+            .getOrRegisterVariant(stack)
             .getItemVariantId();
         return new FluidContainerRow(datasetId, fluidId, fluidStack.amount, itemVariantId);
     }

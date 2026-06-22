@@ -5,8 +5,6 @@ import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
-import net.minecraft.item.ItemStack;
-import net.minecraftforge.fluids.Fluid;
 import net.minecraftforge.fluids.FluidStack;
 
 import moe.takochan.webnei.exporter.domain.IExportModel;
@@ -14,46 +12,28 @@ import moe.takochan.webnei.exporter.domain.fluid.FluidExportModel;
 import moe.takochan.webnei.exporter.domain.fluid.model.FluidBlockRow;
 import moe.takochan.webnei.exporter.domain.fluid.model.FluidContainerRow;
 import moe.takochan.webnei.exporter.domain.fluid.model.FluidRow;
-import moe.takochan.webnei.exporter.domain.item.store.ItemDomainStore;
+import moe.takochan.webnei.exporter.engine.store.IDomainData;
 
 /**
- * fluid domain store 的内部数据和注册逻辑。
+ * fluid domain store 的内部结果集。
  *
  * <p>
- * 该类挂载流体、方块、容器三个 collector，{@link #getOrRegisterFluid(Fluid)} 一次性把它们串起来并维护去重；跨 domain API 由
- * FluidDomainStore 包装后暴露。方块和容器的 item variant 由对应 collector 通过 item store 解析。
+ * 该类只持有 fluid/block/container 结果集；注册编排职责由 FluidRegistrar 负责。
  */
-public final class FluidDomainData {
+public final class FluidDomainData implements IDomainData {
 
-    private final String datasetId;
-    private final ForgeFluidIdentityResolver identityResolver = new ForgeFluidIdentityResolver();
-    private final FluidDetailCollector detailCollector = new FluidDetailCollector();
-    private final FluidBlockCollector blockCollector;
-    private final FluidContainerCollector containerCollector;
     private final Map<String, FluidRow> fluids = new LinkedHashMap<>();
     private final Map<String, FluidStack> stacks = new LinkedHashMap<>();
     private final Map<String, FluidContainerRow> containers = new LinkedHashMap<>();
     private final Map<String, FluidBlockRow> blocks = new LinkedHashMap<>();
 
-    public FluidDomainData(String datasetId, ItemDomainStore itemStore) {
-        this.datasetId = datasetId;
-        this.blockCollector = new FluidBlockCollector(itemStore);
-        this.containerCollector = new FluidContainerCollector(itemStore);
+    FluidRow findFluid(String fluidId) {
+        return fluids.get(fluidId);
     }
 
-    public FluidRow getOrRegisterFluid(Fluid fluid) {
-        FluidIdentity identity = identityResolver.resolve(fluid);
-        FluidRow existing = fluids.get(identity.getFluidId());
-        if (existing != null) {
-            return existing;
-        }
-        FluidStack stack = new FluidStack(fluid, 1);
-        FluidRow row = detailCollector.collect(datasetId, identity, stack);
-        fluids.put(identity.getFluidId(), row);
-        stacks.put(identity.getFluidId(), stack);
-        addBlock(row.getFluidId(), fluid);
-        addContainers(row.getFluidId(), fluid);
-        return row;
+    void putFluid(String fluidId, FluidRow row, FluidStack stack) {
+        fluids.putIfAbsent(fluidId, row);
+        stacks.putIfAbsent(fluidId, stack);
     }
 
     /** 返回已注册 fluid 对应的代表 FluidStack。 */
@@ -61,40 +41,19 @@ public final class FluidDomainData {
         return Collections.unmodifiableMap(stacks);
     }
 
-    /**
-     * 反向补充：把一个流体容器物品并入 fluid domain。
-     *
-     * <p>
-     * 由配方等后续流程在遇到流体容器时调用。本方法自行解析流体、必要时补齐流体（连带方块和既定容器），再写入该容器关联；非流体容器忽略。
-     */
-    public void registerContainer(ItemStack containerStack) {
-        Fluid fluid = containerCollector.resolveFluid(containerStack);
-        if (fluid == null) {
-            return;
-        }
-        FluidRow row = getOrRegisterFluid(fluid);
-        putContainer(containerCollector.collectOne(datasetId, row.getFluidId(), containerStack));
-    }
-
-    private void addBlock(String fluidId, Fluid fluid) {
-        FluidBlockRow row = blockCollector.collect(datasetId, fluidId, fluid);
+    void putBlock(FluidBlockRow row) {
         if (row != null) {
-            blocks.putIfAbsent(fluidId + '\u0000' + row.getItemVariantId(), row);
+            blocks.putIfAbsent(row.getFluidId() + '\u0000' + row.getItemVariantId(), row);
         }
     }
 
-    private void addContainers(String fluidId, Fluid fluid) {
-        for (FluidContainerRow row : containerCollector.collect(datasetId, fluidId, fluid)) {
-            putContainer(row);
-        }
-    }
-
-    private void putContainer(FluidContainerRow row) {
+    void putContainer(FluidContainerRow row) {
         if (row != null) {
             containers.putIfAbsent(row.getFluidId() + '\u0000' + row.getItemVariantId(), row);
         }
     }
 
+    @Override
     public IExportModel toExportModel() {
         return new FluidExportModel(
             new ArrayList<>(fluids.values()),

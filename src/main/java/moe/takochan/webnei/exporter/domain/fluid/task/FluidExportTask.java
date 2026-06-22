@@ -33,13 +33,15 @@ public final class FluidExportTask implements IExportTask {
     @Override
     public void execute(ExportTaskContext context) {
         String datasetId = context.store(DatasetDomainStore.class)
+            .data()
             .datasetId();
         ItemDomainStore itemStore = context.store(ItemDomainStore.class);
 
-        FluidDomainData data = new FluidDomainData(datasetId, itemStore);
-        FluidDomainStore store = new FluidDomainStore(data);
-        FluidRegistrar registrar = new FluidRegistrar(data);
+        FluidDomainData data = new FluidDomainData();
+        FluidRegistrar registrar = new FluidRegistrar(data, datasetId, itemStore);
         new ForgeFluidRegistrySource(registrar).collect();
+
+        FluidDomainStore store = new FluidDomainStore(data, registrar);
         context.register(FluidDomainStore.class, store);
     }
 }
