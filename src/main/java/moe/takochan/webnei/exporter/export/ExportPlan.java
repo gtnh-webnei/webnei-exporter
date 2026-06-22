@@ -22,8 +22,8 @@ public enum ExportPlan {
         new ModExportTask(),
         new ItemExportTask(),
         new FluidExportTask(),
-        new OreDictionaryExportTask(),
         new RecipeExportTask(),
+        new OreDictionaryExportTask(),
         new AssetExportTask()
     );
     // spotless:on
