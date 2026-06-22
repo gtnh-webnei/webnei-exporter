@@ -2,7 +2,6 @@ package moe.takochan.webnei.exporter.domain.mod.store;
 
 import moe.takochan.webnei.exporter.domain.mod.internal.ModDomainData;
 import moe.takochan.webnei.exporter.domain.mod.internal.ModRegistrar;
-import moe.takochan.webnei.exporter.domain.mod.model.ModRow;
 import moe.takochan.webnei.exporter.engine.store.IDomainStore;
 
 /**
