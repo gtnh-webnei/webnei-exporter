@@ -51,13 +51,11 @@ public final class ItemDomainData implements IDomainData {
         items.putIfAbsent(itemId, row);
     }
 
-
     void putVariant(ItemVariantRow row, ItemStack stack) {
         String itemVariantId = row.getItemVariantId();
         variants.put(itemVariantId, row);
         stacks.put(itemVariantId, stack);
     }
-
 
     void putListEntry(ItemListEntryRow row) {
         if (!listEntries.containsKey(row.getItemVariantId())) {
