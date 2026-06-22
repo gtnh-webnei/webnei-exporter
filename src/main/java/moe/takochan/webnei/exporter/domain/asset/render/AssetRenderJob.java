@@ -3,6 +3,7 @@ package moe.takochan.webnei.exporter.domain.asset.render;
 import net.minecraft.item.ItemStack;
 import net.minecraftforge.fluids.FluidStack;
 
+import codechicken.nei.drawable.DrawableResource;
 import lombok.Getter;
 import moe.takochan.webnei.exporter.domain.asset.AssetContract;
 
@@ -17,15 +18,19 @@ public final class AssetRenderJob {
     private final String kind;
     private final ItemStack itemStack;
     private final FluidStack fluidStack;
+    private final DrawableResource image;
+    private final String fallbackText;
 
     private AssetRenderJob(String datasetId, String ownerType, String ownerId, String kind, ItemStack itemStack,
-        FluidStack fluidStack) {
+        FluidStack fluidStack, DrawableResource image, String fallbackText) {
         this.datasetId = datasetId;
         this.ownerType = ownerType;
         this.ownerId = ownerId;
         this.kind = kind;
         this.itemStack = itemStack;
         this.fluidStack = fluidStack;
+        this.image = image;
+        this.fallbackText = fallbackText;
     }
 
     public static AssetRenderJob itemIcon(String datasetId, String itemVariantId, ItemStack stack) {
@@ -46,6 +51,30 @@ public final class AssetRenderJob {
             stack);
     }
 
+    public static AssetRenderJob recipeCategoryImageIcon(String datasetId, String categoryId, DrawableResource image) {
+        return new AssetRenderJob(
+            datasetId,
+            AssetContract.OWNER_TYPE_RECIPE_CATEGORY,
+            categoryId,
+            AssetContract.KIND_RECIPE_CATEGORY_ICON,
+            null,
+            null,
+            image,
+            null);
+    }
+
+    public static AssetRenderJob recipeCategoryTextIcon(String datasetId, String categoryId, String text) {
+        return new AssetRenderJob(
+            datasetId,
+            AssetContract.OWNER_TYPE_RECIPE_CATEGORY,
+            categoryId,
+            AssetContract.KIND_RECIPE_CATEGORY_ICON,
+            null,
+            null,
+            null,
+            text);
+    }
+
     public static AssetRenderJob fluidIcon(String datasetId, String fluidId, FluidStack stack) {
         return new AssetRenderJob(
             datasetId,
@@ -53,7 +82,9 @@ public final class AssetRenderJob {
             fluidId,
             AssetContract.KIND_FLUID_ICON,
             null,
-            stack.copy());
+            stack.copy(),
+            null,
+            null);
     }
 
     public String key() {
@@ -64,6 +95,6 @@ public final class AssetRenderJob {
         ItemStack stack) {
         ItemStack copy = stack.copy();
         copy.stackSize = 1;
-        return new AssetRenderJob(datasetId, ownerType, ownerId, kind, copy, null);
+        return new AssetRenderJob(datasetId, ownerType, ownerId, kind, copy, null, null, null);
     }
 }

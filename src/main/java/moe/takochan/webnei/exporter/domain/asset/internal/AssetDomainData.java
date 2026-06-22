@@ -7,6 +7,7 @@ import java.util.Map;
 import net.minecraft.item.ItemStack;
 import net.minecraftforge.fluids.FluidStack;
 
+import codechicken.nei.drawable.DrawableResource;
 import moe.takochan.webnei.exporter.domain.IExportModel;
 import moe.takochan.webnei.exporter.domain.asset.AssetExportModel;
 import moe.takochan.webnei.exporter.domain.asset.render.AssetRenderJob;
@@ -40,6 +41,20 @@ public final class AssetDomainData implements IDomainData {
             return;
         }
         put(AssetRenderJob.recipeCategoryIcon(datasetId, categoryId, stack));
+    }
+
+    void putRecipeCategoryImageIcon(String categoryId, DrawableResource image) {
+        if (image == null || categoryId == null || categoryId.isEmpty()) {
+            return;
+        }
+        put(AssetRenderJob.recipeCategoryImageIcon(datasetId, categoryId, image));
+    }
+
+    void putRecipeCategoryTextIcon(String categoryId, String text) {
+        if (text == null || text.isEmpty() || categoryId == null || categoryId.isEmpty()) {
+            return;
+        }
+        put(AssetRenderJob.recipeCategoryTextIcon(datasetId, categoryId, text));
     }
 
     @Override

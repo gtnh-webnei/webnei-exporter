@@ -5,6 +5,7 @@ import java.util.Map;
 import net.minecraft.item.ItemStack;
 import net.minecraftforge.fluids.FluidStack;
 
+import codechicken.nei.drawable.DrawableResource;
 import moe.takochan.webnei.exporter.domain.fluid.store.FluidDomainStore;
 import moe.takochan.webnei.exporter.domain.item.store.ItemDomainStore;
 import moe.takochan.webnei.exporter.domain.recipe.store.RecipeDomainStore;
@@ -39,6 +40,16 @@ public final class AssetSource {
             .categoryIconStacks()
             .entrySet()) {
             this.registrar.registerRecipeCategoryIcon(entry.getKey(), entry.getValue());
+        }
+        for (Map.Entry<String, DrawableResource> entry : this.recipeStore.data()
+            .categoryIconImages()
+            .entrySet()) {
+            this.registrar.registerRecipeCategoryImageIcon(entry.getKey(), entry.getValue());
+        }
+        for (Map.Entry<String, String> entry : this.recipeStore.data()
+            .categoryIconTexts()
+            .entrySet()) {
+            this.registrar.registerRecipeCategoryTextIcon(entry.getKey(), entry.getValue());
         }
     }
 }

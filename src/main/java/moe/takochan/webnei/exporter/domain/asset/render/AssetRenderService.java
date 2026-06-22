@@ -52,7 +52,11 @@ public final class AssetRenderService {
     private final int encoderThreads;
 
     public AssetRenderService() {
-        this(Arrays.<IAssetRenderer>asList(new ItemIconRenderer(), new FluidIconRenderer()));
+        this(
+            Arrays.<IAssetRenderer>asList(
+                new ItemIconRenderer(),
+                new FluidIconRenderer(),
+                new RecipeCategoryAuxIconRenderer()));
     }
 
     public AssetRenderService(List<IAssetRenderer> renderers) {
