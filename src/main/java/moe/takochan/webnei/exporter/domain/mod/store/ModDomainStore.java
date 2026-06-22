@@ -1,7 +1,7 @@
 package moe.takochan.webnei.exporter.domain.mod.store;
 
-import moe.takochan.webnei.exporter.domain.IExportModel;
 import moe.takochan.webnei.exporter.domain.mod.internal.ModDomainData;
+import moe.takochan.webnei.exporter.domain.mod.internal.ModRegistrar;
 import moe.takochan.webnei.exporter.domain.mod.model.ModRow;
 import moe.takochan.webnei.exporter.engine.store.IDomainStore;
 
@@ -11,20 +11,23 @@ import moe.takochan.webnei.exporter.engine.store.IDomainStore;
  * <p>
  * 该类只暴露其他 domain 允许依赖的公开 API，内部列表和导出模型组装细节由 ModDomainData 维护。
  */
-public final class ModDomainStore implements IDomainStore {
+public final class ModDomainStore implements IDomainStore<ModDomainData, ModRegistrar> {
 
     private final ModDomainData data;
+    private final ModRegistrar registrar;
 
-    public ModDomainStore(ModDomainData data) {
+    public ModDomainStore(ModDomainData data, ModRegistrar registrar) {
         this.data = data;
-    }
-
-    public ModRow findByModId(String modId) {
-        return data.findByModId(modId);
+        this.registrar = registrar;
     }
 
     @Override
-    public IExportModel toExportModel() {
-        return data.toExportModel();
+    public ModDomainData data() {
+        return data;
+    }
+
+    @Override
+    public ModRegistrar registrar() {
+        return registrar;
     }
 }

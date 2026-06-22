@@ -32,14 +32,14 @@ public final class ModExportTask implements IExportTask {
     @Override
     public void execute(ExportTaskContext context) {
         String datasetId = context.store(DatasetDomainStore.class)
+            .data()
             .datasetId();
 
         ModDomainData data = new ModDomainData();
-        ModDomainStore store = new ModDomainStore(data);
         ModRegistrar registrar = new ModRegistrar(data, datasetId);
+        ModDomainStore store = new ModDomainStore(data, registrar);
 
         new ForgeModSource(registrar).collect();
-
         context.register(ModDomainStore.class, store);
     }
 }

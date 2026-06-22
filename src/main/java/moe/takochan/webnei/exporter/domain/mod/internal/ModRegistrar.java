@@ -10,11 +10,12 @@ import java.security.NoSuchAlgorithmException;
 import cpw.mods.fml.common.ModContainer;
 import moe.takochan.webnei.exporter.WebneiExporterMod;
 import moe.takochan.webnei.exporter.domain.mod.model.ModRow;
+import moe.takochan.webnei.exporter.engine.store.IDomainRegistrar;
 
 /**
  * mod 注册处理器 — 负责从 ModContainer 采集字段并写入 data。
  */
-public final class ModRegistrar {
+public final class ModRegistrar implements IDomainRegistrar {
 
     private static final String UNKNOWN = "";
     private static final String SOURCE_TYPE_UNKNOWN = "unknown";
@@ -38,7 +39,7 @@ public final class ModRegistrar {
             sourceName(mod.getSource()),
             sourceSha256(mod, mod.getSource()),
             true);
-        data.register(row);
+        data.put(row);
     }
 
     private static String value(String value) {
