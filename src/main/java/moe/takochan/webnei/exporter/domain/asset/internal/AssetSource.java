@@ -25,15 +25,18 @@ public final class AssetSource {
     }
 
     public void collect() {
-        for (Map.Entry<String, ItemStack> entry : this.itemStore.stacks()
+        for (Map.Entry<String, ItemStack> entry : this.itemStore.data()
+            .stacks()
             .entrySet()) {
             this.registrar.registerItemIcon(entry.getKey(), entry.getValue());
         }
-        for (Map.Entry<String, FluidStack> entry : this.fluidStore.stacks()
+        for (Map.Entry<String, FluidStack> entry : this.fluidStore.data()
+            .stacks()
             .entrySet()) {
             this.registrar.registerFluidIcon(entry.getKey(), entry.getValue());
         }
-        for (Map.Entry<String, ItemStack> entry : this.recipeStore.categoryIconStacks()
+        for (Map.Entry<String, ItemStack> entry : this.recipeStore.data()
+            .categoryIconStacks()
             .entrySet()) {
             this.registrar.registerRecipeCategoryIcon(entry.getKey(), entry.getValue());
         }

@@ -28,15 +28,17 @@ public final class AssetExportTask implements IExportTask {
     @Override
     public void execute(ExportTaskContext context) {
         String datasetId = context.store(DatasetDomainStore.class)
+            .data()
             .datasetId();
         ItemDomainStore itemStore = context.store(ItemDomainStore.class);
         FluidDomainStore fluidStore = context.store(FluidDomainStore.class);
         RecipeDomainStore recipeStore = context.store(RecipeDomainStore.class);
 
         AssetDomainData data = new AssetDomainData(datasetId);
-        AssetDomainStore store = new AssetDomainStore(data);
         AssetRegistrar registrar = new AssetRegistrar(data);
         new AssetSource(registrar, itemStore, fluidStore, recipeStore).collect();
+
+        AssetDomainStore store = new AssetDomainStore(data, registrar);
         context.register(AssetDomainStore.class, store);
     }
 }
