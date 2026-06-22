@@ -9,11 +9,12 @@ import net.minecraftforge.oredict.OreDictionary;
 import codechicken.nei.ItemList;
 import moe.takochan.webnei.exporter.domain.item.model.ItemVariantRow;
 import moe.takochan.webnei.exporter.domain.item.store.ItemDomainStore;
+import moe.takochan.webnei.exporter.engine.store.IDomainRegistrar;
 
 /**
  * 处理 Forge OreDictionary 数据并写入 ore_dictionary domain store。
  */
-public final class OreDictionaryRegistrar {
+public final class OreDictionaryRegistrar implements IDomainRegistrar {
 
     private final OreDictionaryDomainData data;
     private final ItemDomainStore itemStore;
@@ -27,15 +28,12 @@ public final class OreDictionaryRegistrar {
      * 注册一个 dictionary name 及其 Forge 返回的 ItemStack 列表。
      */
     public void register(String dictionaryName, List<ItemStack> stacks) {
-        data.registerDictionary(dictionaryName);
+        data.putDictionary(dictionaryName);
         for (ItemStack stack : stacks) {
             registerStack(dictionaryName, stack);
         }
     }
 
-    /**
-     * 注册单个 ore entry；普通 stack 直接注册，wildcard damage 先展开成实际 ItemStack。
-     */
     private void registerStack(String dictionaryName, ItemStack stack) {
         if (stack == null || stack.getItem() == null) {
             return;
@@ -47,9 +45,6 @@ public final class OreDictionaryRegistrar {
         registerActualStack(dictionaryName, stack);
     }
 
-    /**
-     * 按 NEI 当前 item universe 将 wildcard damage 展开为实际 ItemStack。
-     */
     private void registerWildcard(String dictionaryName, Item item) {
         for (ItemStack stack : ItemList.itemMap.get(item)) {
             if (stack != null && stack.getItem() != null) {
@@ -58,11 +53,9 @@ public final class OreDictionaryRegistrar {
         }
     }
 
-    /**
-     * 将实际 ItemStack 交给 item store 获取/补齐 variant，并写入矿物词典关联。
-     */
     private void registerActualStack(String dictionaryName, ItemStack stack) {
-        ItemVariantRow row = itemStore.getOrRegisterVariant(stack);
-        data.registerEntry(dictionaryName, row.getItemVariantId());
+        ItemVariantRow row = itemStore.registrar()
+            .getOrRegisterVariant(stack);
+        data.putEntry(dictionaryName, row.getItemVariantId());
     }
 }

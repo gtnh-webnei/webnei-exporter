@@ -1,7 +1,7 @@
 package moe.takochan.webnei.exporter.domain.oredictionary.store;
 
-import moe.takochan.webnei.exporter.domain.IExportModel;
 import moe.takochan.webnei.exporter.domain.oredictionary.internal.OreDictionaryDomainData;
+import moe.takochan.webnei.exporter.domain.oredictionary.internal.OreDictionaryRegistrar;
 import moe.takochan.webnei.exporter.engine.store.IDomainStore;
 
 /**
@@ -10,26 +10,23 @@ import moe.takochan.webnei.exporter.engine.store.IDomainStore;
  * <p>
  * 该类保留对外可调用的注册 API，dictionary/entry 去重和排序状态由 OreDictionaryDomainData 维护。
  */
-public final class OreDictionaryDomainStore implements IDomainStore {
+public final class OreDictionaryDomainStore implements IDomainStore<OreDictionaryDomainData, OreDictionaryRegistrar> {
 
     private final OreDictionaryDomainData data;
+    private final OreDictionaryRegistrar registrar;
 
-    public OreDictionaryDomainStore(OreDictionaryDomainData data) {
+    public OreDictionaryDomainStore(OreDictionaryDomainData data, OreDictionaryRegistrar registrar) {
         this.data = data;
-    }
-
-    /** 注册 dictionary name。 */
-    public void registerDictionary(String dictionaryName) {
-        data.registerDictionary(dictionaryName);
-    }
-
-    /** 注册 dictionary name 与 item variant 的关联；重复关联保留第一次出现的位置。 */
-    public void registerEntry(String dictionaryName, String itemVariantId) {
-        data.registerEntry(dictionaryName, itemVariantId);
+        this.registrar = registrar;
     }
 
     @Override
-    public IExportModel toExportModel() {
-        return data.toExportModel();
+    public OreDictionaryDomainData data() {
+        return data;
+    }
+
+    @Override
+    public OreDictionaryRegistrar registrar() {
+        return registrar;
     }
 }

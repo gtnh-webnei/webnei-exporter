@@ -8,14 +8,15 @@ import moe.takochan.webnei.exporter.domain.IExportModel;
 import moe.takochan.webnei.exporter.domain.oredictionary.OreDictionaryExportModel;
 import moe.takochan.webnei.exporter.domain.oredictionary.model.OreDictionaryEntryRow;
 import moe.takochan.webnei.exporter.domain.oredictionary.model.OreDictionaryRow;
+import moe.takochan.webnei.exporter.engine.store.IDomainData;
 
 /**
- * ore_dictionary domain store 的内部数据。
+ * ore_dictionary domain store 的内部结果集。
  *
  * <p>
  * 该类持有 dictionary/entry 去重 key 和 list_index 分配状态；外部 domain 不应直接依赖这些实现细节。
  */
-public final class OreDictionaryDomainData {
+public final class OreDictionaryDomainData implements IDomainData {
 
     private final String datasetId;
     private final Map<String, OreDictionaryRow> dictionaries = new LinkedHashMap<>();
@@ -26,11 +27,11 @@ public final class OreDictionaryDomainData {
         this.datasetId = datasetId;
     }
 
-    public void registerDictionary(String dictionaryName) {
+    void putDictionary(String dictionaryName) {
         dictionaries.putIfAbsent(dictionaryName, new OreDictionaryRow(datasetId, dictionaryName));
     }
 
-    public void registerEntry(String dictionaryName, String itemVariantId) {
+    void putEntry(String dictionaryName, String itemVariantId) {
         String key = dictionaryName + '\u0000' + itemVariantId;
         if (entries.containsKey(key)) {
             return;
@@ -40,6 +41,7 @@ public final class OreDictionaryDomainData {
         entries.put(key, new OreDictionaryEntryRow(datasetId, dictionaryName, itemVariantId, listIndex));
     }
 
+    @Override
     public IExportModel toExportModel() {
         return new OreDictionaryExportModel(new ArrayList<>(dictionaries.values()), new ArrayList<>(entries.values()));
     }

@@ -27,13 +27,15 @@ public final class OreDictionaryExportTask implements IExportTask {
     @Override
     public void execute(ExportTaskContext context) {
         String datasetId = context.store(DatasetDomainStore.class)
+            .data()
             .datasetId();
         ItemDomainStore itemStore = context.store(ItemDomainStore.class);
 
         OreDictionaryDomainData data = new OreDictionaryDomainData(datasetId);
-        OreDictionaryDomainStore oreStore = new OreDictionaryDomainStore(data);
         OreDictionaryRegistrar registrar = new OreDictionaryRegistrar(data, itemStore);
         new ForgeOreDictionarySource(registrar).collect();
+
+        OreDictionaryDomainStore oreStore = new OreDictionaryDomainStore(data, registrar);
         context.register(OreDictionaryDomainStore.class, oreStore);
     }
 }
