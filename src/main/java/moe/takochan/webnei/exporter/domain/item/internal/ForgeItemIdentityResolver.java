@@ -13,8 +13,6 @@ import moe.takochan.webnei.exporter.util.StableNbtText;
 /** 基于 Forge registry 和 ItemStack 字段解析稳定身份。 */
 public final class ForgeItemIdentityResolver {
 
-    private static final String UNKNOW_ITEM_MODID = "unknow";
-
     /** 解析物品身份，优先用 Forge registry，失败时回退 itemRegistry 名称。 */
     public ItemIdentity resolveItem(Item item) {
         UniqueIdentifier identifier = GameRegistry.findUniqueIdentifierFor(item);
@@ -30,7 +28,8 @@ public final class ForgeItemIdentityResolver {
         if (separator > 0) {
             return new ItemIdentity(itemId, itemId.substring(0, separator), itemId.substring(separator + 1));
         }
-        return new ItemIdentity(itemId, UNKNOW_ITEM_MODID, itemId);
+        // 无可靠 mod id 时留空，与 recipe/mod domain 的空值规则一致。
+        return new ItemIdentity(itemId, "", itemId);
     }
 
     /** 解析 ItemStack 变体身份。 */
