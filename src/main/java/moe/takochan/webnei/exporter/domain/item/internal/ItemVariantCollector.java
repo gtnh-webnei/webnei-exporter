@@ -3,10 +3,8 @@ package moe.takochan.webnei.exporter.domain.item.internal;
 import java.util.List;
 
 import net.minecraft.client.Minecraft;
-import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 
-import moe.takochan.webnei.exporter.domain.item.model.ItemRow;
 import moe.takochan.webnei.exporter.domain.item.model.ItemVariantRow;
 
 /**
@@ -15,20 +13,7 @@ import moe.takochan.webnei.exporter.domain.item.model.ItemVariantRow;
  * <p>
  * tooltip 使用普通玩家 tooltip，不导出高级调试 tooltip。display_name 和 tooltip_text 保留原始格式码（§x）。
  */
-public final class ItemStackDetailCollector {
-
-    public ItemRow collectItem(String datasetId, ItemIdentity item, ItemStack stack) {
-        Item mcItem = stack.getItem();
-        return new ItemRow(
-            datasetId,
-            item.getItemId(),
-            item.getModId(),
-            item.getRegistryName(),
-            value(stack.getUnlocalizedName()),
-            stack.getMaxStackSize(),
-            stack.getMaxDamage(),
-            Item.getIdFromItem(mcItem));
-    }
+public final class ItemVariantCollector {
 
     public ItemVariantRow collectVariant(String datasetId, ItemVariantIdentity variant, ItemStack stack) {
         return new ItemVariantRow(

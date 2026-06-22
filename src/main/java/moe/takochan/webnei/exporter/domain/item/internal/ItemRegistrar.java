@@ -12,7 +12,8 @@ public final class ItemRegistrar implements IDomainRegistrar {
 
     private final String datasetId;
     private final ForgeItemIdentityResolver identityResolver = new ForgeItemIdentityResolver();
-    private final ItemStackDetailCollector detailCollector = new ItemStackDetailCollector();
+    private final ItemCollector itemCollector = new ItemCollector();
+    private final ItemVariantCollector itemVariantCollector = new ItemVariantCollector();
     private final ItemToolClassCollector toolClassCollector = new ItemToolClassCollector();
     private final ItemVariantHookRegistry itemVariantHooks = new ItemVariantHookRegistry();
     private final ItemDomainData data;
@@ -33,10 +34,10 @@ public final class ItemRegistrar implements IDomainRegistrar {
         }
 
         if (data.findItem(itemIdentity.getItemId()) == null) {
-            data.putItem(detailCollector.collectItem(datasetId, itemIdentity, stack));
+            data.putItem(itemCollector.collectItem(datasetId, itemIdentity, stack));
         }
 
-        ItemVariantRow row = detailCollector.collectVariant(datasetId, variantIdentity, stack);
+        ItemVariantRow row = itemVariantCollector.collectVariant(datasetId, variantIdentity, stack);
         itemVariantHooks.enrich(stack, row);
         data.putVariant(row, stack);
         for (ItemToolClassRow toolClassRow : toolClassCollector.collect(datasetId, variantIdentity, stack)) {
