@@ -5,7 +5,7 @@ import net.minecraft.item.ItemStack;
 
 import moe.takochan.webnei.exporter.domain.item.model.ItemRow;
 
-public class ItemCollector {
+public class ItemDetailCollector {
 
     public ItemRow collectItem(String datasetId, ItemIdentity item, ItemStack stack) {
         Item mcItem = stack.getItem();

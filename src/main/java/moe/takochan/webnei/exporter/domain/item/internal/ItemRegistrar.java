@@ -12,7 +12,7 @@ public final class ItemRegistrar implements IDomainRegistrar {
 
     private final String datasetId;
     private final ForgeItemIdentityResolver identityResolver = new ForgeItemIdentityResolver();
-    private final ItemCollector itemCollector = new ItemCollector();
+    private final ItemDetailCollector itemDetailCollector = new ItemDetailCollector();
     private final ItemVariantCollector itemVariantCollector = new ItemVariantCollector();
     private final ItemToolClassCollector toolClassCollector = new ItemToolClassCollector();
     private final ItemVariantHookRegistry itemVariantHooks = new ItemVariantHookRegistry();
@@ -34,7 +34,7 @@ public final class ItemRegistrar implements IDomainRegistrar {
         }
 
         if (data.findItem(itemIdentity.getItemId()) == null) {
-            data.putItem(itemCollector.collectItem(datasetId, itemIdentity, stack));
+            data.putItem(itemDetailCollector.collectItem(datasetId, itemIdentity, stack));
         }
 
         ItemVariantRow row = itemVariantCollector.collectVariant(datasetId, variantIdentity, stack);
