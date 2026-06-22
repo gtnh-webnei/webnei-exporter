@@ -32,12 +32,14 @@ public final class ItemExportTask implements IExportTask {
     @Override
     public void execute(ExportTaskContext context) {
         String datasetId = context.store(DatasetDomainStore.class)
+            .data()
             .datasetId();
 
-        ItemDomainData data = new ItemDomainData(datasetId);
-        ItemDomainStore store = new ItemDomainStore(data);
-        ItemRegistrar registrar = new ItemRegistrar(data);
+        ItemDomainData data = new ItemDomainData();
+        ItemRegistrar registrar = new ItemRegistrar(data, datasetId);
         new NeiItemPanelSource(registrar).collect();
+
+        ItemDomainStore store = new ItemDomainStore(data, registrar);
         context.register(ItemDomainStore.class, store);
     }
 }
