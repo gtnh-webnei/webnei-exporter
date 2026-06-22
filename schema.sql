@@ -148,17 +148,6 @@ CREATE TABLE IF NOT EXISTS recipe_category_catalyst (
     ON DELETE CASCADE
 );
 
-CREATE TABLE IF NOT EXISTS recipe_category_applicable_item (
-  dataset_id TEXT NOT NULL REFERENCES dataset(dataset_id) ON DELETE CASCADE,
-  category_id TEXT NOT NULL,
-  item_variant_id TEXT NOT NULL,
-  role TEXT NOT NULL,
-  opens_category BOOLEAN NOT NULL,
-  display_order INTEGER NOT NULL,
-  source_ref TEXT NOT NULL,
-  PRIMARY KEY (dataset_id, category_id, item_variant_id, role)
-);
-
 CREATE TABLE IF NOT EXISTS recipe_category_layout (
   dataset_id TEXT NOT NULL REFERENCES dataset(dataset_id) ON DELETE CASCADE,
   category_id TEXT NOT NULL,
@@ -501,10 +490,10 @@ CREATE INDEX IF NOT EXISTS idx_nesql_mob_mod_entity
   ON mob (dataset_id, mod_id, entity_name);
 CREATE INDEX IF NOT EXISTS idx_nesql_mob_variant_mob
   ON mob_variant (dataset_id, mob_id);
-CREATE INDEX IF NOT EXISTS idx_nesql_recipe_category_applicable_item_item
-  ON recipe_category_applicable_item (dataset_id, item_variant_id, category_id);
-CREATE INDEX IF NOT EXISTS idx_nesql_recipe_category_applicable_item_order
-  ON recipe_category_applicable_item (dataset_id, category_id, display_order, item_variant_id);
+CREATE INDEX IF NOT EXISTS idx_nesql_recipe_category_catalyst_item
+  ON recipe_category_catalyst (dataset_id, item_variant_id, category_id);
+CREATE INDEX IF NOT EXISTS idx_nesql_recipe_category_catalyst_order
+  ON recipe_category_catalyst (dataset_id, category_id, display_order, item_variant_id);
 CREATE INDEX IF NOT EXISTS idx_nesql_recipe_by_category_order
   ON recipe (dataset_id, category_id, display_order, recipe_id);
 CREATE INDEX IF NOT EXISTS idx_nesql_recipe_source_map
@@ -576,6 +565,7 @@ DROP VIEW IF EXISTS v_recipe_lookup_voltage_tier;
 DROP VIEW IF EXISTS v_recipe_lookup_breakdown;
 DROP VIEW IF EXISTS v_recipe_category_voltage_tier;
 DROP VIEW IF EXISTS v_recipe_category_applicable_item_browser;
+DROP VIEW IF EXISTS v_recipe_category_catalyst_browser;
 DROP VIEW IF EXISTS v_recipe_lookup_recipe_browser;
 DROP VIEW IF EXISTS v_recipe_search_entry;
 DROP VIEW IF EXISTS v_recipe_slot_browser;
@@ -1015,7 +1005,7 @@ LEFT JOIN (
  AND r.category_id = c.category_id
 LEFT JOIN (
   SELECT dataset_id, category_id, COUNT(*) AS applicable_item_count
-  FROM recipe_category_applicable_item
+  FROM recipe_category_catalyst
   GROUP BY dataset_id, category_id
 ) m
   ON m.dataset_id = c.dataset_id
@@ -1321,18 +1311,15 @@ JOIN recipe r
 GROUP BY rli.dataset_id, rli.target_domain, rli.target_id, rli.lookup_kind,
          rli.recipe_id, r.category_id, r.display_order;
 
-CREATE OR REPLACE VIEW v_recipe_category_applicable_item_browser AS
+CREATE OR REPLACE VIEW v_recipe_category_catalyst_browser AS
 SELECT
   m.dataset_id,
   m.category_id,
   m.item_variant_id,
   iv.display_name,
   iv.asset_path,
-  m.role,
-  m.opens_category,
-  m.display_order,
-  m.source_ref
-FROM recipe_category_applicable_item m
+  m.display_order
+FROM recipe_category_catalyst m
 LEFT JOIN v_item_ref iv
   ON iv.dataset_id = m.dataset_id
  AND iv.item_variant_id = m.item_variant_id;
