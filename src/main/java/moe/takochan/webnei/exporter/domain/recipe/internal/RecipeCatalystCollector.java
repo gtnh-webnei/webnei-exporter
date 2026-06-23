@@ -63,7 +63,7 @@ public final class RecipeCatalystCollector {
      * 按 variant 顺序建行，display_order 从 0 递增，保留 catalyst 在 NEI 中的展示次序。
      */
     private static List<RecipeCategoryCatalystRow> buildRows(String datasetId, String categoryId,
-                                                             Set<String> variantIds) {
+        Set<String> variantIds) {
         List<RecipeCategoryCatalystRow> rows = new ArrayList<>();
         int displayOrder = 0;
         for (String itemVariantId : variantIds) {
@@ -83,7 +83,6 @@ public final class RecipeCatalystCollector {
             return Collections.emptyList();
         }
     }
-
 
     /**
      * 经 item store 解析并按需补登记 variant，拿到稳定的 item_variant_id。
