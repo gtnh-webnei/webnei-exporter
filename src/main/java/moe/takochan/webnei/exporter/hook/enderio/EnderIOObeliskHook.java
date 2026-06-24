@@ -6,12 +6,12 @@ import net.minecraft.item.ItemStack;
 import net.minecraftforge.client.IItemRenderer;
 import net.minecraftforge.client.MinecraftForgeClient;
 
-import cpw.mods.fml.common.Loader;
 import crazypants.enderio.CommonProxy;
 import crazypants.enderio.EnderIO;
 import crazypants.enderio.machine.obelisk.ObeliskSpecialRenderer;
 import crazypants.enderio.machine.obelisk.aversion.AversionObeliskRenderer;
 import crazypants.enderio.machine.obelisk.weather.WeatherObeliskSpecialRenderer;
+import moe.takochan.webnei.exporter.compat.Mods;
 import moe.takochan.webnei.exporter.domain.asset.render.hook.AbstractPlayerTickHook;
 import moe.takochan.webnei.exporter.domain.asset.render.hook.ITimeDriverSession;
 
@@ -44,7 +44,7 @@ public final class EnderIOObeliskHook extends AbstractPlayerTickHook {
 
     @Override
     public boolean isAvailable() {
-        return Loader.isModLoaded(EnderIO.MODID) && CLIENT_TICK_COUNT != null;
+        return Mods.ENDER_IO.isLoaded() && CLIENT_TICK_COUNT != null;
     }
 
     @Override

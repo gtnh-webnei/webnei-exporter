@@ -72,6 +72,7 @@ dependencies {
     devOnlyNonPublishable(gtnhDev("Galacticraft"))
     devOnlyNonPublishable(gtnhDev("Galaxy-Space-GTNH"))
     devOnlyNonPublishable(gtnhDev("EnderIO"))
+    devOnlyNonPublishable(gtnhDev("Draconic-Evolution"))
 
     devOnlyNonPublishable(rfg.deobf('curse.maven:witchery-69673:2234410'))
     devOnlyNonPublishable("curse.maven:ExtraUtilities-225561:2264384")

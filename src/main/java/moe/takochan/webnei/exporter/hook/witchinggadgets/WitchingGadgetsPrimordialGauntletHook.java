@@ -4,9 +4,8 @@ import net.minecraft.item.ItemStack;
 import net.minecraftforge.client.IItemRenderer;
 import net.minecraftforge.client.MinecraftForgeClient;
 
-import cpw.mods.fml.common.Loader;
+import moe.takochan.webnei.exporter.compat.Mods;
 import moe.takochan.webnei.exporter.domain.asset.render.hook.AbstractPlayerTickHook;
-import witchinggadgets.WitchingGadgets;
 import witchinggadgets.client.render.ItemRenderPrimordialGauntlet;
 
 /**
@@ -30,7 +29,7 @@ public final class WitchingGadgetsPrimordialGauntletHook extends AbstractPlayerT
 
     @Override
     public boolean isAvailable() {
-        return Loader.isModLoaded(WitchingGadgets.MODID);
+        return Mods.WITCHING_GADGETS.isLoaded();
     }
 
     @Override
