@@ -8,11 +8,14 @@ import moe.takochan.webnei.exporter.domain.asset.AssetContract;
 import moe.takochan.webnei.exporter.domain.asset.internal.AssetPath;
 import moe.takochan.webnei.exporter.domain.asset.render.client.DynamicTextureState;
 import moe.takochan.webnei.exporter.domain.asset.render.client.FboIconRenderer;
+import moe.takochan.webnei.exporter.domain.asset.render.hook.ITimeDriverHook;
+import moe.takochan.webnei.exporter.domain.asset.render.hook.TimeDriverHookRegistry;
 
 public final class ItemIconRenderer implements IAssetRenderer {
 
     private final FboIconRenderer fboRenderer = new FboIconRenderer();
     private final IconAnimator animator = new IconAnimator(fboRenderer);
+    private final TimeDriverHookRegistry timeDrivers = new TimeDriverHookRegistry();
 
     @Override
     public boolean supports(AssetRenderJob job) {
@@ -22,7 +25,7 @@ public final class ItemIconRenderer implements IAssetRenderer {
     @Override
     public IconTile prepareTile(final AssetRenderJob job) throws AssetRenderException {
         final ItemStack stack = job.getItemStack();
-        if (DynamicTextureState.from(stack)
+        if (timeDrivers.find(job) != null || DynamicTextureState.from(stack)
             .isStandardAtlasAnimation()) {
             return null;
         }
@@ -37,8 +40,16 @@ public final class ItemIconRenderer implements IAssetRenderer {
     @Override
     public RenderedAsset renderImage(AssetRenderJob job) throws AssetRenderException {
         ItemStack stack = job.getItemStack();
-        IconAnimator.RenderedIcon icon = animator
-            .render(DynamicTextureState.from(stack), iconCanvasSize(stack), drawAction(stack));
+        DynamicTextureState dynamic = DynamicTextureState.from(stack);
+        IconAnimator.RenderedIcon icon;
+        // 标准 atlas 动画的物品（即使同时由 hook 命中）优先走 atlas 路径，避免时间驱动的固定 N 帧
+        // 抢走原 atlas 帧序列导致底图丢失。仅对纯时间驱动（无 atlas 动画）走采样多帧。
+        ITimeDriverHook hook = dynamic.isStandardAtlasAnimation() ? null : timeDrivers.find(job);
+        if (hook != null) {
+            icon = animator.renderTimeDriven(hook, iconCanvasSize(stack), drawAction(stack));
+        } else {
+            icon = animator.render(dynamic, iconCanvasSize(stack), drawAction(stack));
+        }
         return RenderedAsset.png(job, relativePath(job), icon.getImage(), icon.getMetadataJson());
     }
 

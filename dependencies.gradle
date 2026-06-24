@@ -42,6 +42,10 @@ configurations.configureEach {
     resolutionStrategy {
         force gtnh("GTNHLib")
         force gtnh("Applied-Energistics-2-Unofficial")
+
+        dependencySubstitution {
+            substitute module("com.github.GTNewHorizons:Baubles") using module("com.github.GTNewHorizons:Baubles-Expanded:2.2.0-GTNH") withClassifier("dev") because("Baubles-Expanded replaces Baubles")
+        }
     }
 }
 
@@ -58,8 +62,18 @@ dependencies {
     api(gtnhDev("NotEnoughItems"))
 
     // Mod integrations used by explicit mod adapters.
-    devOnlyNonPublishable(gtnhDev("GT5-Unofficial"))
+    api(gtnhDev("GT5-Unofficial"))
     devOnlyNonPublishable(gtnhDev("NEI-Integration"))
+    devOnlyNonPublishable(gtnhDev("Avaritia"))
+    devOnlyNonPublishable(gtnhDev("Eternal-Singularity"))
+
+    devOnlyNonPublishable(gtnhDev("WitchingGadgets"))
+    devOnlyNonPublishable(gtnhDev("Gadomancy")) { transitive = false }
+    devOnlyNonPublishable(gtnhDev("Galacticraft"))
+    devOnlyNonPublishable(gtnhDev("Galaxy-Space-GTNH"))
+
+    devOnlyNonPublishable(rfg.deobf('curse.maven:witchery-69673:2234410'))
+    devOnlyNonPublishable("curse.maven:ExtraUtilities-225561:2264384")
 }
 
 String gtnh(String name) {

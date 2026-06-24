@@ -128,6 +128,22 @@ public final class DynamicTextureState {
         }
     }
 
+    /**
+     * 把每个 sprite 当前 frameCounter 对应的帧像素显式上传回 atlas。
+     *
+     * <p>
+     * {@link TextureAtlasSprite#updateAnimation()} 只保证推进 frameCounter/tickCounter；其像素上传是条件性的
+     * （仅跨帧边界，且在打了 {@code needsAnimationUpdate} 标记时才执行，见 HodgePodge
+     * {@code IPatchedTextureAtlasSprite}）。导出逐帧渲染并不经过会打该标记的正常渲染主循环，因此采样前必须
+     * 由导出侧显式同步 atlas 像素，否则部分帧的 sprite GL 数据停留在上一帧或初始空白状态，导致 spritesheet
+     * 中间帧出现叠加层（mask / cosmic mask / glint 等）丢失。
+     */
+    public void uploadCurrentFrame() throws AssetRenderException {
+        for (TextureInfo texture : textures) {
+            uploadFrame(texture, frameIndex(texture, frameCounter(texture.sprite)));
+        }
+    }
+
     public void saveState() throws AssetRenderException {
         savedStates.clear();
         for (TextureInfo texture : textures) {

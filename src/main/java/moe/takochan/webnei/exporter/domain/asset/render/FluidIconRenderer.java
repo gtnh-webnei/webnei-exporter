@@ -11,6 +11,8 @@ import moe.takochan.webnei.exporter.domain.asset.AssetContract;
 import moe.takochan.webnei.exporter.domain.asset.internal.AssetPath;
 import moe.takochan.webnei.exporter.domain.asset.render.client.DynamicTextureState;
 import moe.takochan.webnei.exporter.domain.asset.render.client.FboIconRenderer;
+import moe.takochan.webnei.exporter.domain.asset.render.hook.ITimeDriverHook;
+import moe.takochan.webnei.exporter.domain.asset.render.hook.TimeDriverHookRegistry;
 
 /**
  * 流体图标渲染。
@@ -25,6 +27,7 @@ public final class FluidIconRenderer implements IAssetRenderer {
 
     private final FboIconRenderer fboRenderer = new FboIconRenderer();
     private final IconAnimator animator = new IconAnimator(fboRenderer);
+    private final TimeDriverHookRegistry timeDrivers = new TimeDriverHookRegistry();
 
     @Override
     public boolean supports(AssetRenderJob job) {
@@ -34,9 +37,10 @@ public final class FluidIconRenderer implements IAssetRenderer {
     @Override
     public IconTile prepareTile(final AssetRenderJob job) throws AssetRenderException {
         final FluidStack stack = job.getFluidStack();
-        // 动画流体不可批量（需逐帧推进 atlas），退回 renderImage。
-        if (DynamicTextureState.fromIcon(stillIcon(stack), TextureMap.locationBlocksTexture)
-            .isStandardAtlasAnimation()) {
+        // 时间驱动或 atlas 动画都不可批量（需逐帧推进时间或 sprite），退回 renderImage。
+        if (timeDrivers.find(job) != null
+            || DynamicTextureState.fromIcon(stillIcon(stack), TextureMap.locationBlocksTexture)
+                .isStandardAtlasAnimation()) {
             return null;
         }
         return new IconTile(
@@ -51,8 +55,15 @@ public final class FluidIconRenderer implements IAssetRenderer {
     public RenderedAsset renderImage(final AssetRenderJob job) throws AssetRenderException {
         FluidStack stack = job.getFluidStack();
         DynamicTextureState dynamic = DynamicTextureState.fromIcon(stillIcon(stack), TextureMap.locationBlocksTexture);
-        IconAnimator.RenderedIcon rendered = animator
-            .render(dynamic, FboIconRenderer.DEFAULT_WEB_ICON_SIZE, drawAction(stack));
+        IconAnimator.RenderedIcon rendered;
+        // 标准 atlas 动画的流体（即使同时由 hook 命中）优先走 atlas 路径，避免时间驱动的固定 N 帧
+        // 抢走原 atlas 帧序列导致底图丢失。仅对纯时间驱动（无 atlas 动画）走采样多帧。
+        ITimeDriverHook hook = dynamic.isStandardAtlasAnimation() ? null : timeDrivers.find(job);
+        if (hook != null) {
+            rendered = animator.renderTimeDriven(hook, FboIconRenderer.DEFAULT_WEB_ICON_SIZE, drawAction(stack));
+        } else {
+            rendered = animator.render(dynamic, FboIconRenderer.DEFAULT_WEB_ICON_SIZE, drawAction(stack));
+        }
         return RenderedAsset
             .png(job, AssetPath.fluidIcon(job.getOwnerId()), rendered.getImage(), rendered.getMetadataJson());
     }

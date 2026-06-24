@@ -7,6 +7,8 @@ import java.util.Arrays;
 
 import moe.takochan.webnei.exporter.domain.asset.render.client.DynamicTextureState;
 import moe.takochan.webnei.exporter.domain.asset.render.client.FboIconRenderer;
+import moe.takochan.webnei.exporter.domain.asset.render.hook.ITimeDriverHook;
+import moe.takochan.webnei.exporter.domain.asset.render.hook.ITimeDriverSession;
 
 /**
  * 标准 atlas 动画图标的逐帧渲染与拼合。
@@ -32,6 +34,40 @@ final class IconAnimator {
         return renderAnimation(dynamic, canvasSize, action);
     }
 
+    /**
+     * 时间驱动多帧采样：在单 render tick 内通过 {@link ITimeDriverHook} 推进时间状态（player tick / world time /
+     * wallclock 等），让依赖该状态的渲染逻辑逐帧产出不同输出。会话结束时由 hook 自行复原现场，避免泄漏到
+     * 后续渲染。若运行时上下文不可用、采样参数无效或所有采样帧像素相同，则退化为单帧静态。
+     */
+    RenderedIcon renderTimeDriven(ITimeDriverHook hook, int canvasSize, FboIconRenderer.IconRenderAction action)
+        throws AssetRenderException {
+        int sampleCount = hook.sampleCount();
+        int tickStep = hook.tickStep();
+        if (sampleCount <= 1 || tickStep <= 0) {
+            return new RenderedIcon(fboRenderer.render(canvasSize, action), AssetRenderMetadata.staticImage());
+        }
+        ITimeDriverSession session = hook.begin();
+        if (session == null) {
+            return new RenderedIcon(fboRenderer.render(canvasSize, action), AssetRenderMetadata.staticImage());
+        }
+        BufferedImage[] frames = new BufferedImage[sampleCount];
+        try {
+            for (int i = 0; i < sampleCount; i++) {
+                session.advanceTo(i * tickStep);
+                frames[i] = fboRenderer.render(canvasSize, action);
+            }
+        } finally {
+            session.close();
+        }
+        if (allFramesEqual(frames)) {
+            return new RenderedIcon(frames[0], AssetRenderMetadata.staticImage());
+        }
+        BufferedImage spritesheet = concatenateHorizontal(frames);
+        return new RenderedIcon(
+            spritesheet,
+            AssetRenderMetadata.horizontalExpandedTicks(frames[0].getWidth(), frames[0].getHeight(), frames.length));
+    }
+
     private RenderedIcon renderAnimation(DynamicTextureState dynamic, int canvasSize,
         FboIconRenderer.IconRenderAction action) throws AssetRenderException {
         BufferedImage[] frames = new BufferedImage[dynamic.getFrameCount()];
@@ -42,6 +78,10 @@ final class IconAnimator {
                 if (index < 0 || index >= frames.length) {
                     throw new AssetRenderException("Invalid dynamic texture frame index: " + index);
                 }
+                // 渲染前显式同步当前帧像素到 atlas：sprite.updateAnimation() 的 GL 上传是条件性的
+                // （HodgePodge IPatchedTextureAtlasSprite 仅在打了 needsAnimationUpdate 标记时才执行上传），
+                // 导出循环未走主渲染路径不会打标记，不显式 upload 会导致部分帧采到陈旧/空白像素。
+                dynamic.uploadCurrentFrame();
                 frames[index] = fboRenderer.render(canvasSize, action);
                 dynamic.updateAnimation();
             }
