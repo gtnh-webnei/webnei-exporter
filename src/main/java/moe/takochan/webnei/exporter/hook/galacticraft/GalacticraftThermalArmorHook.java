@@ -5,7 +5,7 @@ import net.minecraftforge.client.IItemRenderer;
 import net.minecraftforge.client.MinecraftForgeClient;
 
 import cpw.mods.fml.common.Loader;
-import gregtech.api.enums.Mods;
+import micdoodle8.mods.galacticraft.core.Constants;
 import micdoodle8.mods.galacticraft.planets.asteroids.client.render.item.ItemRendererThermalArmor;
 import moe.takochan.webnei.exporter.domain.asset.render.hook.AbstractPlayerTickHook;
 
@@ -18,7 +18,8 @@ public final class GalacticraftThermalArmorHook extends AbstractPlayerTickHook {
 
     @Override
     public boolean isAvailable() {
-        return Loader.isModLoaded(Mods.GalacticraftCore.ID);
+        // ItemRendererThermalArmor 在 planets.asteroids 子 mod，由 GalacticraftMars 注册。
+        return Loader.isModLoaded(Constants.MOD_ID_PLANETS);
     }
 
     @Override

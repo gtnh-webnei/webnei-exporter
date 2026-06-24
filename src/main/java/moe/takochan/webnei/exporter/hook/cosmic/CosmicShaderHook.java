@@ -7,10 +7,10 @@ import net.minecraftforge.client.MinecraftForgeClient;
 import cpw.mods.fml.common.Loader;
 import fox.spiteful.avaritia.render.CosmicBowRenderer;
 import fox.spiteful.avaritia.render.CosmicItemRenderer;
-import gregtech.api.enums.Mods;
 import moe.takochan.webnei.exporter.domain.asset.AssetContract;
 import moe.takochan.webnei.exporter.domain.asset.render.AssetRenderJob;
 import moe.takochan.webnei.exporter.domain.asset.render.hook.AbstractPlayerTickHook;
+import singulariteam.eternalsingularity.Reference;
 import singulariteam.eternalsingularity.render.EternalItemRenderer;
 
 /**
@@ -24,7 +24,8 @@ public final class CosmicShaderHook extends AbstractPlayerTickHook {
 
     @Override
     public boolean isAvailable() {
-        return Loader.isModLoaded(Mods.Avaritia.ID) || Loader.isModLoaded(Mods.EternalSingularity.ID);
+        // Avaritia 主类未暴露 modid 常量，回落到 @Mod 注解上的字面量；Eternal Singularity 走自己的常量。
+        return Loader.isModLoaded("Avaritia") || Loader.isModLoaded(Reference.MOD_ID);
     }
 
     @Override

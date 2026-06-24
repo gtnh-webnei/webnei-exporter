@@ -5,8 +5,8 @@ import net.minecraftforge.client.IItemRenderer;
 import net.minecraftforge.client.MinecraftForgeClient;
 
 import cpw.mods.fml.common.Loader;
+import galaxyspace.GalaxySpace;
 import galaxyspace.core.render.item.ItemRendererThermalPaddingT2;
-import gregtech.api.enums.Mods;
 import moe.takochan.webnei.exporter.domain.asset.render.hook.AbstractPlayerTickHook;
 
 /**
@@ -17,7 +17,7 @@ public final class GalaxySpaceThermalPaddingHook extends AbstractPlayerTickHook 
 
     @Override
     public boolean isAvailable() {
-        return Loader.isModLoaded(Mods.GalaxySpace.ID);
+        return Loader.isModLoaded(GalaxySpace.MODID);
     }
 
     @Override

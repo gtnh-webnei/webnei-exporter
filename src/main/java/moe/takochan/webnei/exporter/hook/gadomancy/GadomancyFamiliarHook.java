@@ -5,9 +5,9 @@ import net.minecraftforge.client.IItemRenderer;
 import net.minecraftforge.client.MinecraftForgeClient;
 
 import cpw.mods.fml.common.Loader;
-import gregtech.api.enums.Mods;
 import makeo.gadomancy.client.renderers.item.ItemRenderFamiliar;
 import makeo.gadomancy.client.util.FamiliarHandlerClient;
+import makeo.gadomancy.common.Gadomancy;
 import moe.takochan.webnei.exporter.domain.asset.render.hook.AbstractPlayerTickHook;
 import moe.takochan.webnei.exporter.domain.asset.render.hook.ITimeDriverSession;
 
@@ -24,7 +24,7 @@ public final class GadomancyFamiliarHook extends AbstractPlayerTickHook {
 
     @Override
     public boolean isAvailable() {
-        return Loader.isModLoaded(Mods.Gadomancy.ID);
+        return Loader.isModLoaded(Gadomancy.MODID);
     }
 
     @Override
