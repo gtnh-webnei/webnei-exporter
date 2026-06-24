@@ -71,9 +71,13 @@ dependencies {
     devOnlyNonPublishable(gtnhDev("Gadomancy")) { transitive = false }
     devOnlyNonPublishable(gtnhDev("Galacticraft"))
     devOnlyNonPublishable(gtnhDev("Galaxy-Space-GTNH"))
+    devOnlyNonPublishable(gtnhDev("EnderIO"))
 
     devOnlyNonPublishable(rfg.deobf('curse.maven:witchery-69673:2234410'))
     devOnlyNonPublishable("curse.maven:ExtraUtilities-225561:2264384")
+    devOnlyNonPublishable("thaumcraft:Thaumcraft:1.7.10-4.2.3.5:dev")
+    devOnlyNonPublishable("curse.maven:thaumcraft-nei-plugin-225095:2241913")
+
 }
 
 String gtnh(String name) {

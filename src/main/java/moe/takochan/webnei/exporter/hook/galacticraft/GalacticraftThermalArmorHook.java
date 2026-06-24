@@ -10,11 +10,21 @@ import micdoodle8.mods.galacticraft.planets.asteroids.client.render.item.ItemRen
 import moe.takochan.webnei.exporter.domain.asset.render.hook.AbstractPlayerTickHook;
 
 /**
- * Galacticraft 热防护服第二层颜色呼吸：渲染读
- * {@code FMLClientHandler.instance().getClientPlayerEntity().ticksExisted / 15.0F} 求 {@code Math.cos}，
- * 在 {@code (r,b)} 通道上做余弦呼吸。
+ * Galacticraft {@code ItemRendererThermalArmor}：第二层（i==1）色值随
+ * {@code cos(getClientPlayerEntity().ticksExisted / 15.0F)} 周期变化，在 (r, b) 通道上做 cos 抖动。
+ *
+ * <p>
+ * 完整 cos 周期 = {@code 2π × 15 ≈ 94.25 tick}，override {@link #sampleCount} 返回 94 让 spritesheet 闭环。
  */
 public final class GalacticraftThermalArmorHook extends AbstractPlayerTickHook {
+
+    /** cos(ticksExisted / 15) 一个完整周期约 94 tick。 */
+    private static final int COS_PERIOD = 94;
+
+    @Override
+    public int sampleCount() {
+        return COS_PERIOD;
+    }
 
     @Override
     public boolean isAvailable() {

@@ -12,7 +12,7 @@ import moe.takochan.webnei.exporter.domain.asset.render.hook.AbstractPlayerTickH
 import moe.takochan.webnei.exporter.domain.asset.render.hook.ITimeDriverSession;
 
 /**
- * Gadomancy 灵宠图标动画：{@code ItemRenderFamiliar} 内部把
+ * Gadomancy {@code ItemRenderFamiliar}：渲染时把
  * {@code FamiliarHandlerClient.PartialEntityFamiliar.DUMMY_FAMILIAR.ticksExisted} 拷给一个 EntityWisp，
  * EntityWisp 渲染依赖该 tick 流动产生 wisp 帧 / 尺寸变化。
  *
