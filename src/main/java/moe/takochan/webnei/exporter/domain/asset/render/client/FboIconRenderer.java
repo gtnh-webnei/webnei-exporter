@@ -20,7 +20,7 @@ import moe.takochan.webnei.exporter.domain.asset.render.AssetRenderException;
 
 public final class FboIconRenderer {
 
-    public static final int DEFAULT_WEB_ICON_SIZE = 64;
+    public static final int DEFAULT_WEB_ICON_SIZE = 128;
     public static final int GUI_ICON_SIZE = 16;
     public static final int MAX_COLOR = 255;
 
