@@ -50,34 +50,49 @@ configurations.configureEach {
 }
 
 dependencies {
-    // lombok
+    // ===== 构建工具（Maven Central，非 mod 依赖）=====
     def lombokVersion = "1.18.46"
     compileOnly("org.projectlombok:lombok:$lombokVersion")
     annotationProcessor("org.projectlombok:lombok:$lombokVersion")
 
-    // Angelica
+    // ===== GTNH 托管（gtnhDev / gtnh）=====
     runtimeOnlyNonPublishable(gtnhDev("Angelica"))
 
-    // NEI
+    // 核心平台：导出器运行所依赖的渲染/物品/配方框架
     api(gtnhDev("NotEnoughItems"))
-
-    // Mod integrations used by explicit mod adapters.
     api(gtnhDev("GT5-Unofficial"))
     devOnlyNonPublishable(gtnhDev("NEI-Integration"))
+
+    // Avaritia 系列
     devOnlyNonPublishable(gtnhDev("Avaritia"))
     devOnlyNonPublishable(gtnhDev("Eternal-Singularity"))
 
+    // Thaumcraft 系列（GTNH 托管的附属 mod；基础 Thaumcraft 见下方非托管块）
     devOnlyNonPublishable(gtnhDev("WitchingGadgets"))
     devOnlyNonPublishable(gtnhDev("Gadomancy")) { transitive = false }
+
+    // Galacticraft 系列
+    devOnlyNonPublishable(gtnhDev("amunra")) { transitive = false }
     devOnlyNonPublishable(gtnhDev("Galacticraft"))
     devOnlyNonPublishable(gtnhDev("Galaxy-Space-GTNH"))
+
+    // EnderIO
     devOnlyNonPublishable(gtnhDev("EnderIO"))
+
+    // Draconic Evolution
     devOnlyNonPublishable(gtnhDev("Draconic-Evolution"))
 
+    // ===== 非 GTNH 托管（curse.maven / 直接 maven）=====
+
+    // Witchery
     devOnlyNonPublishable(rfg.deobf('curse.maven:witchery-69673:2234410'))
+
+    // Extra Utilities
     devOnlyNonPublishable("curse.maven:ExtraUtilities-225561:2264384")
+
+    // Thaumcraft 系列（基础 mod + NEI 插件；GTNH 托管的附属见上方托管块）
     devOnlyNonPublishable("thaumcraft:Thaumcraft:1.7.10-4.2.3.5:dev")
-    devOnlyNonPublishable("curse.maven:thaumcraft-nei-plugin-225095:2241913")
+    devOnlyNonPublishable(rfg.deobf("curse.maven:thaumcraft-nei-plugin-225095:2241913"))
 
 }
 

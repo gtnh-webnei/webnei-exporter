@@ -29,6 +29,8 @@ public enum Mods {
     GALACTICRAFT_PLANETS("GalacticraftMars"),
     /** Galaxy Space — {@code galaxyspace.GalaxySpace.MODID}。 */
     GALAXY_SPACE("GalaxySpace"),
+    /** AmunRa — {@code de.katzenpapst.amunra.AmunRa.MODID}。 */
+    AMUNRA("GalacticraftAmunRa"),
     /** Witching Gadgets — {@code witchinggadgets.WitchingGadgets.MODID}。 */
     WITCHING_GADGETS("WitchingGadgets");
 

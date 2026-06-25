@@ -37,6 +37,27 @@ public class WebneiLateMixins implements ILateMixinLoader {
             mixins.add("draconicevolution.RenderEarthItemMixin");
         }
 
+        // Galacticraft Core: ItemRendererTier1Rocket 时间驱动旋转
+        if (Mods.GALACTICRAFT_CORE.isLoaded()) {
+            mixins.add("galacticraft.ItemRendererTier1RocketMixin");
+        }
+
+        // Galacticraft Planets (mars/asteroids): Tier2/Tier3 火箭时间驱动旋转
+        if (Mods.GALACTICRAFT_PLANETS.isLoaded()) {
+            mixins.add("galacticraft.ItemRendererTier2RocketMixin");
+            mixins.add("galacticraft.ItemRendererTier3RocketMixin");
+        }
+
+        // AmunRa: ItemRendererShuttle 时间驱动旋转
+        if (Mods.AMUNRA.isLoaded()) {
+            mixins.add("amunra.ItemRendererShuttleMixin");
+        }
+
+        // GalaxySpace: ItemRendererRocket 时间驱动旋转
+        if (Mods.GALAXY_SPACE.isLoaded()) {
+            mixins.add("galaxyspace.ItemRendererRocketMixin");
+        }
+
         return mixins;
     }
 }
