@@ -5,7 +5,11 @@ import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import moe.takochan.webnei.exporter.domain.nei.scan.NeiHandlerDescriptor;
 
-/** 一个 NEI handler 的 recipe 加载和抽取结果摘要。 */
+/**
+ * 实验性 NEI 探测/抽取代码；当前未接入 ExportPlan.ALL 的正式导出流程。
+ * 请勿在正式导出链路中引用，仅供参考。
+ * 一个 NEI handler 的 recipe 加载和抽取结果摘要。
+ */
 @Getter
 @RequiredArgsConstructor(access = AccessLevel.PACKAGE)
 public final class ExtractedHandler {

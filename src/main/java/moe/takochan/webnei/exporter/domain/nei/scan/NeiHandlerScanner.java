@@ -21,6 +21,11 @@ import codechicken.nei.recipe.RecipeCatalysts;
 import cpw.mods.fml.common.Loader;
 import cpw.mods.fml.common.ModContainer;
 
+/**
+ * 实验性 NEI 探测/抽取代码；当前未接入 ExportPlan.ALL 的正式导出流程。
+ * 请勿在正式导出链路中引用，仅供参考。
+ * 扫描运行时已注册的 NEI handler 并生成描述结果。
+ */
 public final class NeiHandlerScanner {
 
     public List<NeiHandlerDescriptor> scan() {

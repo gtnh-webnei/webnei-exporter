@@ -19,7 +19,11 @@ import moe.takochan.webnei.exporter.domain.nei.loading.NeiLoadingStatus;
 import moe.takochan.webnei.exporter.domain.nei.scan.NeiHandlerDescriptor;
 import moe.takochan.webnei.exporter.domain.nei.scan.NeiHandlerEntry;
 
-/** 遍历 NEI handler 列表，逐个加载 recipe 并提取输入/输出/其他格子数据。 */
+/**
+ * 实验性 NEI 探测/抽取代码；当前未接入 ExportPlan.ALL 的正式导出流程。
+ * 请勿在正式导出链路中引用，仅供参考。
+ * 遍历 NEI handler 列表，逐个加载 recipe 并提取输入/输出/其他格子数据。
+ */
 public final class StandardSlotExtractor {
 
     private final INeiLoadingSupport coreLoadingSupport;

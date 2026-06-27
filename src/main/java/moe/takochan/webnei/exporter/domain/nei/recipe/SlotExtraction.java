@@ -5,7 +5,11 @@ import java.util.List;
 
 import lombok.Getter;
 
-/** 一次 recipe visual facts 抽取的完整结果集合。 */
+/**
+ * 实验性 NEI 探测/抽取代码；当前未接入 ExportPlan.ALL 的正式导出流程。
+ * 请勿在正式导出链路中引用，仅供参考。
+ * 一次 recipe visual facts 抽取的完整结果集合。
+ */
 @Getter
 public final class SlotExtraction {
 

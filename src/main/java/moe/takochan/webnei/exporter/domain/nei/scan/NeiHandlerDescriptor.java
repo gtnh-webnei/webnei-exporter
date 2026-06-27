@@ -2,7 +2,11 @@ package moe.takochan.webnei.exporter.domain.nei.scan;
 
 import lombok.Getter;
 
-/** 运行时发现的一个唯一 NEI recipe handler 描述。 */
+/**
+ * 实验性 NEI 探测/抽取代码；当前未接入 ExportPlan.ALL 的正式导出流程。
+ * 请勿在正式导出链路中引用，仅供参考。
+ * 运行时发现的一个唯一 NEI recipe handler 描述。
+ */
 @Getter
 public final class NeiHandlerDescriptor {
 

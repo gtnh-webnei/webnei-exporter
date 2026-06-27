@@ -4,7 +4,11 @@ import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
-/** 一个 NEI recipe 页面的视觉事实抽取摘要。 */
+/**
+ * 实验性 NEI 探测/抽取代码；当前未接入 ExportPlan.ALL 的正式导出流程。
+ * 请勿在正式导出链路中引用，仅供参考。
+ * 一个 NEI recipe 页面的视觉事实抽取摘要。
+ */
 @Getter
 @RequiredArgsConstructor(access = AccessLevel.PACKAGE)
 public final class ExtractedRecipe {

@@ -4,7 +4,11 @@ import codechicken.nei.recipe.IRecipeHandler;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
-/** NEI handler 扫描结果条目，绑定领域描述和原始运行时 handler 实例。 */
+/**
+ * 实验性 NEI 探测/抽取代码；当前未接入 ExportPlan.ALL 的正式导出流程。
+ * 请勿在正式导出链路中引用，仅供参考。
+ * NEI handler 扫描结果条目，绑定领域描述和原始运行时 handler 实例。
+ */
 @Getter
 @RequiredArgsConstructor
 public final class NeiHandlerEntry {

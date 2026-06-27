@@ -10,6 +10,11 @@ import codechicken.nei.recipe.ShapedRecipeHandler;
 import codechicken.nei.recipe.ShapelessRecipeHandler;
 import moe.takochan.webnei.exporter.domain.nei.scan.NeiHandlerEntry;
 
+/**
+ * 实验性 NEI 探测/抽取代码；当前未接入 ExportPlan.ALL 的正式导出流程。
+ * 请勿在正式导出链路中引用，仅供参考。
+ * 内建 NEI handler 加载支持实现。
+ */
 public final class BuiltinNeiLoadingSupport implements INeiLoadingSupport {
 
     private static final String PROVIDER = "builtin-nei";
