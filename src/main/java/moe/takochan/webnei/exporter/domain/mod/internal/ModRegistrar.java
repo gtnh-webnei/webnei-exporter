@@ -4,9 +4,13 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.URISyntaxException;
+import java.net.URL;
+import java.security.CodeSource;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 
+import cpw.mods.fml.common.InjectedModContainer;
 import cpw.mods.fml.common.ModContainer;
 import moe.takochan.webnei.exporter.WebneiExporterMod;
 import moe.takochan.webnei.exporter.domain.mod.model.ModRow;
@@ -18,6 +22,10 @@ import moe.takochan.webnei.exporter.engine.store.IDomainRegistrar;
 public final class ModRegistrar implements IDomainRegistrar {
 
     private static final String UNKNOWN = "";
+    private static final String MOD_ID_MCP = "mcp";
+    private static final String MINECRAFT_JAR_PLACEHOLDER = "minecraft.jar";
+    private static final String SOURCE_TYPE_FILE = "file";
+    private static final String SOURCE_TYPE_DIRECTORY = "directory";
     private static final String SOURCE_TYPE_UNKNOWN = "unknown";
     private static final int HASH_BUFFER_SIZE = 64 * 1024;
 
@@ -30,14 +38,15 @@ public final class ModRegistrar implements IDomainRegistrar {
     }
 
     public void register(ModContainer mod) {
+        File source = resolveSource(mod);
         ModRow row = new ModRow(
             datasetId,
             value(mod.getModId()),
             value(mod.getName()),
             value(mod.getVersion()),
-            sourceType(mod.getSource()),
-            sourceName(mod.getSource()),
-            sourceSha256(mod, mod.getSource()),
+            sourceType(source),
+            sourceName(source),
+            sourceSha256(mod, source),
             true);
         data.put(row);
     }
@@ -46,10 +55,44 @@ public final class ModRegistrar implements IDomainRegistrar {
         return value == null ? UNKNOWN : value;
     }
 
+    private static File resolveSource(ModContainer mod) {
+        File source = mod.getSource();
+        if (isInjectedMinecraftJarPlaceholder(mod, source)) {
+            File wrappedSource = classSource(((InjectedModContainer) mod).wrappedContainer.getClass());
+            if (wrappedSource != null) return wrappedSource;
+        }
+        if (source == null) {
+            File containerSource = classSource(mod.getClass());
+            if (containerSource != null) return containerSource;
+        }
+        return source;
+    }
+
+    private static boolean isInjectedMinecraftJarPlaceholder(ModContainer mod, File source) {
+        return mod instanceof InjectedModContainer && !MOD_ID_MCP.equals(mod.getModId())
+            && source != null
+            && MINECRAFT_JAR_PLACEHOLDER.equals(source.getPath());
+    }
+
+    private static File classSource(Class<?> type) {
+        CodeSource codeSource = type.getProtectionDomain()
+            .getCodeSource();
+        if (codeSource == null) return null;
+
+        URL location = codeSource.getLocation();
+        if (location == null || !SOURCE_TYPE_FILE.equals(location.getProtocol())) return null;
+
+        try {
+            return new File(location.toURI());
+        } catch (URISyntaxException e) {
+            return new File(location.getPath());
+        }
+    }
+
     private static String sourceType(File source) {
         if (source == null) return SOURCE_TYPE_UNKNOWN;
-        if (source.isFile()) return "file";
-        if (source.isDirectory()) return "directory";
+        if (source.isFile()) return SOURCE_TYPE_FILE;
+        if (source.isDirectory()) return SOURCE_TYPE_DIRECTORY;
         return SOURCE_TYPE_UNKNOWN;
     }
 
