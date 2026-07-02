@@ -70,8 +70,17 @@ public final class RecipeDomainData implements IDomainData {
     /** 每个 category 的 recipe display_order 递增计数，保持 NEI 扫描顺序。 */
     private final Map<String, Integer> nextRecipeDisplayOrderByCategory = new LinkedHashMap<>();
 
-    /** 同 category 下相同 visual hash 的出现次数，用于在罕见碰撞时为 recipe_id 追加 occurrence。 */
-    private final Map<String, Integer> visualHashOccurrenceByCategory = new LinkedHashMap<>();
+    /** recipe ID prefix 与 hash 的分隔符。 */
+    private static final char RECIPE_ID_HASH_SEPARATOR = '@';
+
+    /** recipe ID occurrence 后缀分隔符。 */
+    private static final char RECIPE_ID_OCCURRENCE_SEPARATOR = '.';
+
+    /** recipe ID 稳定哈希输入的内部键分隔符。 */
+    private static final char RECIPE_ID_KEY_SEPARATOR = '\u0000';
+
+    /** 相同 base recipe ID 的出现次数，用于在罕见碰撞时为 recipe_id 追加 occurrence。 */
+    private final Map<String, Integer> recipeIdOccurrenceCounts = new LinkedHashMap<>();
 
     public RecipeDomainData(String datasetId) {
         this.datasetId = datasetId;
@@ -129,7 +138,7 @@ public final class RecipeDomainData implements IDomainData {
      */
     void registerVisual(RecipeCategoryIdentity identity, RecipeVisualObservation observation) {
         String categoryId = identity.getCategoryId();
-        String recipeId = nextRecipeId(categoryId, observation);
+        String recipeId = nextRecipeId(identity, observation);
         int recipeDisplayOrder = nextRecipeDisplayOrder(categoryId);
         if (recipes.putIfAbsent(recipeId, new RecipeRow(datasetId, recipeId, categoryId, recipeDisplayOrder)) != null) {
             return;
@@ -187,12 +196,11 @@ public final class RecipeDomainData implements IDomainData {
         }
     }
 
-    private String nextRecipeId(String categoryId, RecipeVisualObservation observation) {
-        String hash = StableHash.shortHash(visualFingerprint(observation));
-        String hashKey = categoryId + '\u0000' + hash;
-        int occurrence = visualHashOccurrenceByCategory.merge(hashKey, 1, Integer::sum);
-        String base = categoryId + '/' + hash;
-        return occurrence == 1 ? base : base + '#' + occurrence;
+    private String nextRecipeId(RecipeCategoryIdentity identity, RecipeVisualObservation observation) {
+        String hashInput = identity.getCategoryId() + RECIPE_ID_KEY_SEPARATOR + visualFingerprint(observation);
+        String baseRecipeId = identity.getRecipeIdPrefix() + RECIPE_ID_HASH_SEPARATOR + StableHash.shortHash(hashInput);
+        int occurrence = recipeIdOccurrenceCounts.merge(baseRecipeId, 1, Integer::sum);
+        return occurrence == 1 ? baseRecipeId : baseRecipeId + RECIPE_ID_OCCURRENCE_SEPARATOR + occurrence;
     }
 
     private int nextRecipeDisplayOrder(String categoryId) {

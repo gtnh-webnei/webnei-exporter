@@ -20,18 +20,38 @@ public final class RecipeCategoryIdentityResolver {
     /** NEI 对未知归属返回的占位 mod id；遇到时归一化为空字符串，与 mod domain 的空值规则保持一致。 */
     private static final String UNKNOWN_MOD_ID = "Unknown";
 
+    /** recipe_id 在 modId 缺失时使用的固定 namespace。 */
+    private static final String RECIPE_NAMESPACE = "recipe";
+
+    /** recipe_id prefix 的 namespace 分隔符。 */
+    private static final char RECIPE_ID_NAMESPACE_SEPARATOR = ':';
+
+    /** 友好 handler slug 取路径尾段时识别的类名包路径分隔符。 */
+    private static final char CLASS_NAME_SEPARATOR = '.';
+
+    /** 友好 handler slug 取路径尾段时识别的 namespaced id 分隔符。 */
+    private static final char NAMESPACE_SEPARATOR = ':';
+
+    /** overlay/handler id 中不提供区分度的通用值。 */
+    private static final String GENERIC_CRAFTING_ID = "crafting";
+
+    /** overlay/handler id 中不提供区分度的通用值。 */
+    private static final String GENERIC_ITEM_ID = "item";
+
     public RecipeCategoryIdentity resolve(IRecipeHandler handler) {
         HandlerInfo info = safeHandlerInfo(handler);
         String handlerClass = handler.getClass()
             .getName();
         String handlerId = safeString(handler::getHandlerId);
         String overlayId = safeString(handler::getOverlayIdentifier);
+        String normalizedModId = modId(info);
         String categoryId = resolveCategoryId(handlerClass, handlerId, overlayId);
         return new RecipeCategoryIdentity(
             handlerKey(handlerClass, handlerId, overlayId),
             categoryId,
+            recipeIdPrefix(normalizedModId, handlerClass, handlerId, overlayId),
             displayName(handler, categoryId),
-            modId(info),
+            normalizedModId,
             canvasWidth(info),
             canvasHeight(info),
             yShift(info),
@@ -83,6 +103,37 @@ public final class RecipeCategoryIdentityResolver {
         return UNKNOWN_MOD_ID.equals(modId) ? "" : modId;
     }
 
+    private static String recipeIdPrefix(String modId, String handlerClass, String handlerId, String overlayId) {
+        return recipeNamespace(modId) + RECIPE_ID_NAMESPACE_SEPARATOR + handlerSlug(handlerClass, handlerId, overlayId);
+    }
+
+    private static String recipeNamespace(String modId) {
+        return modId.isEmpty() ? RECIPE_NAMESPACE : sanitize(modId);
+    }
+
+    private static String handlerSlug(String handlerClass, String handlerId, String overlayId) {
+        String overlaySlug = sanitize(lastSegment(overlayId));
+        if (hasSpecificId(overlayId) && hasText(overlaySlug)) {
+            return overlaySlug;
+        }
+        String handlerIdSlug = sanitize(lastSegment(handlerId));
+        if (hasSpecificId(handlerId) && hasText(handlerIdSlug)) {
+            return handlerIdSlug;
+        }
+        return sanitize(lastSegment(handlerClass));
+    }
+
+    private static String lastSegment(String value) {
+        int classSeparator = value.lastIndexOf(CLASS_NAME_SEPARATOR);
+        int namespaceSeparator = value.lastIndexOf(NAMESPACE_SEPARATOR);
+        int start = Math.max(classSeparator, namespaceSeparator) + 1;
+        return value.substring(start);
+    }
+
+    private static boolean hasSpecificId(String value) {
+        return hasText(value) && !isGenericOverlayId(value);
+    }
+
     /**
      * 由 handler 身份确定性地派生分类 ID。
      *
@@ -113,7 +164,7 @@ public final class RecipeCategoryIdentityResolver {
     }
 
     private static boolean isGenericOverlayId(String id) {
-        return "crafting".equals(id) || "item".equals(id);
+        return GENERIC_CRAFTING_ID.equals(id) || GENERIC_ITEM_ID.equals(id);
     }
 
     private static HandlerInfo safeHandlerInfo(IRecipeHandler handler) {

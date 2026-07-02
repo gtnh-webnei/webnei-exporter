@@ -23,6 +23,9 @@ public final class RecipeCategoryIdentity {
      */
     private final String categoryId;
 
+    /** recipe_id 可见前缀，格式为 namespace:handler_slug。 */
+    private final String recipeIdPrefix;
+
     /** 分类显示名。 */
     private final String displayName;
 
