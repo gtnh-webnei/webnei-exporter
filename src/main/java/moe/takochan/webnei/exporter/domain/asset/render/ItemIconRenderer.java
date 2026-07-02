@@ -16,6 +16,15 @@ public final class ItemIconRenderer implements IAssetRenderer {
     private final FboIconRenderer fboRenderer = new FboIconRenderer();
     private final IconAnimator animator = new IconAnimator(fboRenderer);
     private final TimeDriverHookRegistry timeDrivers = new TimeDriverHookRegistry();
+    private final boolean disableAnimations;
+
+    public ItemIconRenderer() {
+        this(false);
+    }
+
+    public ItemIconRenderer(boolean disableAnimations) {
+        this.disableAnimations = disableAnimations;
+    }
 
     @Override
     public boolean supports(AssetRenderJob job) {
@@ -25,8 +34,8 @@ public final class ItemIconRenderer implements IAssetRenderer {
     @Override
     public IconTile prepareTile(final AssetRenderJob job) throws AssetRenderException {
         final ItemStack stack = job.getItemStack();
-        if (timeDrivers.find(job) != null || DynamicTextureState.from(stack)
-            .isStandardAtlasAnimation()) {
+        if (!disableAnimations && (timeDrivers.find(job) != null || DynamicTextureState.from(stack)
+            .isStandardAtlasAnimation())) {
             return null;
         }
         return new IconTile(
@@ -40,6 +49,14 @@ public final class ItemIconRenderer implements IAssetRenderer {
     @Override
     public RenderedAsset renderImage(AssetRenderJob job) throws AssetRenderException {
         ItemStack stack = job.getItemStack();
+        if (disableAnimations) {
+            int size = iconCanvasSize(stack);
+            return RenderedAsset.png(
+                job,
+                relativePath(job),
+                fboRenderer.render(size, drawAction(stack)),
+                AssetRenderMetadata.staticImage());
+        }
         DynamicTextureState dynamic = DynamicTextureState.from(stack);
         IconAnimator.RenderedIcon icon;
         // 标准 atlas 动画的物品（即使同时由 hook 命中）优先走 atlas 路径，避免时间驱动的固定 N 帧

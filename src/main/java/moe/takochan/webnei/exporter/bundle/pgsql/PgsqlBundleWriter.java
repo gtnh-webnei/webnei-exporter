@@ -54,8 +54,7 @@ public final class PgsqlBundleWriter implements IBundleWriter {
             throw new BundleException("Unable to create bundle directory: " + outputDirectory.getAbsolutePath());
         }
 
-        ExportModelSet preparedModels = assetBundlePreparer
-            .prepare(models, outputDirectory, context.getRenderProgress());
+        ExportModelSet preparedModels = assetBundlePreparer.prepare(models, outputDirectory, context);
         File file = new File(outputDirectory, OUTPUT_FILE_NAME);
         try {
             new PgsqlScriptWriter().write(recordSets(preparedModels.getModels()), file);

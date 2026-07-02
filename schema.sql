@@ -134,6 +134,8 @@ CREATE TABLE IF NOT EXISTS recipe_category (
   category_id TEXT NOT NULL,
   display_name TEXT NOT NULL,
   mod_id TEXT NOT NULL,
+  canvas_width INTEGER NOT NULL,
+  canvas_height INTEGER NOT NULL,
   PRIMARY KEY (dataset_id, category_id)
 );
 
@@ -148,113 +150,38 @@ CREATE TABLE IF NOT EXISTS recipe_category_catalyst (
     ON DELETE CASCADE
 );
 
-CREATE TABLE IF NOT EXISTS recipe_category_layout (
-  dataset_id TEXT NOT NULL REFERENCES dataset(dataset_id) ON DELETE CASCADE,
-  category_id TEXT NOT NULL,
-  canvas_width INTEGER NOT NULL,
-  canvas_height INTEGER NOT NULL,
-  layout_version TEXT NOT NULL,
-  PRIMARY KEY (dataset_id, category_id)
-);
-
 CREATE TABLE IF NOT EXISTS recipe_slot_layout (
   dataset_id TEXT NOT NULL REFERENCES dataset(dataset_id) ON DELETE CASCADE,
   category_id TEXT NOT NULL,
+  slot_key TEXT NOT NULL,
   role TEXT NOT NULL,
-  slot_index INTEGER NOT NULL,
   x INTEGER NOT NULL,
   y INTEGER NOT NULL,
   width INTEGER NOT NULL,
   height INTEGER NOT NULL,
-  slot_style TEXT NOT NULL,
-  placement TEXT,
-  PRIMARY KEY (dataset_id, category_id, role, slot_index)
+  display_order INTEGER NOT NULL,
+  PRIMARY KEY (dataset_id, category_id, slot_key),
+  UNIQUE (dataset_id, category_id, role, x, y)
 );
 
 CREATE TABLE IF NOT EXISTS recipe (
   dataset_id TEXT NOT NULL REFERENCES dataset(dataset_id) ON DELETE CASCADE,
   recipe_id TEXT NOT NULL,
   category_id TEXT NOT NULL,
-  source_plugin TEXT NOT NULL,
-  source_ref TEXT NOT NULL,
-  description TEXT NOT NULL DEFAULT '',
-  display_order INTEGER NOT NULL DEFAULT 0,
+  display_order INTEGER NOT NULL,
   PRIMARY KEY (dataset_id, recipe_id)
 );
 
-CREATE TABLE IF NOT EXISTS recipe_source (
+CREATE TABLE IF NOT EXISTS recipe_slot_candidate (
   dataset_id TEXT NOT NULL REFERENCES dataset(dataset_id) ON DELETE CASCADE,
   recipe_id TEXT NOT NULL,
-  source_type TEXT NOT NULL,
-  source_mod_id TEXT NOT NULL,
-  handler_id TEXT NOT NULL,
-  source_class TEXT NOT NULL,
-  source_map_id TEXT NOT NULL,
-  source_map_name TEXT NOT NULL,
-  raw_recipe_key TEXT NOT NULL,
-  owner_mod_ids TEXT NOT NULL,
-  PRIMARY KEY (dataset_id, recipe_id, source_type)
-);
-
-CREATE TABLE IF NOT EXISTS ingredient_group (
-  dataset_id TEXT NOT NULL REFERENCES dataset(dataset_id) ON DELETE CASCADE,
-  group_id TEXT NOT NULL,
-  domain TEXT NOT NULL,
-  kind TEXT NOT NULL,
-  source_ref TEXT NOT NULL,
-  PRIMARY KEY (dataset_id, group_id)
-);
-
-CREATE TABLE IF NOT EXISTS ingredient_entry (
-  dataset_id TEXT NOT NULL REFERENCES dataset(dataset_id) ON DELETE CASCADE,
-  group_id TEXT NOT NULL,
-  item_variant_id TEXT NOT NULL,
-  fluid_id TEXT NOT NULL,
-  amount INTEGER NOT NULL,
-  PRIMARY KEY (dataset_id, group_id, item_variant_id, fluid_id, amount)
-);
-
-CREATE TABLE IF NOT EXISTS recipe_slot (
-  dataset_id TEXT NOT NULL REFERENCES dataset(dataset_id) ON DELETE CASCADE,
-  recipe_id TEXT NOT NULL,
-  role TEXT NOT NULL,
-  slot_index INTEGER NOT NULL,
-  group_id TEXT NOT NULL,
-  item_variant_id TEXT NOT NULL,
-  fluid_id TEXT NOT NULL,
-  amount INTEGER NOT NULL,
-  probability DOUBLE PRECISION NOT NULL,
-  slot_group_key TEXT NOT NULL DEFAULT '',
-  slot_group_order INTEGER NOT NULL DEFAULT 0,
-  PRIMARY KEY (dataset_id, recipe_id, role, slot_index)
-);
-
-CREATE TABLE IF NOT EXISTS recipe_slot_metadata (
-  dataset_id TEXT NOT NULL REFERENCES dataset(dataset_id) ON DELETE CASCADE,
-  recipe_id TEXT NOT NULL,
-  role TEXT NOT NULL,
-  slot_index INTEGER NOT NULL,
-  metadata_key TEXT NOT NULL,
-  value_type TEXT NOT NULL,
-  value_text TEXT,
-  value_json JSONB,
-  PRIMARY KEY (dataset_id, recipe_id, role, slot_index, metadata_key)
-);
-
-CREATE TABLE IF NOT EXISTS recipe_lookup_index (
-  dataset_id TEXT NOT NULL REFERENCES dataset(dataset_id) ON DELETE CASCADE,
+  slot_key TEXT NOT NULL,
+  candidate_order INTEGER NOT NULL,
   target_domain TEXT NOT NULL,
   target_id TEXT NOT NULL,
-  lookup_kind TEXT NOT NULL,
-  recipe_id TEXT NOT NULL,
-  category_id TEXT NOT NULL,
-  role TEXT NOT NULL,
-  slot_index INTEGER NOT NULL,
-  group_id TEXT NOT NULL,
   amount INTEGER NOT NULL,
-  probability DOUBLE PRECISION NOT NULL,
-  display_order INTEGER NOT NULL,
-  PRIMARY KEY (dataset_id, target_domain, target_id, lookup_kind, recipe_id, role, slot_index)
+  probability DOUBLE PRECISION NOT NULL DEFAULT 1,
+  PRIMARY KEY (dataset_id, recipe_id, slot_key, candidate_order)
 );
 
 CREATE TABLE IF NOT EXISTS ore_dictionary (
@@ -496,26 +423,12 @@ CREATE INDEX IF NOT EXISTS idx_nesql_recipe_category_catalyst_order
   ON recipe_category_catalyst (dataset_id, category_id, display_order, item_variant_id);
 CREATE INDEX IF NOT EXISTS idx_nesql_recipe_by_category_order
   ON recipe (dataset_id, category_id, display_order, recipe_id);
-CREATE INDEX IF NOT EXISTS idx_nesql_recipe_source_map
-  ON recipe_source (dataset_id, source_type, source_mod_id, source_map_id);
-CREATE INDEX IF NOT EXISTS idx_nesql_ingredient_entry_item
-  ON ingredient_entry (dataset_id, item_variant_id, group_id);
-CREATE INDEX IF NOT EXISTS idx_nesql_ingredient_entry_fluid
-  ON ingredient_entry (dataset_id, fluid_id, group_id);
-CREATE INDEX IF NOT EXISTS idx_nesql_ingredient_entry_group
-  ON ingredient_entry (dataset_id, group_id);
-CREATE INDEX IF NOT EXISTS idx_nesql_recipe_slot_group
-  ON recipe_slot (dataset_id, group_id, role);
-CREATE INDEX IF NOT EXISTS idx_nesql_recipe_slot_item
-  ON recipe_slot (dataset_id, item_variant_id, role);
-CREATE INDEX IF NOT EXISTS idx_nesql_recipe_slot_fluid
-  ON recipe_slot (dataset_id, fluid_id, role);
-CREATE INDEX IF NOT EXISTS idx_nesql_recipe_slot_metadata_recipe
-  ON recipe_slot_metadata (dataset_id, recipe_id);
-CREATE INDEX IF NOT EXISTS idx_nesql_recipe_lookup_target_order_recipe
-  ON recipe_lookup_index (dataset_id, target_domain, target_id, lookup_kind, display_order, recipe_id, category_id);
-CREATE INDEX IF NOT EXISTS idx_nesql_recipe_lookup_target_kind_recipe
-  ON recipe_lookup_index (dataset_id, target_id, lookup_kind, recipe_id);
+CREATE INDEX IF NOT EXISTS idx_recipe_slot_layout_category_order
+  ON recipe_slot_layout (dataset_id, category_id, display_order, slot_key);
+CREATE INDEX IF NOT EXISTS idx_recipe_slot_layout_category_role_order
+  ON recipe_slot_layout (dataset_id, category_id, role, display_order, slot_key);
+CREATE INDEX IF NOT EXISTS idx_recipe_slot_candidate_target
+  ON recipe_slot_candidate (dataset_id, target_domain, target_id, recipe_id, slot_key);
 CREATE INDEX IF NOT EXISTS idx_nesql_ore_dictionary_entry_item
   ON ore_dictionary_entry (dataset_id, item_variant_id, dictionary_name);
 CREATE INDEX IF NOT EXISTS idx_nesql_ore_dictionary_entry_name_order
@@ -567,10 +480,13 @@ DROP VIEW IF EXISTS v_recipe_category_voltage_tier;
 DROP VIEW IF EXISTS v_recipe_category_applicable_item_browser;
 DROP VIEW IF EXISTS v_recipe_category_catalyst_browser;
 DROP VIEW IF EXISTS v_recipe_lookup_recipe_browser;
+DROP VIEW IF EXISTS v_recipe_lookup_entry;
 DROP VIEW IF EXISTS v_recipe_search_entry;
 DROP VIEW IF EXISTS v_recipe_slot_browser;
 DROP VIEW IF EXISTS v_recipe_browser;
 DROP VIEW IF EXISTS v_recipe_lookup_detail;
+DROP VIEW IF EXISTS v_recipe_item_slot;
+DROP VIEW IF EXISTS v_recipe_fluid_slot;
 DROP VIEW IF EXISTS v_item_list;
 
 CREATE OR REPLACE VIEW v_item_mod_option AS
@@ -838,7 +754,7 @@ SELECT
   target_id,
   lookup_kind,
   COUNT(DISTINCT recipe_id) AS recipe_count
-FROM recipe_lookup_index
+FROM v_recipe_lookup_entry
 GROUP BY dataset_id, target_domain, target_id, lookup_kind;
 
 CREATE OR REPLACE VIEW v_quest_line_browser AS
@@ -914,52 +830,6 @@ JOIN quest_line_entry r
  AND r.quest_line_id = e.quest_line_id
  AND r.quest_id = d.required_quest_id;
 
-CREATE OR REPLACE VIEW v_quest_task_item_browser AS
-SELECT
-  qi.dataset_id,
-  qi.task_id,
-  qi.list_index,
-  qi.group_id,
-  COALESCE(ie.item_variant_id, '') AS item_variant_id,
-  COALESCE(ie.fluid_id, '') AS fluid_id,
-  COALESCE(ie.amount, 0) AS amount,
-  COALESCE(iv.display_name, fv.display_name) AS display_name,
-  COALESCE(iv.mod_id, fv.mod_id) AS mod_id,
-  COALESCE(iv.asset_path, fv.asset_path) AS asset_path
-FROM quest_task_item qi
-LEFT JOIN ingredient_entry ie
-  ON ie.dataset_id = qi.dataset_id
- AND ie.group_id = qi.group_id
-LEFT JOIN v_item_ref iv
-  ON iv.dataset_id = ie.dataset_id
- AND iv.item_variant_id = ie.item_variant_id
-LEFT JOIN v_fluid_ref fv
-  ON fv.dataset_id = ie.dataset_id
- AND fv.fluid_id = ie.fluid_id;
-
-CREATE OR REPLACE VIEW v_quest_reward_item_browser AS
-SELECT
-  qi.dataset_id,
-  qi.reward_id,
-  qi.list_index,
-  qi.group_id,
-  COALESCE(ie.item_variant_id, '') AS item_variant_id,
-  COALESCE(ie.fluid_id, '') AS fluid_id,
-  COALESCE(ie.amount, 0) AS amount,
-  COALESCE(iv.display_name, fv.display_name) AS display_name,
-  COALESCE(iv.mod_id, fv.mod_id) AS mod_id,
-  COALESCE(iv.asset_path, fv.asset_path) AS asset_path
-FROM quest_reward_item qi
-LEFT JOIN ingredient_entry ie
-  ON ie.dataset_id = qi.dataset_id
- AND ie.group_id = qi.group_id
-LEFT JOIN v_item_ref iv
-  ON iv.dataset_id = ie.dataset_id
- AND iv.item_variant_id = ie.item_variant_id
-LEFT JOIN v_fluid_ref fv
-  ON fv.dataset_id = ie.dataset_id
- AND fv.fluid_id = ie.fluid_id;
-
 CREATE OR REPLACE VIEW v_recipe_category_base AS
 SELECT
   rc.dataset_id,
@@ -969,15 +839,12 @@ SELECT
   COALESCE(m.name, '') AS mod_name,
   rendered_icon.path AS icon_asset_path,
   rendered_background.path AS background_asset_path,
-  rcl.canvas_width,
-  rcl.canvas_height
+  rc.canvas_width,
+  rc.canvas_height
 FROM recipe_category rc
 LEFT JOIN mod m
   ON m.dataset_id = rc.dataset_id
  AND m.mod_id = rc.mod_id
-LEFT JOIN recipe_category_layout rcl
-  ON rcl.dataset_id = rc.dataset_id
- AND rcl.category_id = rc.category_id
 LEFT JOIN asset rendered_icon
   ON rendered_icon.dataset_id = rc.dataset_id
  AND rendered_icon.owner_type = 'category'
@@ -1027,9 +894,6 @@ SELECT
   r.recipe_id,
   r.category_id,
   rc.display_name AS category_display_name,
-  r.source_plugin,
-  r.source_ref,
-  r.description,
   r.display_order,
   rc.mod_id,
   COALESCE(m.name, '') AS mod_name
@@ -1041,97 +905,56 @@ LEFT JOIN mod m
   ON m.dataset_id = rc.dataset_id
  AND m.mod_id = rc.mod_id;
 
-CREATE OR REPLACE VIEW v_recipe_item_slot AS
-SELECT
-  rs.dataset_id,
-  rs.recipe_id,
-  r.category_id,
-  rs.role,
-  rs.slot_index,
-  COALESCE(NULLIF(rs.item_variant_id, ''), ie.item_variant_id) AS item_variant_id,
-  CASE WHEN rs.item_variant_id <> '' THEN rs.amount ELSE ie.amount END AS amount,
-  rs.probability,
-  rs.group_id,
-  iv.display_name,
-  iv.asset_path
-FROM recipe_slot rs
-JOIN recipe r
-  ON r.dataset_id = rs.dataset_id
- AND r.recipe_id = rs.recipe_id
-LEFT JOIN ingredient_entry ie
-  ON ie.dataset_id = rs.dataset_id
- AND ie.group_id = rs.group_id
- AND ie.item_variant_id <> ''
-LEFT JOIN v_item_ref iv
-  ON iv.dataset_id = rs.dataset_id
- AND iv.item_variant_id = COALESCE(NULLIF(rs.item_variant_id, ''), ie.item_variant_id)
-WHERE rs.item_variant_id <> '' OR ie.item_variant_id <> '';
-
-CREATE OR REPLACE VIEW v_recipe_fluid_slot AS
-SELECT
-  rs.dataset_id,
-  rs.recipe_id,
-  r.category_id,
-  rs.role,
-  rs.slot_index,
-  COALESCE(NULLIF(rs.fluid_id, ''), ie.fluid_id) AS fluid_id,
-  CASE WHEN rs.fluid_id <> '' THEN rs.amount ELSE ie.amount END AS amount,
-  rs.probability,
-  rs.group_id,
-  fv.display_name,
-  fv.asset_path
-FROM recipe_slot rs
-JOIN recipe r
-  ON r.dataset_id = rs.dataset_id
- AND r.recipe_id = rs.recipe_id
-LEFT JOIN ingredient_entry ie
-  ON ie.dataset_id = rs.dataset_id
- AND ie.group_id = rs.group_id
- AND ie.fluid_id <> ''
-LEFT JOIN v_fluid_ref fv
-  ON fv.dataset_id = rs.dataset_id
- AND fv.fluid_id = COALESCE(NULLIF(rs.fluid_id, ''), ie.fluid_id)
-WHERE rs.fluid_id <> '' OR ie.fluid_id <> '';
-
 CREATE OR REPLACE VIEW v_recipe_slot_browser AS
 SELECT
-  rs.dataset_id,
-  rs.recipe_id,
+  c.dataset_id,
+  c.recipe_id,
   r.category_id,
-  rs.role,
-  rs.slot_index,
-  rs.group_id,
-  rs.amount,
-  rs.probability,
-  rs.slot_group_key,
-  rs.slot_group_order,
-  NULLIF(rs.item_variant_id, '') AS item_variant_id,
-  NULLIF(rs.fluid_id, '') AS fluid_id
-FROM recipe_slot rs
+  l.role,
+  c.slot_key,
+  l.x,
+  l.y,
+  l.width,
+  l.height,
+  l.display_order AS slot_display_order,
+  c.candidate_order,
+  c.target_domain,
+  c.target_id,
+  c.amount,
+  c.probability
+FROM recipe_slot_candidate c
 JOIN recipe r
-  ON r.dataset_id = rs.dataset_id
- AND r.recipe_id = rs.recipe_id;
+  ON r.dataset_id = c.dataset_id
+ AND r.recipe_id = c.recipe_id
+JOIN recipe_slot_layout l
+  ON l.dataset_id = r.dataset_id
+ AND l.category_id = r.category_id
+ AND l.slot_key = c.slot_key;
 
 CREATE OR REPLACE VIEW v_recipe_search_entry AS
 SELECT
-  dataset_id,
-  recipe_id,
-  category_id,
-  'item' AS target_domain,
-  item_variant_id AS target_id,
-  display_name AS display_name,
-  lower(coalesce(display_name, '') || ' ' || coalesce(item_variant_id, '')) AS search_text
-FROM v_recipe_item_slot
-UNION ALL
-SELECT
-  dataset_id,
-  recipe_id,
-  category_id,
-  'fluid' AS target_domain,
-  fluid_id AS target_id,
-  display_name AS display_name,
-  lower(coalesce(display_name, '') || ' ' || coalesce(fluid_id, '')) AS search_text
-FROM v_recipe_fluid_slot;
+  c.dataset_id,
+  c.recipe_id,
+  r.category_id,
+  c.target_domain,
+  c.target_id,
+  COALESCE(iv.display_name, fv.display_name) AS display_name,
+  lower(
+    coalesce(iv.display_name, fv.display_name, '') || ' ' ||
+    coalesce(c.target_id, '')
+  ) AS search_text
+FROM recipe_slot_candidate c
+JOIN recipe r
+  ON r.dataset_id = c.dataset_id
+ AND r.recipe_id = c.recipe_id
+LEFT JOIN v_item_ref iv
+  ON c.target_domain = 'item'
+ AND iv.dataset_id = c.dataset_id
+ AND iv.item_variant_id = c.target_id
+LEFT JOIN v_fluid_ref fv
+  ON c.target_domain = 'fluid'
+ AND fv.dataset_id = c.dataset_id
+ AND fv.fluid_id = c.target_id;
 
 CREATE MATERIALIZED VIEW IF NOT EXISTS item_search_document AS
 SELECT
@@ -1216,75 +1039,38 @@ SELECT
   lower(
     r.recipe_id || ' ' ||
     r.category_id || ' ' ||
-    r.source_ref || ' ' ||
-    r.description || ' ' ||
     coalesce(string_agg(DISTINCT part.search_text, ' '), '')
   ) AS search_text
 FROM recipe r
 LEFT JOIN (
   SELECT
-    rs.dataset_id,
-    rs.recipe_id,
+    c.dataset_id,
+    c.recipe_id,
     iv.search_text || ' ' || i.search_text AS search_text
-  FROM recipe_slot rs
+  FROM recipe_slot_candidate c
   JOIN item_variant iv
-    ON iv.dataset_id = rs.dataset_id
-   AND iv.item_variant_id = rs.item_variant_id
+    ON iv.dataset_id = c.dataset_id
+   AND iv.item_variant_id = c.target_id
   JOIN item i
     ON i.dataset_id = iv.dataset_id
    AND i.item_id = iv.item_id
-  WHERE rs.item_variant_id <> ''
+  WHERE c.target_domain = 'item'
 
   UNION ALL
 
   SELECT
-    rs.dataset_id,
-    rs.recipe_id,
+    c.dataset_id,
+    c.recipe_id,
     f.search_text AS search_text
-  FROM recipe_slot rs
+  FROM recipe_slot_candidate c
   JOIN fluid f
-    ON f.dataset_id = rs.dataset_id
-   AND f.fluid_id = rs.fluid_id
-  WHERE rs.fluid_id <> ''
-
-  UNION ALL
-
-  SELECT
-    rs.dataset_id,
-    rs.recipe_id,
-    iv.search_text || ' ' || i.search_text AS search_text
-  FROM recipe_slot rs
-  JOIN ingredient_entry ie
-    ON ie.dataset_id = rs.dataset_id
-   AND ie.group_id = rs.group_id
-  JOIN item_variant iv
-    ON iv.dataset_id = ie.dataset_id
-   AND iv.item_variant_id = ie.item_variant_id
-  JOIN item i
-    ON i.dataset_id = iv.dataset_id
-   AND i.item_id = iv.item_id
-  WHERE rs.group_id <> ''
-    AND ie.item_variant_id <> ''
-
-  UNION ALL
-
-  SELECT
-    rs.dataset_id,
-    rs.recipe_id,
-    f.search_text AS search_text
-  FROM recipe_slot rs
-  JOIN ingredient_entry ie
-    ON ie.dataset_id = rs.dataset_id
-   AND ie.group_id = rs.group_id
-  JOIN fluid f
-    ON f.dataset_id = ie.dataset_id
-   AND f.fluid_id = ie.fluid_id
-  WHERE rs.group_id <> ''
-    AND ie.fluid_id <> ''
+    ON f.dataset_id = c.dataset_id
+   AND f.fluid_id = c.target_id
+  WHERE c.target_domain = 'fluid'
 ) part
   ON part.dataset_id = r.dataset_id
  AND part.recipe_id = r.recipe_id
-GROUP BY r.dataset_id, r.recipe_id, r.category_id, r.source_ref, r.description
+GROUP BY r.dataset_id, r.recipe_id, r.category_id
 WITH DATA;
 
 CREATE UNIQUE INDEX IF NOT EXISTS recipe_search_document_pkey
@@ -1294,22 +1080,42 @@ CREATE INDEX IF NOT EXISTS idx_nesql_recipe_search_document_category_recipe
 CREATE INDEX IF NOT EXISTS idx_nesql_recipe_search_document_trgm
   ON recipe_search_document USING gin (search_text gin_trgm_ops);
 
+CREATE OR REPLACE VIEW v_recipe_lookup_entry AS
+SELECT
+  c.dataset_id,
+  c.target_domain,
+  c.target_id,
+  l.role AS lookup_kind,
+  c.recipe_id,
+  r.category_id,
+  c.slot_key,
+  l.display_order AS slot_display_order,
+  c.candidate_order,
+  c.amount,
+  c.probability,
+  r.display_order AS recipe_display_order
+FROM recipe_slot_candidate c
+JOIN recipe r
+  ON r.dataset_id = c.dataset_id
+ AND r.recipe_id = c.recipe_id
+JOIN recipe_slot_layout l
+  ON l.dataset_id = r.dataset_id
+ AND l.category_id = r.category_id
+ AND l.slot_key = c.slot_key;
+
 CREATE OR REPLACE VIEW v_recipe_lookup_recipe_browser AS
 SELECT
-  rli.dataset_id,
-  rli.target_domain,
-  rli.target_id,
-  rli.lookup_kind,
-  rli.recipe_id,
-  r.category_id,
-  MIN(rli.display_order) AS display_order,
-  r.display_order AS recipe_display_order
-FROM recipe_lookup_index rli
-JOIN recipe r
-  ON r.dataset_id = rli.dataset_id
- AND r.recipe_id = rli.recipe_id
-GROUP BY rli.dataset_id, rli.target_domain, rli.target_id, rli.lookup_kind,
-         rli.recipe_id, r.category_id, r.display_order;
+  e.dataset_id,
+  e.target_domain,
+  e.target_id,
+  e.lookup_kind,
+  e.recipe_id,
+  e.category_id,
+  MIN(e.slot_display_order) AS display_order,
+  e.recipe_display_order
+FROM v_recipe_lookup_entry e
+GROUP BY e.dataset_id, e.target_domain, e.target_id, e.lookup_kind,
+         e.recipe_id, e.category_id, e.recipe_display_order;
 
 CREATE OR REPLACE VIEW v_recipe_category_catalyst_browser AS
 SELECT

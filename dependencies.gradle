@@ -82,6 +82,26 @@ dependencies {
     // Draconic Evolution
     devOnlyNonPublishable(gtnhDev("Draconic-Evolution"))
 
+    // Botania
+    devOnlyNonPublishable(gtnhDev("Botania"))
+
+    // Tinkers' Construct
+    devOnlyNonPublishable(gtnhDev("TinkersConstruct"))
+
+    // Gendustry
+    devOnlyNonPublishable(gtnhDev("gendustry"))
+    devOnlyNonPublishable(gtnhDev("bdlib"))
+
+    // Chisel / Forestry / NEIAddons / Railcraft / BuildCraftCompat / ProjectBlue — recipe loading / item feeding hooks 直接 import handler 用
+    devOnlyNonPublishable(gtnhDev("Chisel"))
+    devOnlyNonPublishable(gtnhDev("ForestryMC"))
+    devOnlyNonPublishable(gtnhDev("neiaddons"))
+    devOnlyNonPublishable(gtnhDev("Railcraft"))
+    devOnlyNonPublishable(gtnhDev("BuildCraft"))
+    devOnlyNonPublishable(gtnhDev("BuildCraftCompat"))
+    devOnlyNonPublishable(gtnhDev("ProjectBlue"))
+    devOnlyNonPublishable(gtnhDev("BloodMagic"))
+
     // ===== 非 GTNH 托管（curse.maven / 直接 maven）=====
 
     // Witchery

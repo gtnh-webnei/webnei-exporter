@@ -12,8 +12,13 @@ import moe.takochan.webnei.exporter.domain.item.model.ItemVariantRow;
  *
  * <p>
  * tooltip 使用普通玩家 tooltip，不导出高级调试 tooltip。display_name 和 tooltip_text 保留原始格式码（§x）。
+ * 与 NEI {@code GuiContainerManager.itemDisplayNameShort/itemDisplayName} 一致：单个 stack 在读取 display name 或 tooltip
+ * 时抛异常（例如 forestry 个体 species 为 null）不影响整体导出，回退到占位文本。
  */
 public final class ItemVariantCollector {
+
+    /** 与 NEI 渲染失败时一致的占位显示名。 */
+    private static final String UNNAMED = "Unnamed";
 
     public ItemVariantRow collectVariant(String datasetId, ItemVariantIdentity variant, ItemStack stack) {
         return new ItemVariantRow(
@@ -23,8 +28,16 @@ public final class ItemVariantCollector {
             variant.getDamage(),
             variant.getNbtHash(),
             variant.getNbtText(),
-            value(stack.getDisplayName()),
+            displayName(stack),
             tooltipText(stack));
+    }
+
+    private static String displayName(ItemStack stack) {
+        try {
+            return value(stack.getDisplayName());
+        } catch (Throwable ignored) {
+            return UNNAMED;
+        }
     }
 
     private static String tooltipText(ItemStack stack) {
@@ -39,7 +52,7 @@ public final class ItemVariantCollector {
                 builder.append(value(tooltip.get(i)));
             }
             return builder.toString();
-        } catch (RuntimeException e) {
+        } catch (Throwable ignored) {
             return "";
         }
     }

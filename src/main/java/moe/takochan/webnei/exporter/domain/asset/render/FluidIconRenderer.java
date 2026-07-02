@@ -28,6 +28,15 @@ public final class FluidIconRenderer implements IAssetRenderer {
     private final FboIconRenderer fboRenderer = new FboIconRenderer();
     private final IconAnimator animator = new IconAnimator(fboRenderer);
     private final TimeDriverHookRegistry timeDrivers = new TimeDriverHookRegistry();
+    private final boolean disableAnimations;
+
+    public FluidIconRenderer() {
+        this(false);
+    }
+
+    public FluidIconRenderer(boolean disableAnimations) {
+        this.disableAnimations = disableAnimations;
+    }
 
     @Override
     public boolean supports(AssetRenderJob job) {
@@ -37,10 +46,11 @@ public final class FluidIconRenderer implements IAssetRenderer {
     @Override
     public IconTile prepareTile(final AssetRenderJob job) throws AssetRenderException {
         final FluidStack stack = job.getFluidStack();
-        // 时间驱动或 atlas 动画都不可批量（需逐帧推进时间或 sprite），退回 renderImage。
-        if (timeDrivers.find(job) != null
+        // 时间驱动或 atlas 动画都不可批量（需逐帧推进时间或 sprite），退回 renderImage；
+        // 但 disableAnimations 模式下强制走静态批量路径。
+        if (!disableAnimations && (timeDrivers.find(job) != null
             || DynamicTextureState.fromIcon(stillIcon(stack), TextureMap.locationBlocksTexture)
-                .isStandardAtlasAnimation()) {
+                .isStandardAtlasAnimation())) {
             return null;
         }
         return new IconTile(
@@ -54,6 +64,13 @@ public final class FluidIconRenderer implements IAssetRenderer {
     @Override
     public RenderedAsset renderImage(final AssetRenderJob job) throws AssetRenderException {
         FluidStack stack = job.getFluidStack();
+        if (disableAnimations) {
+            return RenderedAsset.png(
+                job,
+                AssetPath.fluidIcon(job.getOwnerId()),
+                fboRenderer.render(FboIconRenderer.DEFAULT_WEB_ICON_SIZE, drawAction(stack)),
+                AssetRenderMetadata.staticImage());
+        }
         DynamicTextureState dynamic = DynamicTextureState.fromIcon(stillIcon(stack), TextureMap.locationBlocksTexture);
         IconAnimator.RenderedIcon rendered;
         // 标准 atlas 动画的流体（即使同时由 hook 命中）优先走 atlas 路径，避免时间驱动的固定 N 帧

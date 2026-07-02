@@ -174,7 +174,23 @@ enum ReviewedSkippedRecipeCategory {
     /** 不处理：Manual */
     MANUAL_USAGE_HANDLER("li.cil.oc.integration.nei.manualusagehandler", "OpenComputers", "Manual"),
     /** 不处理：OpenComputers API */
-    CALLBACK_DOC_HANDLER("li.cil.oc.integration.nei.callbackdochandler", "OpenComputers", "OpenComputers API");
+    CALLBACK_DOC_HANDLER("li.cil.oc.integration.nei.callbackdochandler", "OpenComputers", "OpenComputers API"),
+    /** 不抓取：辊压机（无序），GTNH 无对应配方 */
+    RECIPE_HANDLER_ROLLING_MACHINE_SHAPELESS(
+        "tonius.neiintegration.mods.railcraft.recipehandlerrollingmachineshapeless", "Railcraft", "辊压机"),
+    /** 不抓取：蒸馏器 */
+    NEIHANDLER_STILL("forestry.factory.recipes.nei.neihandlerstill.forestry.still", "Forestry", "蒸馏器"),
+    /** 不抓取：蝴蝶杂交 */
+    BUTTERFLY_BREEDING_HANDLER("net.bdew.neiaddons.forestry.butterflies.butterflybreedinghandler", "Forestry", "蝴蝶杂交"),
+    /** 不抓取：太空探索，本体已被屏蔽删除 */
+    GT_SPACE_RESEARCH("gregtech.nei.gtneidefaulthandler.gt.recipe.spaceresearch", "dreamcraft", "太空探索"),
+    /** 不抓取：Soul Crafting，有配方但无意义 */
+    SOUL_HANDLER("com.rwtema.extrautils.nei.soulhandler", "ExtraUtilities", "Soul Crafting"),
+    /** 不抓取：Extra Utilities: Microblocks */
+    MICROBLOCKS_HANDLER("com.rwtema.extrautils.nei.microblockshandler", "ExtraUtilities",
+        "Extra Utilities: Microblocks"),
+    /** 不作为配方：要素组合，移交独立 aspect domain 模块处理 */
+    ASPECT_COMBINATION_HANDLER("ru.timeconqueror.tcneiadditions.nei.aspectcombinationhandler", "Thaumcraft", "要素组合");
 
     /** 被排除分类的 category_id，与 recipe_category 导出/主键一致。唯一参与匹配。 */
     private final String categoryId;

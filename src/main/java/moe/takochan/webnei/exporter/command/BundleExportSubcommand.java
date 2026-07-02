@@ -1,7 +1,9 @@
 package moe.takochan.webnei.exporter.command;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 
 import net.minecraft.client.Minecraft;
@@ -86,6 +88,12 @@ public abstract class BundleExportSubcommand implements ExportSubcommand {
      */
     private static final class BundleArguments {
 
+        /** 选项 flag：不渲染图片资源。 */
+        private static final String FLAG_NO_IMAGES = "--no-images";
+
+        /** 选项 flag：动图退化为静态首帧。 */
+        private static final String FLAG_NO_ANIMATIONS = "--no-animations";
+
         /**
          * 导出请求选项。
          */
@@ -102,17 +110,44 @@ public abstract class BundleExportSubcommand implements ExportSubcommand {
         }
 
         /**
-         * 解析 pack、variant 和 format 参数。
+         * 解析 pack、variant、可选 format 与可选 flag 参数。
+         *
+         * <p>
+         * 位置参数：{@code pack_slug pack_version variant [format]}；位置参数之后可附加任意顺序的 flag：
+         * {@code --no-images}（不导图片资源）、{@code --no-animations}（不导动图序列）。
          */
         private static BundleArguments parse(String[] args) {
-            if (args.length < 3 || args.length > 4) {
+            List<String> positional = new ArrayList<>();
+            boolean noImages = false;
+            boolean noAnimations = false;
+            for (String arg : args) {
+                if (arg == null) {
+                    continue;
+                }
+                if (FLAG_NO_IMAGES.equalsIgnoreCase(arg)) {
+                    noImages = true;
+                } else if (FLAG_NO_ANIMATIONS.equalsIgnoreCase(arg)) {
+                    noAnimations = true;
+                } else if (arg.startsWith("--")) {
+                    throw new IllegalArgumentException("Unknown flag: " + arg);
+                } else {
+                    positional.add(arg);
+                }
+            }
+            if (positional.size() < 3 || positional.size() > 4) {
                 throw new IllegalArgumentException("Expected pack_slug, pack_version, variant and optional format");
             }
             Map<String, String> options = new LinkedHashMap<>();
-            options.put(ExportRequestOptions.PACK_SLUG, args[0]);
-            options.put(ExportRequestOptions.PACK_VERSION, args[1]);
-            options.put(ExportRequestOptions.VARIANT, args[2]);
-            return new BundleArguments(options, format(args));
+            options.put(ExportRequestOptions.PACK_SLUG, positional.get(0));
+            options.put(ExportRequestOptions.PACK_VERSION, positional.get(1));
+            options.put(ExportRequestOptions.VARIANT, positional.get(2));
+            if (noImages) {
+                options.put(ExportRequestOptions.SKIP_ASSET_RENDER, "true");
+            }
+            if (noAnimations) {
+                options.put(ExportRequestOptions.SKIP_ASSET_ANIMATIONS, "true");
+            }
+            return new BundleArguments(options, format(positional));
         }
 
         private Map<String, String> options() {
@@ -123,9 +158,9 @@ public abstract class BundleExportSubcommand implements ExportSubcommand {
             return format;
         }
 
-        private static BundleFormat format(String[] args) {
-            if (args.length == 4) {
-                return BundleFormat.parse(args[3]);
+        private static BundleFormat format(List<String> positional) {
+            if (positional.size() == 4) {
+                return BundleFormat.parse(positional.get(3));
             }
             return BundleFormat.defaultFormat();
         }

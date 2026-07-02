@@ -11,4 +11,6 @@ public final class RecipeCategoryRow {
     private final String categoryId;
     private final String displayName;
     private final String modId;
+    private final int canvasWidth;
+    private final int canvasHeight;
 }

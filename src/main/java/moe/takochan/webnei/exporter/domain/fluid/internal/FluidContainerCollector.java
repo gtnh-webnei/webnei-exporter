@@ -11,7 +11,6 @@ import net.minecraftforge.fluids.Fluid;
 import net.minecraftforge.fluids.FluidStack;
 
 import codechicken.nei.ItemList;
-import codechicken.nei.recipe.StackInfo;
 import moe.takochan.webnei.exporter.domain.fluid.model.FluidContainerRow;
 import moe.takochan.webnei.exporter.domain.item.store.ItemDomainStore;
 
@@ -31,7 +30,7 @@ public final class FluidContainerCollector {
     public FluidContainerCollector(ItemDomainStore itemStore) {
         this.itemStore = itemStore;
         for (ItemStack stack : ItemList.items) {
-            FluidStack fluidStack = parse(stack);
+            FluidStack fluidStack = FluidStackResolver.resolve(stack);
             if (fluidStack == null) {
                 continue;
             }
@@ -56,15 +55,15 @@ public final class FluidContainerCollector {
         return rows;
     }
 
-    /** 解析单个 stack 承载的流体；非流体容器返回 {@code null}。 */
+    /** 解析单个 stack 承载的流体；非流体相关返回 {@code null}。 */
     public Fluid resolveFluid(ItemStack stack) {
-        FluidStack fluidStack = parse(stack);
+        FluidStack fluidStack = FluidStackResolver.resolve(stack);
         return fluidStack == null ? null : fluidStack.getFluid();
     }
 
     /** 解析单个流体容器 stack 为容器行；非流体容器返回 {@code null}。 */
     public FluidContainerRow collectOne(String datasetId, String fluidId, ItemStack stack) {
-        FluidStack fluidStack = parse(stack);
+        FluidStack fluidStack = FluidStackResolver.resolve(stack);
         if (fluidStack == null) {
             return null;
         }
@@ -72,16 +71,5 @@ public final class FluidContainerCollector {
             .getOrRegisterVariant(stack)
             .getItemVariantId();
         return new FluidContainerRow(datasetId, fluidId, fluidStack.amount, itemVariantId);
-    }
-
-    private static FluidStack parse(ItemStack stack) {
-        if (stack == null || stack.getItem() == null) {
-            return null;
-        }
-        FluidStack fluidStack = StackInfo.getFluid(stack);
-        if (fluidStack == null || fluidStack.getFluid() == null) {
-            return null;
-        }
-        return fluidStack;
     }
 }

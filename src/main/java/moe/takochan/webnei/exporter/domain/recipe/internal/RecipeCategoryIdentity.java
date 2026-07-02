@@ -29,6 +29,15 @@ public final class RecipeCategoryIdentity {
     /** 分类归属 mod id。 */
     private final String modId;
 
+    /** 分类画布宽度，前端绘制 handler 整页背景使用。 */
+    private final int canvasWidth;
+
+    /** 分类画布高度，前端绘制 handler 整页背景使用。 */
+    private final int canvasHeight;
+
+    /** NEI handler 的 y 偏移；不写表，仅供 collector 把 slot rely 折算成统一坐标系。 */
+    private final int yShift;
+
     /** 分类图标的原始 ItemStack，仅供 asset domain 渲染，可能为空。 */
     private final ItemStack iconStack;
 

@@ -1,6 +1,7 @@
 package moe.takochan.webnei.exporter.domain.recipe.task;
 
 import moe.takochan.webnei.exporter.domain.dataset.store.DatasetDomainStore;
+import moe.takochan.webnei.exporter.domain.fluid.store.FluidDomainStore;
 import moe.takochan.webnei.exporter.domain.item.store.ItemDomainStore;
 import moe.takochan.webnei.exporter.domain.recipe.internal.NeiRecipeSource;
 import moe.takochan.webnei.exporter.domain.recipe.internal.RecipeDomainData;
@@ -30,9 +31,10 @@ public final class RecipeExportTask implements IExportTask {
             .data()
             .datasetId();
         ItemDomainStore itemStore = context.store(ItemDomainStore.class);
+        FluidDomainStore fluidStore = context.store(FluidDomainStore.class);
 
         RecipeDomainData data = new RecipeDomainData(datasetId);
-        RecipeRegistrar registrar = new RecipeRegistrar(data, datasetId, itemStore);
+        RecipeRegistrar registrar = new RecipeRegistrar(data, datasetId, itemStore, fluidStore);
         new NeiRecipeSource(registrar).collect();
 
         RecipeDomainStore store = new RecipeDomainStore(data, registrar);

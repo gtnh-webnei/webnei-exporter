@@ -31,6 +31,32 @@ public enum Mods {
     GALAXY_SPACE("GalaxySpace"),
     /** AmunRa — {@code de.katzenpapst.amunra.AmunRa.MODID}。 */
     AMUNRA("GalacticraftAmunRa"),
+    /** Botania — {@code vazkii.botania.common.lib.LibMisc.MOD_ID}。 */
+    BOTANIA("Botania"),
+    /** Tinkers' Construct — {@code tconstruct.TConstruct.modID}。 */
+    TCONSTRUCT("TConstruct"),
+    /** Gendustry — {@code net.bdew.gendustry.Gendustry.modId}。 */
+    GENDUSTRY("gendustry"),
+    /** Forestry — {@code forestry.core.config.Constants.MOD}。 */
+    FORESTRY("Forestry"),
+    /** NEI Addons — bdew {@code mcmod.info modid}。 */
+    NEI_ADDONS("NEIAddons"),
+    /** NEI Integration — {@code tonius.neiintegration.NEIIntegration.MODID}。 */
+    NEI_INTEGRATION("neiintegration"),
+    /** BuildCraft Compat — {@code @Mod(modid="BuildCraft|Compat")}。 */
+    BUILDCRAFT_COMPAT("BuildCraft|Compat"),
+    /** Applied Energistics 2 — {@code appeng.core.AppEng.MOD_ID}。 */
+    APPLIED_ENERGISTICS_2("appliedenergistics2"),
+    /** GTNH Intergalactic — {@code gregtech.api.enums.Mods.ModIDs.G_T_N_H_INTERGALACTIC}。 */
+    GTNH_INTERGALACTIC("gtnhintergalactic"),
+    /** Extra Utilities — {@code @Mod(modid="ExtraUtilities")}。 */
+    EXTRA_UTILITIES("ExtraUtilities"),
+    /** Chisel — {@code team.chisel.Chisel.MOD_ID}。 */
+    CHISEL("chisel"),
+    /** Project Blue — {@code gcewing.projectblue.Info.MODID}。 */
+    PROJECT_BLUE("ProjectBlue"),
+    /** Blood Magic — {@code @Mod(modid="AWWayofTime")}。 */
+    BLOOD_MAGIC("AWWayofTime"),
     /** Witching Gadgets — {@code witchinggadgets.WitchingGadgets.MODID}。 */
     WITCHING_GADGETS("WitchingGadgets");
 

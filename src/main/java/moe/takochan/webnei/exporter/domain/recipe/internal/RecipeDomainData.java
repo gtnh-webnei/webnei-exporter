@@ -1,6 +1,7 @@
 package moe.takochan.webnei.exporter.domain.recipe.internal;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -12,15 +13,34 @@ import moe.takochan.webnei.exporter.domain.IExportModel;
 import moe.takochan.webnei.exporter.domain.recipe.RecipeExportModel;
 import moe.takochan.webnei.exporter.domain.recipe.model.RecipeCategoryCatalystRow;
 import moe.takochan.webnei.exporter.domain.recipe.model.RecipeCategoryRow;
+import moe.takochan.webnei.exporter.domain.recipe.model.RecipeRow;
+import moe.takochan.webnei.exporter.domain.recipe.model.RecipeSlotCandidateRow;
+import moe.takochan.webnei.exporter.domain.recipe.model.RecipeSlotLayoutRow;
 import moe.takochan.webnei.exporter.engine.store.IDomainData;
+import moe.takochan.webnei.exporter.util.StableHash;
 
 /**
  * recipe domain store 的内部结果集。
  *
  * <p>
- * 该类只持有分类与 catalyst 结果集；注册编排职责由 RecipeRegistrar 负责。
+ * 持有分类身份、catalyst、recipe、slot layout、slot candidate 行集合，以及它们的稳定 ID 与顺序分配状态。
  */
 public final class RecipeDomainData implements IDomainData {
+
+    /** 输入格 role。 */
+    static final String ROLE_INPUT = "input";
+
+    /** 输出格 role。 */
+    static final String ROLE_OUTPUT = "output";
+
+    /** 辅助格 role（有主输出时 NEI other 的归类）。 */
+    static final String ROLE_AUXILIARY = "auxiliary";
+
+    /** NEI item 格子 hitbox 边长；layout 表 width/height 使用。 */
+    private static final int SLOT_SIZE = 18;
+
+    /** 默认候选概率，单位为 1。 */
+    private static final double DEFAULT_PROBABILITY = 1.0;
 
     private final String datasetId;
 
@@ -35,16 +55,29 @@ public final class RecipeDomainData implements IDomainData {
     /** catalyst 行按 category_id + item_variant_id 去重。 */
     private final Map<String, RecipeCategoryCatalystRow> catalysts = new LinkedHashMap<>();
 
+    /** recipe 行按 recipe_id 去重，保持 NEI 顺序。 */
+    private final Map<String, RecipeRow> recipes = new LinkedHashMap<>();
+
+    /** slot layout 行按 (category_id, slot_key) 去重；同 category 下相同 role + x + y 复用同一 slot。 */
+    private final Map<String, RecipeSlotLayoutRow> slotLayouts = new LinkedHashMap<>();
+
+    /** candidate 行按 (recipe_id, slot_key, candidate_order) 去重。 */
+    private final Map<String, RecipeSlotCandidateRow> slotCandidates = new LinkedHashMap<>();
+
+    /** 每个 category 的 slot layout display_order 递增计数。 */
+    private final Map<String, Integer> nextSlotDisplayOrderByCategory = new LinkedHashMap<>();
+
+    /** 每个 category 的 recipe display_order 递增计数，保持 NEI 扫描顺序。 */
+    private final Map<String, Integer> nextRecipeDisplayOrderByCategory = new LinkedHashMap<>();
+
+    /** 同 category 下相同 visual hash 的出现次数，用于在罕见碰撞时为 recipe_id 追加 occurrence。 */
+    private final Map<String, Integer> visualHashOccurrenceByCategory = new LinkedHashMap<>();
+
     public RecipeDomainData(String datasetId) {
         this.datasetId = datasetId;
     }
 
-    /**
-     * 返回 category id 到分类图标原始 {@link ItemStack} 的映射，供 asset domain 注册渲染任务。
-     *
-     * <p>
-     * asset 表使用 category id 作为 owner_id。返回前复制 ItemStack，避免后续渲染修改原始运行时对象。
-     */
+    /** category 图标 ItemStack 映射，供 asset domain 渲染。 */
     public Map<String, ItemStack> categoryIconStacks() {
         Map<String, ItemStack> out = new LinkedHashMap<>();
         for (RecipeCategoryIdentity identity : identitiesByHandlerKey.values()) {
@@ -58,12 +91,7 @@ public final class RecipeDomainData implements IDomainData {
         return out;
     }
 
-    /**
-     * 返回无可用 ItemStack、但带 NEI 自绘贴图的分类的 category id 到 {@link DrawableResource} 映射。
-     *
-     * <p>
-     * 图标来源优先级为 ItemStack &gt; 贴图 &gt; 文字，因此这里跳过已有 ItemStack 的分类。
-     */
+    /** category 自绘贴图映射。 */
     public Map<String, DrawableResource> categoryIconImages() {
         Map<String, DrawableResource> out = new LinkedHashMap<>();
         for (RecipeCategoryIdentity identity : identitiesByHandlerKey.values()) {
@@ -74,12 +102,7 @@ public final class RecipeDomainData implements IDomainData {
         return out;
     }
 
-    /**
-     * 返回既无 ItemStack 也无贴图的分类的 category id 到文字兜底映射。
-     *
-     * <p>
-     * 兜底取 display_name 的前两个字符，模仿 NEI tab 在无图标时的显示，确保每个分类都有可渲染的图标。
-     */
+    /** category 文字兜底映射；既无 ItemStack 也无贴图时取 display_name 前两字。 */
     public Map<String, String> categoryIconTexts() {
         Map<String, String> out = new LinkedHashMap<>();
         for (RecipeCategoryIdentity identity : identitiesByHandlerKey.values()) {
@@ -98,6 +121,123 @@ public final class RecipeDomainData implements IDomainData {
         catalysts.putIfAbsent(row.getCategoryId() + '\u0000' + row.getItemVariantId(), row);
     }
 
+    /**
+     * 注册一个配方页面的 visual facts。
+     *
+     * <p>
+     * 内部统一分配 recipe_id、slot_key、display_order、candidate_order，避免散落在采集器或 registrar。
+     */
+    void registerVisual(RecipeCategoryIdentity identity, RecipeVisualObservation observation) {
+        String categoryId = identity.getCategoryId();
+        String recipeId = nextRecipeId(categoryId, observation);
+        int recipeDisplayOrder = nextRecipeDisplayOrder(categoryId);
+        if (recipes.putIfAbsent(recipeId, new RecipeRow(datasetId, recipeId, categoryId, recipeDisplayOrder)) != null) {
+            return;
+        }
+        boolean hasResult = observation.getResult() != null;
+        registerSlots(categoryId, recipeId, ROLE_INPUT, observation.getInputs());
+        registerSlots(categoryId, recipeId, ROLE_INPUT, observation.getExtraInputs());
+        if (hasResult) {
+            registerSlots(categoryId, recipeId, ROLE_OUTPUT, Collections.singletonList(observation.getResult()));
+            registerSlots(categoryId, recipeId, ROLE_AUXILIARY, observation.getOthers());
+        } else {
+            registerSlots(categoryId, recipeId, ROLE_OUTPUT, observation.getOthers());
+        }
+        registerSlots(categoryId, recipeId, ROLE_OUTPUT, observation.getExtraOutputs());
+    }
+
+    private void registerSlots(String categoryId, String recipeId, String role, List<RecipeSlotObservation> slots) {
+        if (slots == null || slots.isEmpty()) {
+            return;
+        }
+        for (RecipeSlotObservation slot : slots) {
+            String slotKey = slotKey(role, slot.getX(), slot.getY());
+            registerSlotLayout(categoryId, role, slotKey, slot.getX(), slot.getY());
+            registerCandidates(recipeId, slotKey, slot);
+        }
+    }
+
+    private void registerSlotLayout(String categoryId, String role, String slotKey, int x, int y) {
+        String layoutKey = categoryId + '\u0000' + slotKey;
+        if (slotLayouts.containsKey(layoutKey)) {
+            return;
+        }
+        int displayOrder = nextSlotDisplayOrderByCategory.merge(categoryId, 1, Integer::sum) - 1;
+        slotLayouts.put(
+            layoutKey,
+            new RecipeSlotLayoutRow(datasetId, categoryId, slotKey, role, x, y, SLOT_SIZE, SLOT_SIZE, displayOrder));
+    }
+
+    private void registerCandidates(String recipeId, String slotKey, RecipeSlotObservation slot) {
+        int order = 0;
+        for (RecipeCandidateObservation candidate : slot.getCandidates()) {
+            String candidateKey = recipeId + '\u0000' + slotKey + '\u0000' + order;
+            slotCandidates.putIfAbsent(
+                candidateKey,
+                new RecipeSlotCandidateRow(
+                    datasetId,
+                    recipeId,
+                    slotKey,
+                    order,
+                    candidate.getTargetDomain(),
+                    candidate.getTargetId(),
+                    candidate.getAmount(),
+                    DEFAULT_PROBABILITY));
+            order++;
+        }
+    }
+
+    private String nextRecipeId(String categoryId, RecipeVisualObservation observation) {
+        String hash = StableHash.shortHash(visualFingerprint(observation));
+        String hashKey = categoryId + '\u0000' + hash;
+        int occurrence = visualHashOccurrenceByCategory.merge(hashKey, 1, Integer::sum);
+        String base = categoryId + '/' + hash;
+        return occurrence == 1 ? base : base + '#' + occurrence;
+    }
+
+    private int nextRecipeDisplayOrder(String categoryId) {
+        return nextRecipeDisplayOrderByCategory.merge(categoryId, 1, Integer::sum) - 1;
+    }
+
+    /** 把一次 observation 的 slots + candidates 序列化成稳定指纹，用于派生 recipe_id。 */
+    private static String visualFingerprint(RecipeVisualObservation observation) {
+        StringBuilder out = new StringBuilder();
+        appendSlots(out, "i", observation.getInputs());
+        if (observation.getResult() != null) {
+            appendSlots(out, "r", Collections.singletonList(observation.getResult()));
+        }
+        appendSlots(out, "o", observation.getOthers());
+        appendSlots(out, "xi", observation.getExtraInputs());
+        appendSlots(out, "xo", observation.getExtraOutputs());
+        return out.toString();
+    }
+
+    private static void appendSlots(StringBuilder out, String tag, List<RecipeSlotObservation> slots) {
+        for (RecipeSlotObservation slot : slots) {
+            out.append(tag)
+                .append('@')
+                .append(slot.getX())
+                .append(',')
+                .append(slot.getY())
+                .append('[');
+            for (RecipeCandidateObservation candidate : slot.getCandidates()) {
+                out.append(candidate.getTargetDomain())
+                    .append(':')
+                    .append(candidate.getTargetId())
+                    .append('x')
+                    .append(candidate.getAmount())
+                    .append(';');
+            }
+            out.append(']');
+        }
+        out.append('|');
+    }
+
+    /** slot_key 由 role + 坐标派生，category 内稳定。 */
+    private static String slotKey(String role, int x, int y) {
+        return role + '@' + x + ',' + y;
+    }
+
     private static boolean hasIconStack(RecipeCategoryIdentity identity) {
         return identity.getIconStack() != null && identity.getIconStack()
             .getItem() != null;
@@ -108,13 +248,6 @@ public final class RecipeDomainData implements IDomainData {
         return text.length() > 2 ? text.substring(0, 2) : text;
     }
 
-    /**
-     * 生成 recipe domain 的导出模型。
-     *
-     * <p>
-     * 输出 recipe_category 行（dataset_id、category_id、display_name、mod_id）以及 recipe_category_catalyst 行
-     * （能打开该分类的物品 + 展示顺序）。
-     */
     @Override
     public IExportModel toExportModel() {
         List<RecipeCategoryRow> categories = new ArrayList<>();
@@ -124,8 +257,15 @@ public final class RecipeDomainData implements IDomainData {
                     datasetId,
                     identity.getCategoryId(),
                     identity.getDisplayName(),
-                    identity.getModId()));
+                    identity.getModId(),
+                    identity.getCanvasWidth(),
+                    identity.getCanvasHeight()));
         }
-        return new RecipeExportModel(categories, new ArrayList<>(catalysts.values()));
+        return new RecipeExportModel(
+            categories,
+            new ArrayList<>(catalysts.values()),
+            new ArrayList<>(recipes.values()),
+            new ArrayList<>(slotLayouts.values()),
+            new ArrayList<>(slotCandidates.values()));
     }
 }

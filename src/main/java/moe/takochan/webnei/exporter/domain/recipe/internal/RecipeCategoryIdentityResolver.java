@@ -32,8 +32,23 @@ public final class RecipeCategoryIdentityResolver {
             categoryId,
             displayName(handler, categoryId),
             modId(info),
+            canvasWidth(info),
+            canvasHeight(info),
+            yShift(info),
             iconStack(info),
             iconImage(info));
+    }
+
+    private static int canvasWidth(HandlerInfo info) {
+        return info == null ? HandlerInfo.DEFAULT_WIDTH : info.getWidth();
+    }
+
+    private static int canvasHeight(HandlerInfo info) {
+        return info == null ? HandlerInfo.DEFAULT_HEIGHT : info.getHeight();
+    }
+
+    private static int yShift(HandlerInfo info) {
+        return info == null ? 0 : info.getYShift();
     }
 
     private static ItemStack iconStack(HandlerInfo info) {

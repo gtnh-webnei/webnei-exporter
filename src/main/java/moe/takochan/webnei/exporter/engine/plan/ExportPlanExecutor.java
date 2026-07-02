@@ -13,6 +13,8 @@ import moe.takochan.webnei.exporter.bundle.BundleTarget;
 import moe.takochan.webnei.exporter.bundle.IBundleWriter;
 import moe.takochan.webnei.exporter.domain.ExportModelSet;
 import moe.takochan.webnei.exporter.engine.ExportExecutionContext;
+import moe.takochan.webnei.exporter.engine.ExportRequest;
+import moe.takochan.webnei.exporter.engine.ExportRequestOptions;
 import moe.takochan.webnei.exporter.engine.job.ExportJobSession;
 import moe.takochan.webnei.exporter.engine.job.IExportJobListener;
 import moe.takochan.webnei.exporter.engine.store.DomainStoreRegistry;
@@ -54,11 +56,21 @@ public final class ExportPlanExecutor {
             return bundleWriter.write(
                 new ExportModelSet(plan.id(), storeRegistry.collectModels()),
                 defaultTarget(),
-                BundleContext.withRenderProgress(session));
+                bundleContext(executionContext, session));
         } catch (BundleException e) {
             WebneiExporterMod.LOG.error("Failed to write WebNEI export bundle", e);
             return BundleResult.failure(bundleWriter.format(), e.getMessage());
         }
+    }
+
+    /** 从请求 option 中读出 asset 渲染开关，组装本次 bundle 写出上下文。 */
+    private static BundleContext bundleContext(ExportExecutionContext executionContext, ExportJobSession session) {
+        ExportRequest request = executionContext.request();
+        boolean skipAssetRender = ExportRequestOptions
+            .asBoolean(request.option(ExportRequestOptions.SKIP_ASSET_RENDER));
+        boolean skipAssetAnimations = ExportRequestOptions
+            .asBoolean(request.option(ExportRequestOptions.SKIP_ASSET_ANIMATIONS));
+        return BundleContext.create(session, skipAssetRender, skipAssetAnimations);
     }
 
     private static BundleTarget defaultTarget() {

@@ -32,13 +32,14 @@ public final class NeiRecipeSource {
         this.registrar = registrar;
     }
 
-    /** 扫描 NEI 四个 handler 列表，把每个 handler 交给 recipe registrar。 */
+    /** 扫描 NEI 四个 handler 列表，把每个 handler 交给 recipe registrar；最后统一喂物品收尾。 */
     public void collect() {
         for (List<? extends IRecipeHandler> handlers : neiHandlerLists()) {
             for (IRecipeHandler handler : handlers) {
                 this.registrar.register(handler);
             }
         }
+        this.registrar.finishFeeding();
     }
 
     /** NEI 登记 recipe handler 的四个静态列表：查合成 / 查用途，各含普通与序列化注册两种。 */
