@@ -1,7 +1,9 @@
 package moe.takochan.webnei.exporter.engine;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 
 import moe.takochan.webnei.exporter.bundle.BundleFormat;
@@ -19,23 +21,32 @@ public final class ExportRequest {
     private final String planId;
 
     /** 调用方选择的 bundle 输出格式。 */
-    private final BundleFormat bundleFormat;
+    private final List<BundleFormat> bundleFormats;
 
     /** 命令层传入的导出参数。 */
     private final Map<String, String> options;
 
-    private ExportRequest(String planId, BundleFormat bundleFormat, Map<String, String> options) {
+    private ExportRequest(String planId, List<BundleFormat> bundleFormats, Map<String, String> options) {
+        if (bundleFormats == null || bundleFormats.isEmpty()) {
+            throw new IllegalArgumentException("bundleFormats must not be empty");
+        }
         this.planId = planId;
-        this.bundleFormat = bundleFormat;
+        this.bundleFormats = Collections.unmodifiableList(new ArrayList<>(bundleFormats));
         this.options = Collections.unmodifiableMap(new LinkedHashMap<>(options));
     }
 
     public static ExportRequest bundle(String planId, BundleFormat bundleFormat) {
-        return new ExportRequest(planId, bundleFormat, Collections.<String, String>emptyMap());
+        return bundle(planId, bundleFormat, Collections.<String, String>emptyMap());
     }
 
     public static ExportRequest bundle(String planId, BundleFormat bundleFormat, Map<String, String> options) {
-        return new ExportRequest(planId, bundleFormat, options);
+        List<BundleFormat> formats = new ArrayList<>();
+        formats.add(bundleFormat);
+        return new ExportRequest(planId, formats, options);
+    }
+
+    public static ExportRequest bundle(String planId, List<BundleFormat> bundleFormats, Map<String, String> options) {
+        return new ExportRequest(planId, bundleFormats, options);
     }
 
     public String planId() {
@@ -43,7 +54,11 @@ public final class ExportRequest {
     }
 
     public BundleFormat bundleFormat() {
-        return bundleFormat;
+        return bundleFormats.get(0);
+    }
+
+    public List<BundleFormat> bundleFormats() {
+        return bundleFormats;
     }
 
     public String option(String key) {

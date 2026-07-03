@@ -6,16 +6,12 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-import net.minecraft.client.Minecraft;
 import net.minecraft.command.ICommandSender;
 
 import moe.takochan.webnei.exporter.bundle.BundleFormat;
-import moe.takochan.webnei.exporter.client.gui.GuiExportProgress;
-import moe.takochan.webnei.exporter.domain.asset.render.client.AssetRenderDispatcher;
+import moe.takochan.webnei.exporter.client.gui.ExportGuiLauncher;
 import moe.takochan.webnei.exporter.engine.ExportRequest;
 import moe.takochan.webnei.exporter.engine.ExportRequestOptions;
-import moe.takochan.webnei.exporter.engine.job.ExportJobRunner;
-import moe.takochan.webnei.exporter.engine.job.ExportJobSession;
 import moe.takochan.webnei.exporter.export.ExportPlan;
 
 /**
@@ -69,18 +65,7 @@ public abstract class BundleExportSubcommand implements ExportSubcommand {
             CommandMessageSender.send(sender, usageKey);
             return;
         }
-        final GuiExportProgress gui = new GuiExportProgress();
-        ExportJobSession session = ExportJobRunner.defaults()
-            .submit(ExportRequest.bundle(planId, arguments.format(), arguments.options()), gui);
-        gui.bind(session);
-        AssetRenderDispatcher.INSTANCE.runLater(new Runnable() {
-
-            @Override
-            public void run() {
-                Minecraft.getMinecraft()
-                    .displayGuiScreen(gui);
-            }
-        });
+        ExportGuiLauncher.submitAndShowProgress(ExportRequest.bundle(planId, arguments.format(), arguments.options()));
     }
 
     /**

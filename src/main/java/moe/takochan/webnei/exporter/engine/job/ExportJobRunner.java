@@ -6,9 +6,11 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import moe.takochan.webnei.exporter.WebneiExporterMod;
 import moe.takochan.webnei.exporter.bundle.BundleException;
+import moe.takochan.webnei.exporter.bundle.BundleFormat;
 import moe.takochan.webnei.exporter.bundle.BundleResult;
 import moe.takochan.webnei.exporter.bundle.BundleWriterRegistry;
 import moe.takochan.webnei.exporter.bundle.IBundleWriter;
+import moe.takochan.webnei.exporter.bundle.MultiBundleWriter;
 import moe.takochan.webnei.exporter.engine.ExportExecutionContext;
 import moe.takochan.webnei.exporter.engine.ExportRequest;
 import moe.takochan.webnei.exporter.engine.plan.ExportPlanExecutor;
@@ -112,7 +114,15 @@ public final class ExportJobRunner {
     }
 
     private IBundleWriter bundleWriter(ExportRequest request) throws BundleException {
-        return bundleWriterRegistry.writerFor(request.bundleFormat());
+        List<BundleFormat> formats = request.bundleFormats();
+        if (formats.size() == 1) {
+            return bundleWriterRegistry.writerFor(formats.get(0));
+        }
+        List<IBundleWriter> writers = new ArrayList<>();
+        for (BundleFormat format : formats) {
+            writers.add(bundleWriterRegistry.writerFor(format));
+        }
+        return new MultiBundleWriter(writers);
     }
 
     private static void fail(ExportJobSession session, IExportJobListener listener, String reason) {

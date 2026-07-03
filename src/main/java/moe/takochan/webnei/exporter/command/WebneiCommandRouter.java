@@ -7,6 +7,8 @@ import java.util.List;
 
 import net.minecraft.command.ICommandSender;
 
+import moe.takochan.webnei.exporter.client.gui.ExportGuiLauncher;
+
 /**
  * /webnei 命令路由器，负责帮助、补全和导出子命令分发。
  */
@@ -25,8 +27,12 @@ public final class WebneiCommandRouter {
             sendHelp(sender);
             return true;
         }
-        if (args.length < 2 || !"export".equals(args[0])) {
+        if (!"export".equals(args[0])) {
             return false;
+        }
+        if (args.length == 1) {
+            ExportGuiLauncher.showConfig();
+            return true;
         }
         for (ExportSubcommand subcommand : subcommands) {
             if (subcommand.name()
@@ -69,6 +75,7 @@ public final class WebneiCommandRouter {
     private void sendHelp(ICommandSender sender) {
         CommandMessageSender.send(sender, "webnei.command.help.header");
         CommandMessageSender.send(sender, "webnei.command.help.help");
+        CommandMessageSender.send(sender, "webnei.command.help.export.gui");
         for (ExportSubcommand subcommand : subcommands) {
             CommandMessageSender.send(sender, subcommand.descriptionKey());
         }

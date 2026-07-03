@@ -42,6 +42,8 @@ configurations.configureEach {
     resolutionStrategy {
         force gtnh("GTNHLib")
         force gtnh("Applied-Energistics-2-Unofficial")
+        force gtnh("BuildCraft")
+        force gtnh("BuildCraftCompat")
 
         dependencySubstitution {
             substitute module("com.github.GTNewHorizons:Baubles") using module("com.github.GTNewHorizons:Baubles-Expanded:2.2.0-GTNH") withClassifier("dev") because("Baubles-Expanded replaces Baubles")
@@ -89,7 +91,7 @@ dependencies {
     devOnlyNonPublishable(gtnhDev("TinkersConstruct"))
 
     // Gendustry
-    devOnlyNonPublishable(gtnhDev("gendustry"))
+    devOnlyNonPublishable(gtnhDev("gendustry")) { transitive = false }
     devOnlyNonPublishable(gtnhDev("bdlib"))
 
     // Chisel / Forestry / NEIAddons / Railcraft / BuildCraftCompat / ProjectBlue — recipe loading / item feeding hooks 直接 import handler 用
