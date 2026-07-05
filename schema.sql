@@ -601,3 +601,109 @@ CREATE TABLE IF NOT EXISTS gt_bartworks_ore_layer (
   display_name TEXT NOT NULL DEFAULT '',
   PRIMARY KEY (dataset_id, entry_id, layer)
 );
+
+CREATE OR REPLACE VIEW v_item_browser AS
+SELECT
+  ile.dataset_id,
+  iv.item_variant_id,
+  iv.item_id,
+  i.mod_id,
+  CASE WHEN i.mod_id = 'minecraft' AND m.name IS NULL THEN 'Minecraft' ELSE m.name END AS mod_name,
+  i.registry_name,
+  i.unlocalized_name,
+  iv.damage,
+  iv.nbt_hash,
+  iv.display_name,
+  iv.tooltip_text,
+  iv.chemical_expression,
+  iv.search_text,
+  ile.list_index,
+  a.path AS icon_path,
+  a.media_type AS icon_media_type,
+  a.width AS icon_width,
+  a.height AS icon_height,
+  a.metadata_json AS icon_metadata_json
+FROM item_list_entry ile
+JOIN item_variant iv
+  ON iv.dataset_id = ile.dataset_id
+ AND iv.item_variant_id = ile.item_variant_id
+JOIN item i
+  ON i.dataset_id = iv.dataset_id
+ AND i.item_id = iv.item_id
+LEFT JOIN mod m
+  ON m.dataset_id = i.dataset_id
+ AND m.mod_id = i.mod_id
+LEFT JOIN asset a
+  ON a.dataset_id = iv.dataset_id
+ AND a.owner_type = 'item_variant'
+ AND a.owner_id = iv.item_variant_id
+ AND a.kind = 'item_icon';
+
+CREATE OR REPLACE VIEW v_fluid_browser AS
+SELECT
+  f.dataset_id,
+  f.fluid_id,
+  f.mod_id,
+  CASE WHEN f.mod_id = 'minecraft' AND m.name IS NULL THEN 'Minecraft' ELSE m.name END AS mod_name,
+  f.registry_name,
+  f.unlocalized_name,
+  f.display_name,
+  f.chemical_expression,
+  f.search_text,
+  f.luminosity,
+  f.density,
+  f.temperature,
+  f.viscosity,
+  f.gaseous,
+  a.path AS icon_path,
+  a.media_type AS icon_media_type,
+  a.width AS icon_width,
+  a.height AS icon_height,
+  a.metadata_json AS icon_metadata_json
+FROM fluid f
+LEFT JOIN mod m
+  ON m.dataset_id = f.dataset_id
+ AND m.mod_id = f.mod_id
+LEFT JOIN asset a
+  ON a.dataset_id = f.dataset_id
+ AND a.owner_type = 'fluid'
+ AND a.owner_id = f.fluid_id
+ AND a.kind = 'fluid_icon';
+
+CREATE EXTENSION IF NOT EXISTS pg_trgm;
+
+CREATE INDEX IF NOT EXISTS idx_item_list_entry_dataset_list_index
+  ON item_list_entry (dataset_id, list_index) INCLUDE (item_variant_id);
+
+CREATE INDEX IF NOT EXISTS idx_item_variant_dataset_item_id
+  ON item_variant (dataset_id, item_id);
+
+CREATE INDEX IF NOT EXISTS idx_asset_dataset_owner_kind_id
+  ON asset (dataset_id, owner_type, kind, owner_id);
+
+CREATE INDEX IF NOT EXISTS idx_fluid_dataset_display
+  ON fluid (dataset_id, display_name, fluid_id);
+
+CREATE INDEX IF NOT EXISTS idx_ore_dictionary_entry_dataset_item_dictionary
+  ON ore_dictionary_entry (dataset_id, item_variant_id, dictionary_name);
+
+CREATE INDEX IF NOT EXISTS idx_item_variant_display_name_trgm
+  ON item_variant USING gin ((lower(regexp_replace(display_name, '§.', '', 'g'))) gin_trgm_ops);
+
+CREATE INDEX IF NOT EXISTS idx_item_variant_tooltip_body_trgm
+  ON item_variant USING gin (((CASE WHEN position(E'\n' in tooltip_text) > 0 THEN lower(regexp_replace(substring(tooltip_text from position(E'\n' in tooltip_text) + 1), '§.', '', 'g')) ELSE '' END)) gin_trgm_ops);
+
+CREATE INDEX IF NOT EXISTS idx_item_item_id_trgm
+  ON item USING gin ((lower(item_id)) gin_trgm_ops);
+
+CREATE INDEX IF NOT EXISTS idx_fluid_display_name_trgm
+  ON fluid USING gin ((lower(regexp_replace(display_name, '§.', '', 'g'))) gin_trgm_ops);
+
+CREATE INDEX IF NOT EXISTS idx_fluid_id_trgm
+  ON fluid USING gin ((lower(fluid_id)) gin_trgm_ops);
+
+CREATE INDEX IF NOT EXISTS idx_mod_name_trgm
+  ON mod USING gin ((lower(name)) gin_trgm_ops);
+
+CREATE INDEX IF NOT EXISTS idx_ore_dictionary_entry_dictionary_trgm
+  ON ore_dictionary_entry USING gin ((lower(dictionary_name)) gin_trgm_ops);
