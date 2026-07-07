@@ -39,6 +39,11 @@ final class PgsqlScriptWriter {
             }
 
             writer.write("COMMIT;\n");
+
+            // 搜索物化视图不随 COPY 更新，数据提交后须刷新。CONCURRENTLY 要求视图有唯一索引，
+            // 且不能在事务块内执行，故置于 COMMIT 之后。
+            writer.write("\nREFRESH MATERIALIZED VIEW CONCURRENTLY mv_item_search;\n");
+            writer.write("REFRESH MATERIALIZED VIEW CONCURRENTLY mv_fluid_search;\n");
         }
     }
 

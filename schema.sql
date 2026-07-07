@@ -43,9 +43,6 @@ CREATE TABLE IF NOT EXISTS item (
   mod_id TEXT NOT NULL,
   registry_name TEXT NOT NULL,
   unlocalized_name TEXT NOT NULL,
-  search_text TEXT GENERATED ALWAYS AS (
-    lower(item_id)
-  ) STORED,
   max_stack_size INTEGER NOT NULL,
   max_damage INTEGER NOT NULL,
   runtime_item_id INTEGER NOT NULL,
@@ -62,9 +59,6 @@ CREATE TABLE IF NOT EXISTS item_variant (
   display_name TEXT NOT NULL,
   tooltip_text TEXT NOT NULL,
   chemical_expression TEXT NOT NULL DEFAULT '',
-  search_text TEXT GENERATED ALWAYS AS (
-    lower(item_variant_id || ' ' || item_id || ' ' || display_name || ' ' || regexp_replace(tooltip_text, '§.', '', 'g'))
-  ) STORED,
   PRIMARY KEY (dataset_id, item_variant_id)
 );
 
@@ -91,9 +85,6 @@ CREATE TABLE IF NOT EXISTS fluid (
   unlocalized_name TEXT NOT NULL,
   display_name TEXT NOT NULL,
   chemical_expression TEXT NOT NULL DEFAULT '',
-  search_text TEXT GENERATED ALWAYS AS (
-    lower(fluid_id || ' ' || registry_name || ' ' || display_name || ' ' || chemical_expression)
-  ) STORED,
   luminosity INTEGER NOT NULL,
   density INTEGER NOT NULL,
   temperature INTEGER NOT NULL,
@@ -616,7 +607,6 @@ SELECT
   iv.display_name,
   iv.tooltip_text,
   iv.chemical_expression,
-  iv.search_text,
   ile.list_index,
   a.path AS icon_path,
   a.media_type AS icon_media_type,
@@ -649,7 +639,6 @@ SELECT
   f.unlocalized_name,
   f.display_name,
   f.chemical_expression,
-  f.search_text,
   f.luminosity,
   f.density,
   f.temperature,
@@ -687,23 +676,88 @@ CREATE INDEX IF NOT EXISTS idx_fluid_dataset_display
 CREATE INDEX IF NOT EXISTS idx_ore_dictionary_entry_dataset_item_dictionary
   ON ore_dictionary_entry (dataset_id, item_variant_id, dictionary_name);
 
-CREATE INDEX IF NOT EXISTS idx_item_variant_display_name_trgm
-  ON item_variant USING gin ((lower(regexp_replace(display_name, '§.', '', 'g'))) gin_trgm_ops);
+-- 搜索物化视图：每种搜索能力一个已规范化列（去色码 + 小写 + 域特定处理），
+-- 查询期只做 LIKE 子串匹配，命中返回主键 id，展示数据仍走 v_item_browser / v_fluid_browser。
+-- 规范化在此固化一次，后端不再现算。行集与展示视图对齐（item 从 item_list_entry 起）。
+--   s_std = 标准无前缀组合：名字 + 提示(跳首行) + ID(registry) + 矿典
+--   s_mod = 模组名(@)  s_tooltip = 提示(#)  s_ore = 矿典($)  s_id = ID(&)
+CREATE MATERIALIZED VIEW mv_item_search AS
+SELECT
+  b.dataset_id,
+  b.item_variant_id,
+  b.name_norm || ' ' || b.tooltip_norm || ' ' || b.id_norm || ' ' || b.ore_norm AS s_std,
+  b.mod_norm     AS s_mod,
+  b.tooltip_norm AS s_tooltip,
+  b.ore_norm     AS s_ore,
+  b.id_norm      AS s_id
+FROM (
+  SELECT
+    ile.dataset_id,
+    iv.item_variant_id,
+    lower(regexp_replace(iv.display_name, '§.', '', 'g')) AS name_norm,
+    CASE WHEN position(E'\n' in iv.tooltip_text) > 0
+         THEN lower(regexp_replace(substring(iv.tooltip_text from position(E'\n' in iv.tooltip_text) + 1), '§.', '', 'g'))
+         ELSE '' END AS tooltip_norm,
+    lower(i.item_id) AS id_norm,
+    lower(coalesce(m.name, '')) AS mod_norm,
+    lower(coalesce(ore.names, '')) AS ore_norm
+  FROM item_list_entry ile
+  JOIN item_variant iv
+    ON iv.dataset_id = ile.dataset_id
+   AND iv.item_variant_id = ile.item_variant_id
+  JOIN item i
+    ON i.dataset_id = iv.dataset_id
+   AND i.item_id = iv.item_id
+  LEFT JOIN mod m
+    ON m.dataset_id = i.dataset_id
+   AND m.mod_id = i.mod_id
+  LEFT JOIN (
+    SELECT dataset_id, item_variant_id, string_agg(dictionary_name, ' ') AS names
+    FROM ore_dictionary_entry
+    GROUP BY dataset_id, item_variant_id
+  ) ore
+    ON ore.dataset_id = iv.dataset_id
+   AND ore.item_variant_id = iv.item_variant_id
+) b;
 
-CREATE INDEX IF NOT EXISTS idx_item_variant_tooltip_body_trgm
-  ON item_variant USING gin (((CASE WHEN position(E'\n' in tooltip_text) > 0 THEN lower(regexp_replace(substring(tooltip_text from position(E'\n' in tooltip_text) + 1), '§.', '', 'g')) ELSE '' END)) gin_trgm_ops);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_mv_item_search_pk
+  ON mv_item_search (dataset_id, item_variant_id);
+CREATE INDEX IF NOT EXISTS idx_mv_item_search_std_trgm
+  ON mv_item_search USING gin (s_std gin_trgm_ops);
+CREATE INDEX IF NOT EXISTS idx_mv_item_search_mod_trgm
+  ON mv_item_search USING gin (s_mod gin_trgm_ops);
+CREATE INDEX IF NOT EXISTS idx_mv_item_search_tooltip_trgm
+  ON mv_item_search USING gin (s_tooltip gin_trgm_ops);
+CREATE INDEX IF NOT EXISTS idx_mv_item_search_ore_trgm
+  ON mv_item_search USING gin (s_ore gin_trgm_ops);
+CREATE INDEX IF NOT EXISTS idx_mv_item_search_id_trgm
+  ON mv_item_search USING gin (s_id gin_trgm_ops);
 
-CREATE INDEX IF NOT EXISTS idx_item_item_id_trgm
-  ON item USING gin ((lower(item_id)) gin_trgm_ops);
+CREATE MATERIALIZED VIEW mv_fluid_search AS
+SELECT
+  b.dataset_id,
+  b.fluid_id,
+  b.name_norm || ' ' || b.id_norm AS s_std,
+  b.mod_norm AS s_mod,
+  b.id_norm  AS s_id
+FROM (
+  SELECT
+    f.dataset_id,
+    f.fluid_id,
+    lower(regexp_replace(f.display_name, '§.', '', 'g')) AS name_norm,
+    lower(f.fluid_id) AS id_norm,
+    lower(coalesce(m.name, '')) AS mod_norm
+  FROM fluid f
+  LEFT JOIN mod m
+    ON m.dataset_id = f.dataset_id
+   AND m.mod_id = f.mod_id
+) b;
 
-CREATE INDEX IF NOT EXISTS idx_fluid_display_name_trgm
-  ON fluid USING gin ((lower(regexp_replace(display_name, '§.', '', 'g'))) gin_trgm_ops);
-
-CREATE INDEX IF NOT EXISTS idx_fluid_id_trgm
-  ON fluid USING gin ((lower(fluid_id)) gin_trgm_ops);
-
-CREATE INDEX IF NOT EXISTS idx_mod_name_trgm
-  ON mod USING gin ((lower(name)) gin_trgm_ops);
-
-CREATE INDEX IF NOT EXISTS idx_ore_dictionary_entry_dictionary_trgm
-  ON ore_dictionary_entry USING gin ((lower(dictionary_name)) gin_trgm_ops);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_mv_fluid_search_pk
+  ON mv_fluid_search (dataset_id, fluid_id);
+CREATE INDEX IF NOT EXISTS idx_mv_fluid_search_std_trgm
+  ON mv_fluid_search USING gin (s_std gin_trgm_ops);
+CREATE INDEX IF NOT EXISTS idx_mv_fluid_search_mod_trgm
+  ON mv_fluid_search USING gin (s_mod gin_trgm_ops);
+CREATE INDEX IF NOT EXISTS idx_mv_fluid_search_id_trgm
+  ON mv_fluid_search USING gin (s_id gin_trgm_ops);
