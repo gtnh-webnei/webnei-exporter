@@ -14,6 +14,9 @@ public final class ForgeModSource {
     }
 
     public void collect() {
+        // 先补录原版 minecraft，使其排在所有 mod 之前；Forge active 列表里没有它。
+        this.registrar.registerMinecraft();
+
         List<ModContainer> mods = Loader.instance()
             .getActiveModList();
 

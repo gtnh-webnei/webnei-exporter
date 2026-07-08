@@ -599,7 +599,7 @@ SELECT
   iv.item_variant_id,
   iv.item_id,
   i.mod_id,
-  CASE WHEN i.mod_id = 'minecraft' AND m.name IS NULL THEN 'Minecraft' ELSE m.name END AS mod_name,
+  m.name AS mod_name,
   i.registry_name,
   i.unlocalized_name,
   iv.damage,
@@ -634,7 +634,7 @@ SELECT
   f.dataset_id,
   f.fluid_id,
   f.mod_id,
-  CASE WHEN f.mod_id = 'minecraft' AND m.name IS NULL THEN 'Minecraft' ELSE m.name END AS mod_name,
+  m.name AS mod_name,
   f.registry_name,
   f.unlocalized_name,
   f.display_name,
@@ -659,6 +659,33 @@ LEFT JOIN asset a
  AND a.owner_id = f.fluid_id
  AND a.kind = 'fluid_icon';
 
+CREATE OR REPLACE VIEW v_recipe_category_browser AS
+SELECT
+  rc.dataset_id,
+  rc.category_id,
+  rc.display_name,
+  rc.mod_id,
+  m.name AS mod_name,
+  (SELECT COUNT(*) FROM recipe r
+    WHERE r.dataset_id = rc.dataset_id
+      AND r.category_id = rc.category_id) AS recipe_count,
+  a.path AS icon_path,
+  a.width AS icon_width,
+  a.height AS icon_height,
+  a.metadata_json AS icon_metadata_json,
+  lower(regexp_replace(rc.display_name, '§.', '', 'g'))
+    || ' ' || lower(coalesce(m.name, '')) AS search_std,
+  lower(coalesce(m.name, '')) AS search_mod
+FROM recipe_category rc
+LEFT JOIN mod m
+  ON m.dataset_id = rc.dataset_id
+ AND m.mod_id = rc.mod_id
+LEFT JOIN asset a
+  ON a.dataset_id = rc.dataset_id
+ AND a.owner_type = 'category'
+ AND a.owner_id = rc.category_id
+ AND a.kind = 'recipe_category_icon';
+
 CREATE EXTENSION IF NOT EXISTS pg_trgm;
 
 CREATE INDEX IF NOT EXISTS idx_item_list_entry_dataset_list_index
@@ -675,6 +702,16 @@ CREATE INDEX IF NOT EXISTS idx_fluid_dataset_display
 
 CREATE INDEX IF NOT EXISTS idx_ore_dictionary_entry_dataset_item_dictionary
   ON ore_dictionary_entry (dataset_id, item_variant_id, dictionary_name);
+
+-- 配方分类列表：名称/模组按 trgm 子串搜索，配方数按分类聚合。
+CREATE INDEX IF NOT EXISTS idx_recipe_category_name_trgm
+  ON recipe_category USING gin (lower(regexp_replace(display_name, '§.', '', 'g')) gin_trgm_ops);
+
+CREATE INDEX IF NOT EXISTS idx_mod_name_trgm
+  ON mod USING gin (lower(name) gin_trgm_ops);
+
+CREATE INDEX IF NOT EXISTS idx_recipe_dataset_category
+  ON recipe (dataset_id, category_id);
 
 -- 搜索物化视图：每种搜索能力一个已规范化列（去色码 + 小写 + 域特定处理），
 -- 查询期只做 LIKE 子串匹配，命中返回主键 id，展示数据仍走 v_item_browser / v_fluid_browser。

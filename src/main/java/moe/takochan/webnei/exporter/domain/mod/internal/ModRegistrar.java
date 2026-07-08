@@ -11,6 +11,7 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 
 import cpw.mods.fml.common.InjectedModContainer;
+import cpw.mods.fml.common.Loader;
 import cpw.mods.fml.common.ModContainer;
 import moe.takochan.webnei.exporter.WebneiExporterMod;
 import moe.takochan.webnei.exporter.domain.mod.model.ModRow;
@@ -28,6 +29,11 @@ public final class ModRegistrar implements IDomainRegistrar {
     private static final String SOURCE_TYPE_DIRECTORY = "directory";
     private static final String SOURCE_TYPE_UNKNOWN = "unknown";
     private static final int HASH_BUFFER_SIZE = 64 * 1024;
+
+    // 原版内容（物品/流体/配方分类）的归属 modId 是 "minecraft"，但 Forge 的 active mod 列表里
+    // 没有对应的 ModContainer（伪容器用 mcp/FML/Forge）。这里补一条 minecraft 行填补该结构性缺口。
+    private static final String MOD_ID_MINECRAFT = "minecraft";
+    private static final String MOD_NAME_MINECRAFT = "Minecraft";
 
     private final ModDomainData data;
     private final String datasetId;
@@ -47,6 +53,20 @@ public final class ModRegistrar implements IDomainRegistrar {
             sourceType(source),
             sourceName(source),
             sourceSha256(mod, source),
+            true);
+        data.put(row);
+    }
+
+    /** 补录原版 minecraft mod 行；无独立 jar，来源字段用既有的“无来源”约定。 */
+    public void registerMinecraft() {
+        ModRow row = new ModRow(
+            datasetId,
+            MOD_ID_MINECRAFT,
+            MOD_NAME_MINECRAFT,
+            Loader.MC_VERSION,
+            SOURCE_TYPE_UNKNOWN,
+            UNKNOWN,
+            UNKNOWN,
             true);
         data.put(row);
     }
