@@ -6,6 +6,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
+import moe.takochan.webnei.exporter.bundle.record.mapper.AspectRecordSetMapper;
 import moe.takochan.webnei.exporter.bundle.record.mapper.AssetRecordSetMapper;
 import moe.takochan.webnei.exporter.bundle.record.mapper.DatasetRecordSetMapper;
 import moe.takochan.webnei.exporter.bundle.record.mapper.FluidRecordSetMapper;
@@ -37,6 +38,7 @@ public final class BundleRecordSetMapperRegistry {
         mappers.add(new FluidRecordSetMapper());
         mappers.add(new OreDictionaryRecordSetMapper());
         mappers.add(new RecipeRecordSetMapper());
+        mappers.add(new AspectRecordSetMapper());
         mappers.add(new AssetRecordSetMapper());
         return new BundleRecordSetMapperRegistry(mappers);
     }

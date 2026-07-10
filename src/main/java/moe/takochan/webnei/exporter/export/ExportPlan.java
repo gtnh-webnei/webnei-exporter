@@ -1,6 +1,7 @@
 package moe.takochan.webnei.exporter.export;
 
 import lombok.Getter;
+import moe.takochan.webnei.exporter.domain.aspect.task.AspectExportTask;
 import moe.takochan.webnei.exporter.domain.asset.task.AssetExportTask;
 import moe.takochan.webnei.exporter.domain.dataset.task.DatasetModExportTask;
 import moe.takochan.webnei.exporter.domain.fluid.task.FluidExportTask;
@@ -24,6 +25,7 @@ public enum ExportPlan {
         new FluidExportTask(),
         new RecipeExportTask(),
         new OreDictionaryExportTask(),
+        new AspectExportTask(),
         new AssetExportTask()
     );
     // spotless:on

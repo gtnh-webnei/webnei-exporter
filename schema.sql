@@ -352,26 +352,31 @@ CREATE TABLE IF NOT EXISTS quest_reward_item (
 CREATE TABLE IF NOT EXISTS aspect (
   dataset_id TEXT NOT NULL REFERENCES dataset(dataset_id) ON DELETE CASCADE,
   aspect_id TEXT NOT NULL,
-  icon_item_variant_id TEXT NOT NULL,
-  name TEXT NOT NULL,
+  item_variant_id TEXT NOT NULL,
+  display_name TEXT NOT NULL,
   description TEXT NOT NULL,
   primal BOOLEAN NOT NULL,
+  color INTEGER NOT NULL,
+  blend INTEGER NOT NULL,
+  chat_color TEXT,
+  registry_order INTEGER NOT NULL,
   PRIMARY KEY (dataset_id, aspect_id)
 );
 
 CREATE TABLE IF NOT EXISTS aspect_component (
   dataset_id TEXT NOT NULL REFERENCES dataset(dataset_id) ON DELETE CASCADE,
   aspect_id TEXT NOT NULL,
+  component_index INTEGER NOT NULL CHECK (component_index IN (0, 1)),
   component_aspect_id TEXT NOT NULL,
-  PRIMARY KEY (dataset_id, aspect_id, component_aspect_id)
+  PRIMARY KEY (dataset_id, aspect_id, component_index)
 );
 
 CREATE TABLE IF NOT EXISTS aspect_item (
   dataset_id TEXT NOT NULL REFERENCES dataset(dataset_id) ON DELETE CASCADE,
-  aspect_id TEXT NOT NULL,
   item_variant_id TEXT NOT NULL,
-  amount INTEGER NOT NULL,
-  PRIMARY KEY (dataset_id, aspect_id, item_variant_id)
+  aspect_id TEXT NOT NULL,
+  amount INTEGER NOT NULL CHECK (amount > 0),
+  PRIMARY KEY (dataset_id, item_variant_id, aspect_id)
 );
 
 CREATE TABLE IF NOT EXISTS diagram_group (
@@ -702,6 +707,12 @@ CREATE INDEX IF NOT EXISTS idx_fluid_dataset_display
 
 CREATE INDEX IF NOT EXISTS idx_ore_dictionary_entry_dataset_item_dictionary
   ON ore_dictionary_entry (dataset_id, item_variant_id, dictionary_name);
+
+CREATE INDEX IF NOT EXISTS idx_aspect_component_dataset_component_aspect
+  ON aspect_component (dataset_id, component_aspect_id, aspect_id);
+
+CREATE INDEX IF NOT EXISTS idx_aspect_item_dataset_aspect_item_variant
+  ON aspect_item (dataset_id, aspect_id, item_variant_id);
 
 -- 配方分类列表：名称/模组按 trgm 子串搜索，配方数按分类聚合。
 CREATE INDEX IF NOT EXISTS idx_recipe_category_name_trgm
