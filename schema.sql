@@ -691,6 +691,86 @@ LEFT JOIN asset a
  AND a.owner_id = rc.category_id
  AND a.kind = 'recipe_category_icon';
 
+DROP VIEW IF EXISTS v_aspect_item_browser;
+DROP VIEW IF EXISTS v_aspect_component_browser;
+DROP VIEW IF EXISTS v_aspect_browser;
+
+CREATE VIEW v_aspect_browser AS
+SELECT
+  a.dataset_id,
+  a.aspect_id,
+  a.display_name,
+  a.description,
+  a.primal,
+  a.color,
+  a.registry_order,
+  icon.path AS icon_path,
+  icon.width AS icon_width,
+  icon.height AS icon_height,
+  icon.metadata_json AS icon_metadata_json,
+  COALESCE(item_counts.associated_item_count, 0) AS associated_item_count
+FROM aspect a
+LEFT JOIN asset icon
+  ON icon.dataset_id = a.dataset_id
+ AND icon.owner_type = 'item_variant'
+ AND icon.owner_id = a.item_variant_id
+ AND icon.kind = 'item_icon'
+LEFT JOIN (
+  SELECT
+    ai.dataset_id,
+    ai.aspect_id,
+    COUNT(*) AS associated_item_count
+  FROM aspect_item ai
+  JOIN item_list_entry ile
+    ON ile.dataset_id = ai.dataset_id
+   AND ile.item_variant_id = ai.item_variant_id
+  GROUP BY ai.dataset_id, ai.aspect_id
+) item_counts
+  ON item_counts.dataset_id = a.dataset_id
+ AND item_counts.aspect_id = a.aspect_id;
+
+CREATE VIEW v_aspect_component_browser AS
+SELECT
+  ac.dataset_id,
+  ac.aspect_id AS parent_aspect_id,
+  ac.component_index,
+  component.aspect_id,
+  component.display_name,
+  component.color,
+  icon.path AS icon_path,
+  icon.width AS icon_width,
+  icon.height AS icon_height,
+  icon.metadata_json AS icon_metadata_json
+FROM aspect_component ac
+JOIN aspect component
+  ON component.dataset_id = ac.dataset_id
+ AND component.aspect_id = ac.component_aspect_id
+LEFT JOIN asset icon
+  ON icon.dataset_id = component.dataset_id
+ AND icon.owner_type = 'item_variant'
+ AND icon.owner_id = component.item_variant_id
+ AND icon.kind = 'item_icon';
+
+CREATE VIEW v_aspect_item_browser AS
+SELECT
+  ai.dataset_id,
+  ai.aspect_id,
+  b.item_variant_id,
+  b.mod_id,
+  b.mod_name,
+  b.registry_name,
+  b.display_name,
+  ai.amount,
+  b.list_index,
+  b.icon_path,
+  b.icon_width,
+  b.icon_height,
+  b.icon_metadata_json
+FROM aspect_item ai
+JOIN v_item_browser b
+  ON b.dataset_id = ai.dataset_id
+ AND b.item_variant_id = ai.item_variant_id;
+
 CREATE EXTENSION IF NOT EXISTS pg_trgm;
 
 CREATE INDEX IF NOT EXISTS idx_item_list_entry_dataset_list_index
