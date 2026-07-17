@@ -5,6 +5,7 @@ import net.minecraftforge.fluids.Fluid;
 import net.minecraftforge.fluids.FluidStack;
 
 import moe.takochan.webnei.exporter.domain.fluid.hook.FluidHookRegistry;
+import moe.takochan.webnei.exporter.domain.fluid.hook.IFluidDisplayStackHook;
 import moe.takochan.webnei.exporter.domain.fluid.model.FluidBlockRow;
 import moe.takochan.webnei.exporter.domain.fluid.model.FluidContainerRow;
 import moe.takochan.webnei.exporter.domain.fluid.model.FluidRow;
@@ -69,7 +70,8 @@ public final class FluidRegistrar implements IDomainRegistrar {
         if (stack == null || stack.getItem() == null) {
             return null;
         }
-        if (!hooks.isFluidDisplay(stack)) {
+        IFluidDisplayStackHook displayHook = hooks.findFluidDisplayHook(stack);
+        if (displayHook == null) {
             return null;
         }
         FluidStack fluidStack = FluidStackResolver.resolve(stack);
@@ -77,6 +79,10 @@ public final class FluidRegistrar implements IDomainRegistrar {
             return null;
         }
         FluidRow row = getOrRegisterFluid(fluidStack.getFluid());
-        return new FluidDisplayResolution(row.getFluidId(), fluidStack.amount);
+        return new FluidDisplayResolution(
+            row.getFluidId(),
+            fluidStack.amount,
+            displayHook.presentationType(),
+            displayHook.amountUnit());
     }
 }

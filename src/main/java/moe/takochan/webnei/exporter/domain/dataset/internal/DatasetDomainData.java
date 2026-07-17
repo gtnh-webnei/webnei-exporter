@@ -26,6 +26,13 @@ public final class DatasetDomainData implements IDomainData {
         return row.getDatasetId();
     }
 
+    public String language() {
+        if (row == null) {
+            return null;
+        }
+        return row.getLanguage();
+    }
+
     @Override
     public IExportModel toExportModel() {
         return row == null ? null : new DatasetExportModel(row);

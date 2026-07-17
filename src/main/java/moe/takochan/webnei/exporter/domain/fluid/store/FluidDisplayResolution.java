@@ -15,4 +15,6 @@ public final class FluidDisplayResolution {
 
     private final String fluidId;
     private final int amount;
+    private final String presentationType;
+    private final String amountUnit;
 }

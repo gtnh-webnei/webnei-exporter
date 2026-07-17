@@ -7,11 +7,13 @@ import moe.takochan.webnei.exporter.bundle.record.BundleRecordSet;
 import moe.takochan.webnei.exporter.bundle.record.BundleRecordSetSpec;
 import moe.takochan.webnei.exporter.bundle.record.IBundleRecordSetMapper;
 import moe.takochan.webnei.exporter.domain.recipe.RecipeExportModel;
+import moe.takochan.webnei.exporter.domain.recipe.model.RecipeCandidateTooltipFragmentRow;
 import moe.takochan.webnei.exporter.domain.recipe.model.RecipeCategoryCatalystRow;
 import moe.takochan.webnei.exporter.domain.recipe.model.RecipeCategoryRow;
 import moe.takochan.webnei.exporter.domain.recipe.model.RecipeRow;
 import moe.takochan.webnei.exporter.domain.recipe.model.RecipeSlotCandidateRow;
 import moe.takochan.webnei.exporter.domain.recipe.model.RecipeSlotLayoutRow;
+import moe.takochan.webnei.exporter.domain.recipe.model.RecipeTooltipRegionRow;
 
 public final class RecipeRecordSetMapper implements IBundleRecordSetMapper<RecipeExportModel> {
 
@@ -58,7 +60,33 @@ public final class RecipeRecordSetMapper implements IBundleRecordSetMapper<Recip
         .field("target_domain", RecipeSlotCandidateRow::getTargetDomain)
         .field("target_id", RecipeSlotCandidateRow::getTargetId)
         .field("amount", RecipeSlotCandidateRow::getAmount)
-        .field("probability", RecipeSlotCandidateRow::getProbability);
+        .field("probability", RecipeSlotCandidateRow::getProbability)
+        .field("presentation_type", RecipeSlotCandidateRow::getPresentationType)
+        .field("presentation_id", RecipeSlotCandidateRow::getPresentationId)
+        .field("amount_unit", RecipeSlotCandidateRow::getAmountUnit);
+
+    private static final BundleRecordSetSpec<RecipeCandidateTooltipFragmentRow> RECIPE_CANDIDATE_TOOLTIP_FRAGMENT = BundleRecordSetSpec
+        .<RecipeCandidateTooltipFragmentRow>recordSet("recipe_candidate_tooltip_fragment", 145)
+        .field("dataset_id", RecipeCandidateTooltipFragmentRow::getDatasetId)
+        .field("recipe_id", RecipeCandidateTooltipFragmentRow::getRecipeId)
+        .field("slot_key", RecipeCandidateTooltipFragmentRow::getSlotKey)
+        .field("candidate_order", RecipeCandidateTooltipFragmentRow::getCandidateOrder)
+        .field("fragment_order", RecipeCandidateTooltipFragmentRow::getFragmentOrder)
+        .field("state_key", RecipeCandidateTooltipFragmentRow::getStateKey)
+        .field("text_value", RecipeCandidateTooltipFragmentRow::getTextValue);
+
+    private static final BundleRecordSetSpec<RecipeTooltipRegionRow> RECIPE_TOOLTIP_REGION = BundleRecordSetSpec
+        .<RecipeTooltipRegionRow>recordSet("recipe_tooltip_region", 150)
+        .field("dataset_id", RecipeTooltipRegionRow::getDatasetId)
+        .field("recipe_id", RecipeTooltipRegionRow::getRecipeId)
+        .field("region_order", RecipeTooltipRegionRow::getRegionOrder)
+        .field("region_type", RecipeTooltipRegionRow::getRegionType)
+        .field("x", RecipeTooltipRegionRow::getX)
+        .field("y", RecipeTooltipRegionRow::getY)
+        .field("width", RecipeTooltipRegionRow::getWidth)
+        .field("height", RecipeTooltipRegionRow::getHeight)
+        .field("state_key", RecipeTooltipRegionRow::getStateKey)
+        .field("tooltip_text", RecipeTooltipRegionRow::getTooltipText);
 
     @Override
     public Class<RecipeExportModel> modelType() {
@@ -72,6 +100,8 @@ public final class RecipeRecordSetMapper implements IBundleRecordSetMapper<Recip
             RECIPE_CATEGORY_CATALYST.records(model.getCatalysts()),
             RECIPE.records(model.getRecipes()),
             RECIPE_SLOT_LAYOUT.records(model.getSlotLayouts()),
-            RECIPE_SLOT_CANDIDATE.records(model.getSlotCandidates()));
+            RECIPE_SLOT_CANDIDATE.records(model.getSlotCandidates()),
+            RECIPE_CANDIDATE_TOOLTIP_FRAGMENT.records(model.getCandidateTooltipFragments()),
+            RECIPE_TOOLTIP_REGION.records(model.getTooltipRegions()));
     }
 }

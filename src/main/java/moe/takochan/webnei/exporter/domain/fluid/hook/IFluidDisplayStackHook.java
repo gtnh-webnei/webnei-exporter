@@ -21,4 +21,10 @@ public interface IFluidDisplayStackHook extends IExportHook {
      * @return true 表示该 stack 应作为流体候选导出
      */
     boolean isFluidDisplay(ItemStack stack);
+
+    /** Structured recipe presentation type for displays recognized by this hook. */
+    String presentationType();
+
+    /** Structured amount unit for displays recognized by this hook. */
+    String amountUnit();
 }

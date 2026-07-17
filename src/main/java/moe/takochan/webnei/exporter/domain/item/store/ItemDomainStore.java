@@ -1,5 +1,7 @@
 package moe.takochan.webnei.exporter.domain.item.store;
 
+import net.minecraft.item.ItemStack;
+
 import moe.takochan.webnei.exporter.domain.item.internal.ItemDomainData;
 import moe.takochan.webnei.exporter.domain.item.internal.ItemRegistrar;
 import moe.takochan.webnei.exporter.engine.store.IDomainStore;
@@ -19,6 +21,11 @@ public final class ItemDomainStore implements IDomainStore<ItemDomainData, ItemR
     public ItemDomainStore(ItemDomainData data, ItemRegistrar registrar) {
         this.data = data;
         this.registrar = registrar;
+    }
+
+    /** Returns whether the stack can be persisted with a stable item identity. */
+    public boolean hasStableIdentity(ItemStack stack) {
+        return registrar.hasStableIdentity(stack);
     }
 
     @Override

@@ -30,9 +30,6 @@ public final class ItemVariantRow {
     /** 当前语言环境下的显示名称，保留 Minecraft 格式码。 */
     private final String displayName;
 
-    /** 当前普通玩家 tooltip 文本，按行用换行符连接并保留 Minecraft 格式码。 */
-    private final String tooltipText;
-
     /** 由 item variant hook 补充的化学式或材料表达式；未知时为空。 */
     @Setter
     private String chemicalExpression = "";

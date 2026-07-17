@@ -32,13 +32,13 @@ public final class FluidHookRegistry {
         }
     }
 
-    /** 任一钩子判定为"流体显示占位 ItemStack"即返回 true。 */
-    public boolean isFluidDisplay(ItemStack stack) {
+    /** 返回第一个命中该流体显示占位 ItemStack 的 hook；未命中时返回 null。 */
+    public IFluidDisplayStackHook findFluidDisplayHook(ItemStack stack) {
         for (IFluidDisplayStackHook hook : displayStackHooks) {
             if (hook.isFluidDisplay(stack)) {
-                return true;
+                return hook;
             }
         }
-        return false;
+        return null;
     }
 }

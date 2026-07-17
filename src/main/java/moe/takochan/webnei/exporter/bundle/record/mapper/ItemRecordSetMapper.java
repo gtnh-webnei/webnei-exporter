@@ -10,6 +10,7 @@ import moe.takochan.webnei.exporter.domain.item.ItemExportModel;
 import moe.takochan.webnei.exporter.domain.item.model.ItemListEntryRow;
 import moe.takochan.webnei.exporter.domain.item.model.ItemRow;
 import moe.takochan.webnei.exporter.domain.item.model.ItemToolClassRow;
+import moe.takochan.webnei.exporter.domain.item.model.ItemTooltipSnapshotRow;
 import moe.takochan.webnei.exporter.domain.item.model.ItemVariantRow;
 
 /** item export model 的记录集映射。 */
@@ -34,8 +35,15 @@ public final class ItemRecordSetMapper implements IBundleRecordSetMapper<ItemExp
         .field("nbt_hash", ItemVariantRow::getNbtHash)
         .field("nbt_text", ItemVariantRow::getNbtText)
         .field("display_name", ItemVariantRow::getDisplayName)
-        .field("tooltip_text", ItemVariantRow::getTooltipText)
         .field("chemical_expression", ItemVariantRow::getChemicalExpression);
+
+    private static final BundleRecordSetSpec<ItemTooltipSnapshotRow> ITEM_TOOLTIP_SNAPSHOT = BundleRecordSetSpec
+        .<ItemTooltipSnapshotRow>recordSet("item_tooltip_snapshot", 45)
+        .field("dataset_id", ItemTooltipSnapshotRow::getDatasetId)
+        .field("item_variant_id", ItemTooltipSnapshotRow::getItemVariantId)
+        .field("tooltip_type", ItemTooltipSnapshotRow::getTooltipType)
+        .field("key_state", ItemTooltipSnapshotRow::getKeyState)
+        .field("tooltip_text", ItemTooltipSnapshotRow::getTooltipText);
 
     private static final BundleRecordSetSpec<ItemToolClassRow> ITEM_TOOL_CLASS = BundleRecordSetSpec
         .<ItemToolClassRow>recordSet("item_tool_class", 50)
@@ -60,6 +68,7 @@ public final class ItemRecordSetMapper implements IBundleRecordSetMapper<ItemExp
         return Arrays.asList(
             ITEM.records(model.getItems()),
             ITEM_VARIANT.records(model.getVariants()),
+            ITEM_TOOLTIP_SNAPSHOT.records(model.getTooltipSnapshots()),
             ITEM_TOOL_CLASS.records(model.getToolClasses()),
             ITEM_LIST_ENTRY.records(model.getListEntries()));
     }

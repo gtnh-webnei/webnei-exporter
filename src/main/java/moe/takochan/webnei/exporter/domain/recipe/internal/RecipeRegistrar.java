@@ -4,9 +4,11 @@ import codechicken.nei.recipe.IRecipeHandler;
 import moe.takochan.webnei.exporter.domain.fluid.store.FluidDomainStore;
 import moe.takochan.webnei.exporter.domain.item.store.ItemDomainStore;
 import moe.takochan.webnei.exporter.domain.recipe.hook.ItemFeedingHookRegistry;
+import moe.takochan.webnei.exporter.domain.recipe.hook.RecipeCandidateMetadataHookRegistry;
 import moe.takochan.webnei.exporter.domain.recipe.hook.RecipeCategoryHookRegistry;
 import moe.takochan.webnei.exporter.domain.recipe.hook.RecipeLoadingHookRegistry;
 import moe.takochan.webnei.exporter.domain.recipe.hook.RecipeSlotSourceHookRegistry;
+import moe.takochan.webnei.exporter.domain.recipe.hook.RecipeTooltipRegionHookRegistry;
 import moe.takochan.webnei.exporter.domain.recipe.internal.ItemFeedingCollector.FeedTarget;
 import moe.takochan.webnei.exporter.domain.recipe.model.RecipeCategoryCatalystRow;
 import moe.takochan.webnei.exporter.engine.store.IDomainRegistrar;
@@ -37,7 +39,12 @@ public final class RecipeRegistrar implements IDomainRegistrar {
         this.datasetId = datasetId;
         this.catalystCollector = new RecipeCatalystCollector(itemStore);
         this.handlerLoader = new RecipeHandlerLoader(new RecipeLoadingHookRegistry());
-        this.visualCollector = new RecipeVisualFactCollector(itemStore, fluidStore, new RecipeSlotSourceHookRegistry());
+        this.visualCollector = new RecipeVisualFactCollector(
+            itemStore,
+            fluidStore,
+            new RecipeSlotSourceHookRegistry(),
+            new RecipeCandidateMetadataHookRegistry(),
+            new RecipeTooltipRegionHookRegistry());
     }
 
     public void register(IRecipeHandler handler) {

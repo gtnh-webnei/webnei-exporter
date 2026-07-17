@@ -11,11 +11,15 @@ import net.minecraft.item.ItemStack;
 import codechicken.nei.drawable.DrawableResource;
 import moe.takochan.webnei.exporter.domain.IExportModel;
 import moe.takochan.webnei.exporter.domain.recipe.RecipeExportModel;
+import moe.takochan.webnei.exporter.domain.recipe.hook.RecipeTooltipFragmentObservation;
+import moe.takochan.webnei.exporter.domain.recipe.hook.RecipeTooltipRegionObservation;
+import moe.takochan.webnei.exporter.domain.recipe.model.RecipeCandidateTooltipFragmentRow;
 import moe.takochan.webnei.exporter.domain.recipe.model.RecipeCategoryCatalystRow;
 import moe.takochan.webnei.exporter.domain.recipe.model.RecipeCategoryRow;
 import moe.takochan.webnei.exporter.domain.recipe.model.RecipeRow;
 import moe.takochan.webnei.exporter.domain.recipe.model.RecipeSlotCandidateRow;
 import moe.takochan.webnei.exporter.domain.recipe.model.RecipeSlotLayoutRow;
+import moe.takochan.webnei.exporter.domain.recipe.model.RecipeTooltipRegionRow;
 import moe.takochan.webnei.exporter.engine.store.IDomainData;
 import moe.takochan.webnei.exporter.util.StableHash;
 
@@ -39,9 +43,6 @@ public final class RecipeDomainData implements IDomainData {
     /** NEI item 格子 hitbox 边长；layout 表 width/height 使用。 */
     private static final int SLOT_SIZE = 18;
 
-    /** 默认候选概率，单位为 1。 */
-    private static final double DEFAULT_PROBABILITY = 1.0;
-
     private final String datasetId;
 
     /**
@@ -64,6 +65,12 @@ public final class RecipeDomainData implements IDomainData {
     /** candidate 行按 (recipe_id, slot_key, candidate_order) 去重。 */
     private final Map<String, RecipeSlotCandidateRow> slotCandidates = new LinkedHashMap<>();
 
+    /** tooltip fragment rows keyed by complete candidate parent and fragment order. */
+    private final Map<String, RecipeCandidateTooltipFragmentRow> candidateTooltipFragments = new LinkedHashMap<>();
+
+    /** tooltip region rows keyed by recipe, region order, and state. */
+    private final Map<String, RecipeTooltipRegionRow> tooltipRegions = new LinkedHashMap<>();
+
     /** 每个 category 的 slot layout display_order 递增计数。 */
     private final Map<String, Integer> nextSlotDisplayOrderByCategory = new LinkedHashMap<>();
 
@@ -73,8 +80,8 @@ public final class RecipeDomainData implements IDomainData {
     /** recipe ID prefix 与 hash 的分隔符。 */
     private static final char RECIPE_ID_HASH_SEPARATOR = '@';
 
-    /** recipe ID occurrence 后缀分隔符。 */
-    private static final char RECIPE_ID_OCCURRENCE_SEPARATOR = '.';
+    /** occurrence suffix separator used by recipe IDs and duplicate visual slot keys. */
+    private static final char OCCURRENCE_SEPARATOR = '.';
 
     /** recipe ID 稳定哈希输入的内部键分隔符。 */
     private static final char RECIPE_ID_KEY_SEPARATOR = '\u0000';
@@ -143,24 +150,34 @@ public final class RecipeDomainData implements IDomainData {
         if (recipes.putIfAbsent(recipeId, new RecipeRow(datasetId, recipeId, categoryId, recipeDisplayOrder)) != null) {
             return;
         }
+        Map<String, Integer> slotOccurrences = new LinkedHashMap<>();
         boolean hasResult = observation.getResult() != null;
-        registerSlots(categoryId, recipeId, ROLE_INPUT, observation.getInputs());
-        registerSlots(categoryId, recipeId, ROLE_INPUT, observation.getExtraInputs());
+        registerSlots(categoryId, recipeId, ROLE_INPUT, observation.getInputs(), slotOccurrences);
+        registerSlots(categoryId, recipeId, ROLE_INPUT, observation.getExtraInputs(), slotOccurrences);
         if (hasResult) {
-            registerSlots(categoryId, recipeId, ROLE_OUTPUT, Collections.singletonList(observation.getResult()));
-            registerSlots(categoryId, recipeId, ROLE_AUXILIARY, observation.getOthers());
+            registerSlots(
+                categoryId,
+                recipeId,
+                ROLE_OUTPUT,
+                Collections.singletonList(observation.getResult()),
+                slotOccurrences);
+            registerSlots(categoryId, recipeId, ROLE_AUXILIARY, observation.getOthers(), slotOccurrences);
         } else {
-            registerSlots(categoryId, recipeId, ROLE_OUTPUT, observation.getOthers());
+            registerSlots(categoryId, recipeId, ROLE_OUTPUT, observation.getOthers(), slotOccurrences);
         }
-        registerSlots(categoryId, recipeId, ROLE_OUTPUT, observation.getExtraOutputs());
+        registerSlots(categoryId, recipeId, ROLE_OUTPUT, observation.getExtraOutputs(), slotOccurrences);
+        registerRegions(recipeId, observation.getRegions());
     }
 
-    private void registerSlots(String categoryId, String recipeId, String role, List<RecipeSlotObservation> slots) {
+    private void registerSlots(String categoryId, String recipeId, String role, List<RecipeSlotObservation> slots,
+        Map<String, Integer> slotOccurrences) {
         if (slots == null || slots.isEmpty()) {
             return;
         }
         for (RecipeSlotObservation slot : slots) {
-            String slotKey = slotKey(role, slot.getX(), slot.getY());
+            String baseSlotKey = slotKey(role, slot.getX(), slot.getY());
+            int occurrence = slotOccurrences.merge(baseSlotKey, 1, Integer::sum);
+            String slotKey = occurrence == 1 ? baseSlotKey : baseSlotKey + OCCURRENCE_SEPARATOR + occurrence;
             registerSlotLayout(categoryId, role, slotKey, slot.getX(), slot.getY());
             registerCandidates(recipeId, slotKey, slot);
         }
@@ -178,21 +195,65 @@ public final class RecipeDomainData implements IDomainData {
     }
 
     private void registerCandidates(String recipeId, String slotKey, RecipeSlotObservation slot) {
-        int order = 0;
+        int candidateOrder = 0;
         for (RecipeCandidateObservation candidate : slot.getCandidates()) {
-            String candidateKey = recipeId + '\u0000' + slotKey + '\u0000' + order;
+            String candidateKey = recipeId + '\u0000' + slotKey + '\u0000' + candidateOrder;
             slotCandidates.putIfAbsent(
                 candidateKey,
                 new RecipeSlotCandidateRow(
                     datasetId,
                     recipeId,
                     slotKey,
-                    order,
+                    candidateOrder,
                     candidate.getTargetDomain(),
                     candidate.getTargetId(),
                     candidate.getAmount(),
-                    DEFAULT_PROBABILITY));
-            order++;
+                    candidate.getProbability(),
+                    candidate.getPresentationType(),
+                    candidate.getPresentationId(),
+                    candidate.getAmountUnit()));
+            registerFragments(recipeId, slotKey, candidateOrder, candidate.getFragments());
+            candidateOrder++;
+        }
+    }
+
+    private void registerFragments(String recipeId, String slotKey, int candidateOrder,
+        List<RecipeTooltipFragmentObservation> fragments) {
+        int fragmentOrder = 0;
+        for (RecipeTooltipFragmentObservation fragment : fragments) {
+            String fragmentKey = recipeId + '\u0000' + slotKey + '\u0000' + candidateOrder + '\u0000' + fragmentOrder;
+            candidateTooltipFragments.putIfAbsent(
+                fragmentKey,
+                new RecipeCandidateTooltipFragmentRow(
+                    datasetId,
+                    recipeId,
+                    slotKey,
+                    candidateOrder,
+                    fragmentOrder,
+                    fragment.getStateKey(),
+                    fragment.getTextValue()));
+            fragmentOrder++;
+        }
+    }
+
+    private void registerRegions(String recipeId, List<RecipeTooltipRegionObservation> regions) {
+        int regionOrder = 0;
+        for (RecipeTooltipRegionObservation region : regions) {
+            String regionKey = recipeId + '\u0000' + regionOrder + '\u0000' + region.getStateKey();
+            tooltipRegions.putIfAbsent(
+                regionKey,
+                new RecipeTooltipRegionRow(
+                    datasetId,
+                    recipeId,
+                    regionOrder,
+                    region.getRegionType(),
+                    region.getX(),
+                    region.getY(),
+                    region.getWidth(),
+                    region.getHeight(),
+                    region.getStateKey(),
+                    region.getTooltipText()));
+            regionOrder++;
         }
     }
 
@@ -200,7 +261,7 @@ public final class RecipeDomainData implements IDomainData {
         String hashInput = identity.getCategoryId() + RECIPE_ID_KEY_SEPARATOR + visualFingerprint(observation);
         String baseRecipeId = identity.getRecipeIdPrefix() + RECIPE_ID_HASH_SEPARATOR + StableHash.shortHash(hashInput);
         int occurrence = recipeIdOccurrenceCounts.merge(baseRecipeId, 1, Integer::sum);
-        return occurrence == 1 ? baseRecipeId : baseRecipeId + RECIPE_ID_OCCURRENCE_SEPARATOR + occurrence;
+        return occurrence == 1 ? baseRecipeId : baseRecipeId + OCCURRENCE_SEPARATOR + occurrence;
     }
 
     private int nextRecipeDisplayOrder(String categoryId) {
@@ -274,6 +335,8 @@ public final class RecipeDomainData implements IDomainData {
             new ArrayList<>(catalysts.values()),
             new ArrayList<>(recipes.values()),
             new ArrayList<>(slotLayouts.values()),
-            new ArrayList<>(slotCandidates.values()));
+            new ArrayList<>(slotCandidates.values()),
+            new ArrayList<>(candidateTooltipFragments.values()),
+            new ArrayList<>(tooltipRegions.values()));
     }
 }

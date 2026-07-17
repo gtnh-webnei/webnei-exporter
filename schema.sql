@@ -57,9 +57,25 @@ CREATE TABLE IF NOT EXISTS item_variant (
   nbt_hash TEXT NOT NULL,
   nbt_text TEXT NOT NULL,
   display_name TEXT NOT NULL,
-  tooltip_text TEXT NOT NULL,
   chemical_expression TEXT NOT NULL DEFAULT '',
-  PRIMARY KEY (dataset_id, item_variant_id)
+  PRIMARY KEY (dataset_id, item_variant_id),
+  FOREIGN KEY (dataset_id, item_id)
+    REFERENCES item(dataset_id, item_id)
+);
+
+CREATE TABLE IF NOT EXISTS item_tooltip_snapshot (
+  dataset_id TEXT NOT NULL REFERENCES dataset(dataset_id) ON DELETE CASCADE,
+  item_variant_id TEXT NOT NULL,
+  tooltip_type TEXT NOT NULL CHECK (tooltip_type IN ('standard', 'key')),
+  key_state TEXT NOT NULL CHECK (key_state IN ('none', 'lshift', 'lcontrol', 'lshift_lcontrol')),
+  tooltip_text TEXT NOT NULL,
+  PRIMARY KEY (dataset_id, item_variant_id, key_state),
+  CHECK (
+    (tooltip_type = 'standard' AND key_state = 'none')
+    OR (tooltip_type = 'key' AND key_state <> 'none')
+  ),
+  FOREIGN KEY (dataset_id, item_variant_id)
+    REFERENCES item_variant(dataset_id, item_variant_id) ON DELETE CASCADE
 );
 
 CREATE TABLE IF NOT EXISTS item_tool_class (
@@ -148,8 +164,7 @@ CREATE TABLE IF NOT EXISTS recipe_slot_layout (
   width INTEGER NOT NULL,
   height INTEGER NOT NULL,
   display_order INTEGER NOT NULL,
-  PRIMARY KEY (dataset_id, category_id, slot_key),
-  UNIQUE (dataset_id, category_id, role, x, y)
+  PRIMARY KEY (dataset_id, category_id, slot_key)
 );
 
 CREATE TABLE IF NOT EXISTS recipe (
@@ -168,8 +183,40 @@ CREATE TABLE IF NOT EXISTS recipe_slot_candidate (
   target_domain TEXT NOT NULL,
   target_id TEXT NOT NULL,
   amount INTEGER NOT NULL,
-  probability DOUBLE PRECISION NOT NULL DEFAULT 1,
+  probability DOUBLE PRECISION NOT NULL DEFAULT 1 CHECK (probability >= 0 AND probability <= 1),
+  presentation_type TEXT NOT NULL CHECK (presentation_type IN ('itemStack', 'gtFluidDisplay', 'fluidSlot')),
+  presentation_id TEXT NOT NULL,
+  amount_unit TEXT NOT NULL CHECK (amount_unit IN ('item', 'L', 'mB', 'mBPerTick')),
   PRIMARY KEY (dataset_id, recipe_id, slot_key, candidate_order)
+);
+
+CREATE TABLE IF NOT EXISTS recipe_candidate_tooltip_fragment (
+  dataset_id TEXT NOT NULL,
+  recipe_id TEXT NOT NULL,
+  slot_key TEXT NOT NULL,
+  candidate_order INTEGER NOT NULL,
+  fragment_order INTEGER NOT NULL CHECK (fragment_order >= 0),
+  state_key TEXT NOT NULL CHECK (state_key IN ('all', 'none', 'lshift', 'lcontrol', 'lshift_lcontrol')),
+  text_value TEXT NOT NULL,
+  PRIMARY KEY (dataset_id, recipe_id, slot_key, candidate_order, fragment_order),
+  FOREIGN KEY (dataset_id, recipe_id, slot_key, candidate_order)
+    REFERENCES recipe_slot_candidate(dataset_id, recipe_id, slot_key, candidate_order) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS recipe_tooltip_region (
+  dataset_id TEXT NOT NULL,
+  recipe_id TEXT NOT NULL,
+  region_order INTEGER NOT NULL CHECK (region_order >= 0),
+  region_type TEXT NOT NULL CHECK (region_type IN ('fluidTank', 'recipeTitle')),
+  x INTEGER NOT NULL,
+  y INTEGER NOT NULL,
+  width INTEGER NOT NULL CHECK (width > 0),
+  height INTEGER NOT NULL CHECK (height > 0),
+  state_key TEXT NOT NULL CHECK (state_key IN ('all', 'none', 'lshift', 'lcontrol', 'lshift_lcontrol')),
+  tooltip_text TEXT NOT NULL,
+  PRIMARY KEY (dataset_id, recipe_id, region_order, state_key),
+  FOREIGN KEY (dataset_id, recipe_id)
+    REFERENCES recipe(dataset_id, recipe_id) ON DELETE CASCADE
 );
 
 CREATE TABLE IF NOT EXISTS ore_dictionary (
@@ -602,19 +649,12 @@ CREATE OR REPLACE VIEW v_item_browser AS
 SELECT
   ile.dataset_id,
   iv.item_variant_id,
-  iv.item_id,
   i.mod_id,
   m.name AS mod_name,
   i.registry_name,
-  i.unlocalized_name,
-  iv.damage,
-  iv.nbt_hash,
   iv.display_name,
-  iv.tooltip_text,
-  iv.chemical_expression,
   ile.list_index,
   a.path AS icon_path,
-  a.media_type AS icon_media_type,
   a.width AS icon_width,
   a.height AS icon_height,
   a.metadata_json AS icon_metadata_json
@@ -641,16 +681,8 @@ SELECT
   f.mod_id,
   m.name AS mod_name,
   f.registry_name,
-  f.unlocalized_name,
   f.display_name,
-  f.chemical_expression,
-  f.luminosity,
-  f.density,
-  f.temperature,
-  f.viscosity,
-  f.gaseous,
   a.path AS icon_path,
-  a.media_type AS icon_media_type,
   a.width AS icon_width,
   a.height AS icon_height,
   a.metadata_json AS icon_metadata_json
@@ -823,8 +855,8 @@ FROM (
     ile.dataset_id,
     iv.item_variant_id,
     lower(regexp_replace(iv.display_name, '§.', '', 'g')) AS name_norm,
-    CASE WHEN position(E'\n' in iv.tooltip_text) > 0
-         THEN lower(regexp_replace(substring(iv.tooltip_text from position(E'\n' in iv.tooltip_text) + 1), '§.', '', 'g'))
+    CASE WHEN position(E'\n' in its.tooltip_text) > 0
+         THEN lower(regexp_replace(substring(its.tooltip_text from position(E'\n' in its.tooltip_text) + 1), '§.', '', 'g'))
          ELSE '' END AS tooltip_norm,
     lower(i.item_id) AS id_norm,
     lower(coalesce(m.name, '')) AS mod_norm,
@@ -836,6 +868,11 @@ FROM (
   JOIN item i
     ON i.dataset_id = iv.dataset_id
    AND i.item_id = iv.item_id
+  JOIN item_tooltip_snapshot its
+    ON its.dataset_id = iv.dataset_id
+   AND its.item_variant_id = iv.item_variant_id
+   AND its.tooltip_type = 'standard'
+   AND its.key_state = 'none'
   LEFT JOIN mod m
     ON m.dataset_id = i.dataset_id
    AND m.mod_id = i.mod_id

@@ -31,8 +31,8 @@ public final class ItemExportTask implements IExportTask {
 
     @Override
     public void execute(ExportTaskContext context) {
-        String datasetId = context.store(DatasetDomainStore.class)
-            .data()
+        DatasetDomainStore datasetStore = context.store(DatasetDomainStore.class);
+        String datasetId = datasetStore.data()
             .datasetId();
 
         ItemDomainData data = new ItemDomainData();

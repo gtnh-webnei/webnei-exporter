@@ -11,7 +11,7 @@ import moe.takochan.webnei.exporter.engine.store.IDomainRegistrar;
 
 public final class DatasetRegistrar implements IDomainRegistrar {
 
-    private static final String SCHEMA_VERSION = "3";
+    private static final String SCHEMA_VERSION = "6";
 
     private final DatasetDomainData data;
 
@@ -20,9 +20,10 @@ public final class DatasetRegistrar implements IDomainRegistrar {
     }
 
     public void register(String packSlug, String packVersion, String variant, String language) {
+        String datasetId = buildDatasetId(packSlug, packVersion, variant, language);
         data.setRow(
             new DatasetRow(
-                buildDatasetId(packSlug, packVersion, variant, language),
+                datasetId,
                 packSlug,
                 packVersion,
                 variant,

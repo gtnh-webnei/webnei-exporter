@@ -57,6 +57,10 @@ dependencies {
     compileOnly("org.projectlombok:lombok:$lombokVersion")
     annotationProcessor("org.projectlombok:lombok:$lombokVersion")
 
+    def rfbVersion = "1.0.11"
+    compileOnly("com.gtnewhorizons.retrofuturabootstrap:RetroFuturaBootstrap:$rfbVersion")
+    testImplementation("com.gtnewhorizons.retrofuturabootstrap:RetroFuturaBootstrap:$rfbVersion")
+
     // ===== GTNH 托管（gtnhDev / gtnh）=====
     runtimeOnlyNonPublishable(gtnhDev("Angelica"))
 
