@@ -11,7 +11,7 @@ import moe.takochan.webnei.exporter.engine.store.IDomainRegistrar;
 
 public final class DatasetRegistrar implements IDomainRegistrar {
 
-    private static final String SCHEMA_VERSION = "7";
+    private static final String SCHEMA_VERSION = "8";
 
     private final DatasetDomainData data;
 
@@ -19,28 +19,27 @@ public final class DatasetRegistrar implements IDomainRegistrar {
         this.data = data;
     }
 
-    public void register(String packSlug, String packVersion, String variant, String language) {
-        String datasetId = buildDatasetId(packSlug, packVersion, variant, language);
+    public void register(String packVersion, String variant, String language) {
+        String datasetId = buildDatasetId(packVersion, variant, language);
         data.setRow(
             new DatasetRow(
                 datasetId,
-                packSlug,
                 packVersion,
                 variant,
                 language,
-                buildDisplayName(packSlug, packVersion, variant, language),
+                buildDisplayName(packVersion, variant, language),
                 SCHEMA_VERSION,
                 Tags.VERSION,
                 exportedAt(),
                 Loader.MC_VERSION));
     }
 
-    private static String buildDatasetId(String packSlug, String packVersion, String variant, String language) {
-        return packSlug + ":" + packVersion + ":" + variant + ":" + language;
+    private static String buildDatasetId(String packVersion, String variant, String language) {
+        return packVersion + ":" + variant + ":" + language;
     }
 
-    private static String buildDisplayName(String packSlug, String packVersion, String variant, String language) {
-        return packSlug + " " + packVersion + " " + variant + " (" + language + ")";
+    private static String buildDisplayName(String packVersion, String variant, String language) {
+        return packVersion + " " + variant + " (" + language + ")";
     }
 
     private static String exportedAt() {

@@ -15,7 +15,6 @@ public final class DatasetRecordSetMapper implements IBundleRecordSetMapper<Data
     private static final BundleRecordSetSpec<DatasetRow> DATASET = BundleRecordSetSpec
         .<DatasetRow>recordSet("dataset", 10)
         .field("dataset_id", DatasetRow::getDatasetId)
-        .field("pack_slug", DatasetRow::getPackSlug)
         .field("pack_version", DatasetRow::getPackVersion)
         .field("variant", DatasetRow::getVariant)
         .field("language", DatasetRow::getLanguage)

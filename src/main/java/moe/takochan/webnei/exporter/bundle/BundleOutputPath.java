@@ -23,9 +23,7 @@ public final class BundleOutputPath {
     }
 
     private static String datasetOutputPath(DatasetRow dataset) {
-        return sanitizePathSegment(dataset.getPackSlug()) + File.separator
-            + sanitizePathSegment(dataset.getPackVersion())
-            + File.separator
+        return sanitizePathSegment(dataset.getPackVersion()) + File.separator
             + sanitizePathSegment(dataset.getVariant())
             + File.separator
             + sanitizePathSegment(dataset.getLanguage());

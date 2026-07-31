@@ -1,6 +1,5 @@
 CREATE TABLE IF NOT EXISTS dataset (
   dataset_id TEXT PRIMARY KEY,
-  pack_slug TEXT NOT NULL,
   pack_version TEXT NOT NULL,
   variant TEXT NOT NULL,
   language TEXT NOT NULL,
@@ -9,7 +8,7 @@ CREATE TABLE IF NOT EXISTS dataset (
   exporter_version TEXT NOT NULL,
   created_at TIMESTAMPTZ NOT NULL,
   minecraft_version TEXT NOT NULL,
-  UNIQUE (pack_slug, pack_version, variant, language)
+  UNIQUE (pack_version, variant, language)
 );
 
 CREATE TABLE IF NOT EXISTS mod (

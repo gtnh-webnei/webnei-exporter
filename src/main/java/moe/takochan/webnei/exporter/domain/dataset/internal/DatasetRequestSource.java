@@ -15,16 +15,13 @@ public final class DatasetRequestSource {
     }
 
     public void collect() {
-        String packSlug = context.executionContext()
-            .request()
-            .option(ExportRequestOptions.PACK_SLUG);
         String packVersion = context.executionContext()
             .request()
             .option(ExportRequestOptions.PACK_VERSION);
         String variant = context.executionContext()
             .request()
             .option(ExportRequestOptions.VARIANT);
-        this.registrar.register(packSlug, packVersion, variant, currentLanguage());
+        registrar.register(packVersion, variant, currentLanguage());
     }
 
     private static String currentLanguage() {

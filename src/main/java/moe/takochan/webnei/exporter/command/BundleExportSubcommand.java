@@ -15,7 +15,7 @@ import moe.takochan.webnei.exporter.engine.ExportRequestOptions;
 import moe.takochan.webnei.exporter.export.ExportPlan;
 
 /**
- * 需要 pack、variant 和 bundle format 参数的导出子命令基类。
+ * 需要 GTNH 版本、数据变体和 bundle format 参数的导出子命令基类。
  */
 public abstract class BundleExportSubcommand implements ExportSubcommand {
 
@@ -95,10 +95,10 @@ public abstract class BundleExportSubcommand implements ExportSubcommand {
         }
 
         /**
-         * 解析 pack、variant、可选 format 与可选 flag 参数。
+         * 解析 GTNH 版本、数据变体、可选 format 与可选 flag 参数。
          *
          * <p>
-         * 位置参数：{@code pack_slug pack_version variant [format]}；位置参数之后可附加任意顺序的 flag：
+         * 位置参数：{@code pack_version variant [format]}；位置参数之后可附加任意顺序的 flag：
          * {@code --no-images}（不导图片资源）、{@code --no-animations}（不导动图序列）。
          */
         private static BundleArguments parse(String[] args) {
@@ -119,13 +119,12 @@ public abstract class BundleExportSubcommand implements ExportSubcommand {
                     positional.add(arg);
                 }
             }
-            if (positional.size() < 3 || positional.size() > 4) {
-                throw new IllegalArgumentException("Expected pack_slug, pack_version, variant and optional format");
+            if (positional.size() < 2 || positional.size() > 3) {
+                throw new IllegalArgumentException("Expected pack_version, variant and optional format");
             }
             Map<String, String> options = new LinkedHashMap<>();
-            options.put(ExportRequestOptions.PACK_SLUG, positional.get(0));
-            options.put(ExportRequestOptions.PACK_VERSION, positional.get(1));
-            options.put(ExportRequestOptions.VARIANT, positional.get(2));
+            options.put(ExportRequestOptions.PACK_VERSION, positional.get(0));
+            options.put(ExportRequestOptions.VARIANT, positional.get(1));
             if (noImages) {
                 options.put(ExportRequestOptions.SKIP_ASSET_RENDER, "true");
             }
@@ -144,8 +143,8 @@ public abstract class BundleExportSubcommand implements ExportSubcommand {
         }
 
         private static BundleFormat format(List<String> positional) {
-            if (positional.size() == 4) {
-                return BundleFormat.parse(positional.get(3));
+            if (positional.size() == 3) {
+                return BundleFormat.parse(positional.get(2));
             }
             return BundleFormat.defaultFormat();
         }

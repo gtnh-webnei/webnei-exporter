@@ -42,10 +42,10 @@ public final class GuiExportConfig extends GuiScreen {
     private static final int PLAN_DESCRIPTION_TOP = 50;
     private static final int PARAMETER_SECTION_TOP = 62;
     private static final int FIELD_TOP = 80;
-    private static final int FORMAT_SECTION_TOP = 160;
-    private static final int FORMAT_BUTTON_TOP = 180;
-    private static final int ASSET_SECTION_TOP = 206;
-    private static final int ASSET_BUTTON_TOP = 224;
+    private static final int FORMAT_SECTION_TOP = 132;
+    private static final int FORMAT_BUTTON_TOP = 152;
+    private static final int ASSET_SECTION_TOP = 178;
+    private static final int ASSET_BUTTON_TOP = 196;
     private static final int CONTENT_BOTTOM_PADDING = 10;
     private static final int CONTENT_HEIGHT = ASSET_BUTTON_TOP + OPTION_HEIGHT + CONTENT_BOTTOM_PADDING;
     private static final int ACTION_BUTTON_BOTTOM_MARGIN = 12;
@@ -80,7 +80,6 @@ public final class GuiExportConfig extends GuiScreen {
     private int scrollY;
     private String errorMessage = "";
 
-    private GuiTextField packSlugField;
     private GuiTextField packVersionField;
     private GuiTextField variantField;
     private GuiTextField[] fields = new GuiTextField[0];
@@ -240,11 +239,10 @@ public final class GuiExportConfig extends GuiScreen {
     }
 
     private void initTextFields() {
-        packSlugField = textField(0);
-        packVersionField = textField(1);
-        variantField = textField(2);
-        fields = new GuiTextField[] { packSlugField, packVersionField, variantField };
-        packSlugField.setFocused(true);
+        packVersionField = textField(0);
+        variantField = textField(1);
+        fields = new GuiTextField[] { packVersionField, variantField };
+        packVersionField.setFocused(true);
     }
 
     private GuiTextField textField(int id) {
@@ -321,10 +319,9 @@ public final class GuiExportConfig extends GuiScreen {
     }
 
     private void submit() {
-        String packSlug = trim(packSlugField.getText());
         String packVersion = trim(packVersionField.getText());
         String variant = trim(variantField.getText());
-        if (packSlug.isEmpty() || packVersion.isEmpty() || variant.isEmpty()) {
+        if (packVersion.isEmpty() || variant.isEmpty()) {
             errorMessage = label("webnei.gui.export.config.error.parameters");
             return;
         }
@@ -333,7 +330,6 @@ public final class GuiExportConfig extends GuiScreen {
             return;
         }
         Map<String, String> options = new LinkedHashMap<>();
-        options.put(ExportRequestOptions.PACK_SLUG, packSlug);
         options.put(ExportRequestOptions.PACK_VERSION, packVersion);
         options.put(ExportRequestOptions.VARIANT, variant);
         if (selectedAssetModeId == ASSET_SKIP_IMAGES_ID) {
@@ -371,9 +367,8 @@ public final class GuiExportConfig extends GuiScreen {
     private void layoutTextFields(int contentLeft) {
         int fieldLeft = contentLeft + 118;
         int rowGap = fieldRowGap();
-        layoutTextField(packSlugField, fieldLeft, contentY(FIELD_TOP));
-        layoutTextField(packVersionField, fieldLeft, contentY(FIELD_TOP + rowGap));
-        layoutTextField(variantField, fieldLeft, contentY(FIELD_TOP + rowGap * 2));
+        layoutTextField(packVersionField, fieldLeft, contentY(FIELD_TOP));
+        layoutTextField(variantField, fieldLeft, contentY(FIELD_TOP + rowGap));
     }
 
     private void layoutTextField(GuiTextField field, int left, int top) {
@@ -462,9 +457,8 @@ public final class GuiExportConfig extends GuiScreen {
 
     private void drawFieldLabels(int left, int top) {
         int rowGap = fieldRowGap();
-        drawContentText(label("webnei.gui.export.config.packSlug"), left, top + 5, COLOR_TEXT);
-        drawContentText(label("webnei.gui.export.config.packVersion"), left, top + rowGap + 5, COLOR_TEXT);
-        drawContentText(label("webnei.gui.export.config.variant"), left, top + rowGap * 2 + 5, COLOR_TEXT);
+        drawContentText(label("webnei.gui.export.config.packVersion"), left, top + 5, COLOR_TEXT);
+        drawContentText(label("webnei.gui.export.config.variant"), left, top + rowGap + 5, COLOR_TEXT);
     }
 
     private void drawContentText(String text, int left, int top, int color) {
