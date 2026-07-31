@@ -11,15 +11,11 @@ import net.minecraft.item.ItemStack;
 import codechicken.nei.drawable.DrawableResource;
 import moe.takochan.webnei.exporter.domain.IExportModel;
 import moe.takochan.webnei.exporter.domain.recipe.RecipeExportModel;
-import moe.takochan.webnei.exporter.domain.recipe.hook.RecipeTooltipFragmentObservation;
-import moe.takochan.webnei.exporter.domain.recipe.hook.RecipeTooltipRegionObservation;
-import moe.takochan.webnei.exporter.domain.recipe.model.RecipeCandidateTooltipFragmentRow;
 import moe.takochan.webnei.exporter.domain.recipe.model.RecipeCategoryCatalystRow;
 import moe.takochan.webnei.exporter.domain.recipe.model.RecipeCategoryRow;
 import moe.takochan.webnei.exporter.domain.recipe.model.RecipeRow;
 import moe.takochan.webnei.exporter.domain.recipe.model.RecipeSlotCandidateRow;
 import moe.takochan.webnei.exporter.domain.recipe.model.RecipeSlotLayoutRow;
-import moe.takochan.webnei.exporter.domain.recipe.model.RecipeTooltipRegionRow;
 import moe.takochan.webnei.exporter.engine.store.IDomainData;
 import moe.takochan.webnei.exporter.util.StableHash;
 
@@ -43,40 +39,6 @@ public final class RecipeDomainData implements IDomainData {
     /** NEI item 格子 hitbox 边长；layout 表 width/height 使用。 */
     private static final int SLOT_SIZE = 18;
 
-    private final String datasetId;
-
-    /**
-     * 按 handler key 去重保存分类身份，并保持 NEI 扫描顺序。
-     *
-     * <p>
-     * key 是 handler class + handler id + overlay id 的稳定组合，不写入表，只用于 exporter 内部识别同一个 NEI handler。
-     */
-    private final Map<String, RecipeCategoryIdentity> identitiesByHandlerKey = new LinkedHashMap<>();
-
-    /** catalyst 行按 category_id + item_variant_id 去重。 */
-    private final Map<String, RecipeCategoryCatalystRow> catalysts = new LinkedHashMap<>();
-
-    /** recipe 行按 recipe_id 去重，保持 NEI 顺序。 */
-    private final Map<String, RecipeRow> recipes = new LinkedHashMap<>();
-
-    /** slot layout 行按 (category_id, slot_key) 去重；同 category 下相同 role + x + y 复用同一 slot。 */
-    private final Map<String, RecipeSlotLayoutRow> slotLayouts = new LinkedHashMap<>();
-
-    /** candidate 行按 (recipe_id, slot_key, candidate_order) 去重。 */
-    private final Map<String, RecipeSlotCandidateRow> slotCandidates = new LinkedHashMap<>();
-
-    /** tooltip fragment rows keyed by complete candidate parent and fragment order. */
-    private final Map<String, RecipeCandidateTooltipFragmentRow> candidateTooltipFragments = new LinkedHashMap<>();
-
-    /** tooltip region rows keyed by recipe, region order, and state. */
-    private final Map<String, RecipeTooltipRegionRow> tooltipRegions = new LinkedHashMap<>();
-
-    /** 每个 category 的 slot layout display_order 递增计数。 */
-    private final Map<String, Integer> nextSlotDisplayOrderByCategory = new LinkedHashMap<>();
-
-    /** 每个 category 的 recipe display_order 递增计数，保持 NEI 扫描顺序。 */
-    private final Map<String, Integer> nextRecipeDisplayOrderByCategory = new LinkedHashMap<>();
-
     /** recipe ID prefix 与 hash 的分隔符。 */
     private static final char RECIPE_ID_HASH_SEPARATOR = '@';
 
@@ -86,7 +48,33 @@ public final class RecipeDomainData implements IDomainData {
     /** recipe ID 稳定哈希输入的内部键分隔符。 */
     private static final char RECIPE_ID_KEY_SEPARATOR = '\u0000';
 
-    /** 相同 base recipe ID 的出现次数，用于在罕见碰撞时为 recipe_id 追加 occurrence。 */
+    /** 保持历史 recipe visual fingerprint 中物品候选的 domain 前缀。 */
+    private static final String RECIPE_ITEM_FINGERPRINT_DOMAIN = "item";
+
+    private final String datasetId;
+
+    /** 按 handler key 去重保存分类身份，并保持 NEI 扫描顺序。 */
+    private final Map<String, RecipeCategoryIdentity> identitiesByHandlerKey = new LinkedHashMap<>();
+
+    /** catalyst 行按 category_id + item_variant_id 去重。 */
+    private final Map<String, RecipeCategoryCatalystRow> catalysts = new LinkedHashMap<>();
+
+    /** recipe 行按 recipe_id 去重，保持 NEI 顺序。 */
+    private final Map<String, RecipeRow> recipes = new LinkedHashMap<>();
+
+    /** slot layout 行按 (category_id, slot_key) 去重。 */
+    private final Map<String, RecipeSlotLayoutRow> slotLayouts = new LinkedHashMap<>();
+
+    /** candidate 行按 (recipe_id, slot_key, candidate_order) 去重。 */
+    private final Map<String, RecipeSlotCandidateRow> slotCandidates = new LinkedHashMap<>();
+
+    /** 每个 category 的 slot layout display_order 递增计数。 */
+    private final Map<String, Integer> nextSlotDisplayOrderByCategory = new LinkedHashMap<>();
+
+    /** 每个 category 的 recipe display_order 递增计数。 */
+    private final Map<String, Integer> nextRecipeDisplayOrderByCategory = new LinkedHashMap<>();
+
+    /** 相同 base recipe ID 的出现次数。 */
     private final Map<String, Integer> recipeIdOccurrenceCounts = new LinkedHashMap<>();
 
     public RecipeDomainData(String datasetId) {
@@ -137,12 +125,7 @@ public final class RecipeDomainData implements IDomainData {
         catalysts.putIfAbsent(row.getCategoryId() + '\u0000' + row.getItemVariantId(), row);
     }
 
-    /**
-     * 注册一个配方页面的 visual facts。
-     *
-     * <p>
-     * 内部统一分配 recipe_id、slot_key、display_order、candidate_order，避免散落在采集器或 registrar。
-     */
+    /** 注册一个配方页面的 visual facts，并统一分配 ID 与顺序。 */
     void registerVisual(RecipeCategoryIdentity identity, RecipeVisualObservation observation) {
         String categoryId = identity.getCategoryId();
         String recipeId = nextRecipeId(identity, observation);
@@ -153,7 +136,6 @@ public final class RecipeDomainData implements IDomainData {
         Map<String, Integer> slotOccurrences = new LinkedHashMap<>();
         boolean hasResult = observation.getResult() != null;
         registerSlots(categoryId, recipeId, ROLE_INPUT, observation.getInputs(), slotOccurrences);
-        registerSlots(categoryId, recipeId, ROLE_INPUT, observation.getExtraInputs(), slotOccurrences);
         if (hasResult) {
             registerSlots(
                 categoryId,
@@ -165,8 +147,6 @@ public final class RecipeDomainData implements IDomainData {
         } else {
             registerSlots(categoryId, recipeId, ROLE_OUTPUT, observation.getOthers(), slotOccurrences);
         }
-        registerSlots(categoryId, recipeId, ROLE_OUTPUT, observation.getExtraOutputs(), slotOccurrences);
-        registerRegions(recipeId, observation.getRegions());
     }
 
     private void registerSlots(String categoryId, String recipeId, String role, List<RecipeSlotObservation> slots,
@@ -205,55 +185,9 @@ public final class RecipeDomainData implements IDomainData {
                     recipeId,
                     slotKey,
                     candidateOrder,
-                    candidate.getTargetDomain(),
-                    candidate.getTargetId(),
-                    candidate.getAmount(),
-                    candidate.getProbability(),
-                    candidate.getPresentationType(),
-                    candidate.getPresentationId(),
-                    candidate.getAmountUnit()));
-            registerFragments(recipeId, slotKey, candidateOrder, candidate.getFragments());
+                    candidate.getItemVariantId(),
+                    candidate.getAmount()));
             candidateOrder++;
-        }
-    }
-
-    private void registerFragments(String recipeId, String slotKey, int candidateOrder,
-        List<RecipeTooltipFragmentObservation> fragments) {
-        int fragmentOrder = 0;
-        for (RecipeTooltipFragmentObservation fragment : fragments) {
-            String fragmentKey = recipeId + '\u0000' + slotKey + '\u0000' + candidateOrder + '\u0000' + fragmentOrder;
-            candidateTooltipFragments.putIfAbsent(
-                fragmentKey,
-                new RecipeCandidateTooltipFragmentRow(
-                    datasetId,
-                    recipeId,
-                    slotKey,
-                    candidateOrder,
-                    fragmentOrder,
-                    fragment.getStateKey(),
-                    fragment.getTextValue()));
-            fragmentOrder++;
-        }
-    }
-
-    private void registerRegions(String recipeId, List<RecipeTooltipRegionObservation> regions) {
-        int regionOrder = 0;
-        for (RecipeTooltipRegionObservation region : regions) {
-            String regionKey = recipeId + '\u0000' + regionOrder + '\u0000' + region.getStateKey();
-            tooltipRegions.putIfAbsent(
-                regionKey,
-                new RecipeTooltipRegionRow(
-                    datasetId,
-                    recipeId,
-                    regionOrder,
-                    region.getRegionType(),
-                    region.getX(),
-                    region.getY(),
-                    region.getWidth(),
-                    region.getHeight(),
-                    region.getStateKey(),
-                    region.getTooltipText()));
-            regionOrder++;
         }
     }
 
@@ -268,7 +202,7 @@ public final class RecipeDomainData implements IDomainData {
         return nextRecipeDisplayOrderByCategory.merge(categoryId, 1, Integer::sum) - 1;
     }
 
-    /** 把一次 observation 的 slots + candidates 序列化成稳定指纹，用于派生 recipe_id。 */
+    /** 把一次 observation 的标准 slots + candidates 序列化成稳定指纹，用于派生 recipe_id。 */
     private static String visualFingerprint(RecipeVisualObservation observation) {
         StringBuilder out = new StringBuilder();
         appendSlots(out, "i", observation.getInputs());
@@ -276,8 +210,6 @@ public final class RecipeDomainData implements IDomainData {
             appendSlots(out, "r", Collections.singletonList(observation.getResult()));
         }
         appendSlots(out, "o", observation.getOthers());
-        appendSlots(out, "xi", observation.getExtraInputs());
-        appendSlots(out, "xo", observation.getExtraOutputs());
         return out.toString();
     }
 
@@ -290,9 +222,9 @@ public final class RecipeDomainData implements IDomainData {
                 .append(slot.getY())
                 .append('[');
             for (RecipeCandidateObservation candidate : slot.getCandidates()) {
-                out.append(candidate.getTargetDomain())
+                out.append(RECIPE_ITEM_FINGERPRINT_DOMAIN)
                     .append(':')
-                    .append(candidate.getTargetId())
+                    .append(candidate.getItemVariantId())
                     .append('x')
                     .append(candidate.getAmount())
                     .append(';');
@@ -335,8 +267,6 @@ public final class RecipeDomainData implements IDomainData {
             new ArrayList<>(catalysts.values()),
             new ArrayList<>(recipes.values()),
             new ArrayList<>(slotLayouts.values()),
-            new ArrayList<>(slotCandidates.values()),
-            new ArrayList<>(candidateTooltipFragments.values()),
-            new ArrayList<>(tooltipRegions.values()));
+            new ArrayList<>(slotCandidates.values()));
     }
 }

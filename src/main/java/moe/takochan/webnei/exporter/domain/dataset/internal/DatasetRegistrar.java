@@ -11,7 +11,7 @@ import moe.takochan.webnei.exporter.engine.store.IDomainRegistrar;
 
 public final class DatasetRegistrar implements IDomainRegistrar {
 
-    private static final String SCHEMA_VERSION = "6";
+    private static final String SCHEMA_VERSION = "7";
 
     private final DatasetDomainData data;
 

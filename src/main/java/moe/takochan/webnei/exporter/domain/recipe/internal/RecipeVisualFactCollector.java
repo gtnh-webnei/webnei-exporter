@@ -5,43 +5,25 @@ import java.util.Collections;
 import java.util.List;
 
 import net.minecraft.item.ItemStack;
-import net.minecraftforge.fluids.Fluid;
-import net.minecraftforge.fluids.FluidStack;
 
 import codechicken.nei.PositionedStack;
 import codechicken.nei.recipe.IRecipeHandler;
 import moe.takochan.webnei.exporter.WebneiExporterMod;
 import moe.takochan.webnei.exporter.domain.fluid.model.FluidContainerRow;
-import moe.takochan.webnei.exporter.domain.fluid.model.FluidRow;
-import moe.takochan.webnei.exporter.domain.fluid.store.FluidDisplayResolution;
 import moe.takochan.webnei.exporter.domain.fluid.store.FluidDomainStore;
 import moe.takochan.webnei.exporter.domain.item.store.ItemDomainStore;
-import moe.takochan.webnei.exporter.domain.recipe.hook.ExtraRecipeSlot;
-import moe.takochan.webnei.exporter.domain.recipe.hook.RecipeCandidateMetadata;
-import moe.takochan.webnei.exporter.domain.recipe.hook.RecipeCandidateMetadataHookRegistry;
-import moe.takochan.webnei.exporter.domain.recipe.hook.RecipeSlotSourceHookRegistry;
-import moe.takochan.webnei.exporter.domain.recipe.hook.RecipeTooltipRegionHookRegistry;
-import moe.takochan.webnei.exporter.domain.recipe.hook.RecipeTooltipRegionObservation;
 
-/** Collects ordered recipe slots, candidates, and non-slot tooltip regions from public NEI data. */
+/** Collects ordered recipe slots and item candidates from public NEI data. */
 public final class RecipeVisualFactCollector {
 
     private static final int ORIGINAL_CANDIDATE_INDEX = -1;
 
     private final ItemDomainStore itemStore;
     private final FluidDomainStore fluidStore;
-    private final RecipeSlotSourceHookRegistry slotSourceHooks;
-    private final RecipeCandidateMetadataHookRegistry candidateMetadataHooks;
-    private final RecipeTooltipRegionHookRegistry tooltipRegionHooks;
 
-    public RecipeVisualFactCollector(ItemDomainStore itemStore, FluidDomainStore fluidStore,
-        RecipeSlotSourceHookRegistry slotSourceHooks, RecipeCandidateMetadataHookRegistry candidateMetadataHooks,
-        RecipeTooltipRegionHookRegistry tooltipRegionHooks) {
+    public RecipeVisualFactCollector(ItemDomainStore itemStore, FluidDomainStore fluidStore) {
         this.itemStore = itemStore;
         this.fluidStore = fluidStore;
-        this.slotSourceHooks = slotSourceHooks;
-        this.candidateMetadataHooks = candidateMetadataHooks;
-        this.tooltipRegionHooks = tooltipRegionHooks;
     }
 
     /** Extracts one recipe page; returns null when no reliable slots can be collected. */
@@ -57,67 +39,10 @@ public final class RecipeVisualFactCollector {
             recipeIndex,
             safeOthers(handler, recipeIndex),
             identity);
-        List<RecipeSlotObservation> extraInputs = new ArrayList<>();
-        List<RecipeSlotObservation> extraOutputs = new ArrayList<>();
-        collectExtraSlots(handler, recipeIndex, identity, extraInputs, extraOutputs);
-        if (inputs.isEmpty() && result == null && others.isEmpty() && extraInputs.isEmpty() && extraOutputs.isEmpty()) {
+        if (inputs.isEmpty() && result == null && others.isEmpty()) {
             return null;
         }
-        List<RecipeTooltipRegionObservation> regions = collectRegions(handler, recipeIndex, identity.getYShift());
-        return RecipeVisualObservation.of(inputs, result, others, extraInputs, extraOutputs, regions);
-    }
-
-    private List<RecipeTooltipRegionObservation> collectRegions(IRecipeHandler handler, int recipeIndex, int yShift) {
-        List<RecipeTooltipRegionObservation> collected = tooltipRegionHooks.collect(handler, recipeIndex);
-        List<RecipeTooltipRegionObservation> shifted = new ArrayList<>(collected.size());
-        for (RecipeTooltipRegionObservation region : collected) {
-            shifted.add(region.withYShift(yShift));
-        }
-        return shifted;
-    }
-
-    private void collectExtraSlots(IRecipeHandler handler, int recipeIndex, RecipeCategoryIdentity identity,
-        List<RecipeSlotObservation> extraInputs, List<RecipeSlotObservation> extraOutputs) {
-        if (!slotSourceHooks.hasSource(handler)) {
-            return;
-        }
-        for (ExtraRecipeSlot extra : slotSourceHooks.extractSlots(handler, recipeIndex)) {
-            List<RecipeCandidateObservation> candidates = resolveFluidCandidates(extra.getFluidCandidates());
-            if (candidates.isEmpty()) {
-                continue;
-            }
-            RecipeSlotObservation slot = RecipeSlotObservation
-                .of(extra.getX(), extra.getY() + identity.getYShift(), candidates);
-            if (extra.getRole() == ExtraRecipeSlot.Role.INPUT) {
-                extraInputs.add(slot);
-            } else {
-                extraOutputs.add(slot);
-            }
-        }
-    }
-
-    private List<RecipeCandidateObservation> resolveFluidCandidates(List<FluidStack> fluidStacks) {
-        List<RecipeCandidateObservation> out = new ArrayList<>(fluidStacks.size());
-        for (FluidStack fluidStack : fluidStacks) {
-            RecipeCandidateObservation candidate = resolveFluidCandidate(fluidStack);
-            if (candidate != null) {
-                out.add(candidate);
-            }
-        }
-        return out;
-    }
-
-    private RecipeCandidateObservation resolveFluidCandidate(FluidStack fluidStack) {
-        if (fluidStack == null) {
-            return null;
-        }
-        Fluid fluid = fluidStack.getFluid();
-        if (fluid == null) {
-            return null;
-        }
-        FluidRow row = fluidStore.registrar()
-            .getOrRegisterFluid(fluid);
-        return RecipeCandidateObservations.fluidSlot(row.getFluidId(), fluidStack.amount);
+        return RecipeVisualObservation.of(inputs, result, others);
     }
 
     private List<RecipeSlotObservation> collectSlots(IRecipeHandler handler, int recipeIndex,
@@ -151,14 +76,7 @@ public final class RecipeVisualFactCollector {
         PositionedStack stack) {
         List<RecipeCandidateObservation> out = new ArrayList<>();
         forEachActiveCandidate(stack, (sourceIndex, active) -> {
-            RecipeCandidateMetadata metadata = candidateMetadataHooks.collect(handler, recipeIndex, stack);
-            RecipeCandidateObservation candidate = resolveCandidate(
-                handler,
-                recipeIndex,
-                stack,
-                sourceIndex,
-                active,
-                metadata);
+            RecipeCandidateObservation candidate = resolveCandidate(handler, recipeIndex, stack, sourceIndex, active);
             if (candidate != null) {
                 out.add(candidate);
             }
@@ -204,7 +122,7 @@ public final class RecipeVisualFactCollector {
     }
 
     private RecipeCandidateObservation resolveCandidate(IRecipeHandler handler, int recipeIndex,
-        PositionedStack positionedStack, int sourceIndex, ItemStack stack, RecipeCandidateMetadata metadata) {
+        PositionedStack positionedStack, int sourceIndex, ItemStack stack) {
         if (!itemStore.hasStableIdentity(stack)) {
             WebneiExporterMod.LOG.warn(
                 "Skipping recipe candidate with unregistered item: handlerClass={}, recipeIndex={}, relx={}, rely={}, sourceCandidateIndex={} (items[] index; -1 means original fallback), itemClass={}",
@@ -220,27 +138,13 @@ public final class RecipeVisualFactCollector {
             return null;
         }
 
-        FluidDisplayResolution fluid = fluidStore.registrar()
-            .tryAsFluidDisplay(stack);
-        if (fluid != null) {
-            String carrierVariantId = itemStore.registrar()
-                .getOrRegisterVariant(stack)
-                .getItemVariantId();
-            return RecipeCandidateObservations.fluidDisplay(
-                fluid.getFluidId(),
-                fluid.getAmount(),
-                fluid.getPresentationType(),
-                carrierVariantId,
-                fluid.getAmountUnit(),
-                metadata);
-        }
         FluidContainerRow container = fluidStore.registrar()
             .registerContainer(stack);
         String variantId = container != null ? container.getItemVariantId()
             : itemStore.registrar()
                 .getOrRegisterVariant(stack)
                 .getItemVariantId();
-        return RecipeCandidateObservations.itemStack(variantId, stack.stackSize, metadata);
+        return new RecipeCandidateObservation(variantId, stack.stackSize);
     }
 
     private static boolean isValid(ItemStack stack) {

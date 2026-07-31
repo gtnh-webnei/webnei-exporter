@@ -67,7 +67,6 @@ dependencies {
     // 核心平台：导出器运行所依赖的渲染/物品/配方框架
     api(gtnhDev("NotEnoughItems"))
     api(gtnhDev("GT5-Unofficial"))
-    devOnlyNonPublishable(gtnhDev("NEI-Integration"))
 
     // Avaritia 系列
     devOnlyNonPublishable(gtnhDev("Avaritia"))
@@ -88,33 +87,10 @@ dependencies {
     // Draconic Evolution
     devOnlyNonPublishable(gtnhDev("Draconic-Evolution"))
 
-    // Botania
-    devOnlyNonPublishable(gtnhDev("Botania"))
-
-    // Tinkers' Construct
-    devOnlyNonPublishable(gtnhDev("TinkersConstruct"))
-
-    // Gendustry
-    devOnlyNonPublishable(gtnhDev("gendustry")) { transitive = false }
-    devOnlyNonPublishable(gtnhDev("bdlib"))
-
-    // Chisel / Forestry / NEIAddons / Railcraft / BuildCraftCompat / ProjectBlue — recipe loading / item feeding hooks 直接 import handler 用
-    devOnlyNonPublishable(gtnhDev("Chisel"))
-    devOnlyNonPublishable(gtnhDev("ForestryMC"))
-    devOnlyNonPublishable(gtnhDev("neiaddons"))
-    devOnlyNonPublishable(gtnhDev("Railcraft"))
-    devOnlyNonPublishable(gtnhDev("BuildCraft"))
-    devOnlyNonPublishable(gtnhDev("BuildCraftCompat"))
-    devOnlyNonPublishable(gtnhDev("ProjectBlue"))
-    devOnlyNonPublishable(gtnhDev("BloodMagic"))
-
     // ===== 非 GTNH 托管（curse.maven / 直接 maven）=====
 
     // Witchery
     devOnlyNonPublishable(rfg.deobf('curse.maven:witchery-69673:2234410'))
-
-    // Extra Utilities
-    devOnlyNonPublishable("curse.maven:ExtraUtilities-225561:2264384")
 
     // Thaumcraft 系列（基础 mod + NEI 插件；GTNH 托管的附属见上方托管块）
     devOnlyNonPublishable("thaumcraft:Thaumcraft:1.7.10-4.2.3.5:dev")
